@@ -16,7 +16,8 @@ struct SubscribeOKMessage {
     let expires: UInt64
     let groupOrder: GroupOrder
     let contentExist: ContentExist
-    let parameters: [SetupParameter]
+    let deliveryTimeout: UInt64?
+    let maxCacheDuration: UInt64?
 
     func encode() -> Data {
         var payload: Data = .init()
@@ -52,10 +53,16 @@ struct SubscribeOKMessage {
         }()
         let contentExist: ContentExist = try .decode(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
-        var parameters: [SetupParameter] = []
+        var deliveryTimeout: UInt64?
+        var maxCacheDuration: UInt64?
         for _ in 0 ..< paramCount {
-            if let parameter: SetupParameter = try? SetupParameter.decode(from: reader) {
-                parameters.append(parameter)
+            switch try? ControlMessageParameter.decode(from: reader) {
+            case .deliveryTimeout(let value):
+                deliveryTimeout = value
+            case .maxCacheDuration(let value):
+                maxCacheDuration = value
+            default:
+                break
             }
         }
         return .init(
@@ -64,8 +71,20 @@ struct SubscribeOKMessage {
             expires: expires,
             groupOrder: groupOrder,
             contentExist: contentExist,
-            parameters: parameters
+            deliveryTimeout: deliveryTimeout,
+            maxCacheDuration: maxCacheDuration
         )
+    }
+
+    private var parameters: [ControlMessageParameter] {
+        var parameters: [ControlMessageParameter] = []
+        if let deliveryTimeout {
+            parameters.append(.deliveryTimeout(deliveryTimeout))
+        }
+        if let maxCacheDuration {
+            parameters.append(.maxCacheDuration(maxCacheDuration))
+        }
+        return parameters
     }
 }
 

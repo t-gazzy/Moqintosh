@@ -16,7 +16,7 @@ struct PublishOKMessage {
     let subscriberPriority: UInt8
     let groupOrder: GroupOrder
     let filter: SubscriptionFilter
-    let parameters: [SetupParameter]
+    let deliveryTimeout: UInt64?
 
     func encode() -> Data {
         var payload: Data = .init()
@@ -52,10 +52,10 @@ struct PublishOKMessage {
         }()
         let filter: SubscriptionFilter = try decodeFilter(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
-        var parameters: [SetupParameter] = []
+        var deliveryTimeout: UInt64?
         for _ in 0 ..< paramCount {
-            if let parameter: SetupParameter = try? SetupParameter.decode(from: reader) {
-                parameters.append(parameter)
+            if case .deliveryTimeout(let value) = try? ControlMessageParameter.decode(from: reader) {
+                deliveryTimeout = value
             }
         }
         return .init(
@@ -64,8 +64,13 @@ struct PublishOKMessage {
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
             filter: filter,
-            parameters: parameters
+            deliveryTimeout: deliveryTimeout
         )
+    }
+
+    private var parameters: [ControlMessageParameter] {
+        guard let deliveryTimeout else { return [] }
+        return [.deliveryTimeout(deliveryTimeout)]
     }
 
     private var filterPayload: Data {

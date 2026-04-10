@@ -50,7 +50,8 @@ public final class Subscriber {
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
             forward: forward,
-            filter: filter
+            filter: filter,
+            deliveryTimeout: nil
         )
         OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
         try await session.context.controlStream.send(bytes: message.encode())

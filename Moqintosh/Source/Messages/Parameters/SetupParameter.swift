@@ -15,11 +15,14 @@ enum SetupParameter {
     /// PATH parameter (Type 0x01, odd → bytes)
     case path(String)
 
-    /// AUTHORIZATION TOKEN parameter (Type 0x03, odd → bytes)
-    case authorizationToken(AuthorizationToken)
-
     /// MAX_REQUEST_ID parameter (Type 0x02, even → varint)
     case maxRequestId(UInt64)
+
+    /// MAX_AUTH_TOKEN_CACHE_SIZE parameter (Type 0x04, even → varint)
+    case maxAuthTokenCacheSize(UInt64)
+
+    /// AUTHORIZATION TOKEN parameter (Type 0x03, odd → bytes)
+    case authorizationToken(AuthorizationToken)
 
     /// AUTHORITY parameter (Type 0x05, odd → bytes)
     case authority(String)
@@ -56,13 +59,18 @@ enum SetupParameter {
                 throw SetupParameterError.typeMismatch(type: pair.type)
             }
             return .maxRequestId(v)
+        case 0x04:
+            guard case .varint(let v) = pair.value else {
+                throw SetupParameterError.typeMismatch(type: pair.type)
+            }
+            return .maxAuthTokenCacheSize(v)
         case 0x05:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
                 throw ByteReaderError.invalidUTF8
             }
             return .authority(string)
-        case 0x07:
+        case 0x06:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
                 throw ByteReaderError.invalidUTF8
@@ -79,14 +87,16 @@ enum SetupParameter {
         switch self {
         case .path(let s):
             return KeyValuePair(type: 0x01, value: .bytes(Data(s.utf8)))
-        case .authorizationToken(let token):
-            return KeyValuePair(type: 0x03, value: .bytes(token.value))
         case .maxRequestId(let v):
             return KeyValuePair(type: 0x02, value: .varint(v))
+        case .maxAuthTokenCacheSize(let v):
+            return KeyValuePair(type: 0x04, value: .varint(v))
+        case .authorizationToken(let token):
+            return KeyValuePair(type: 0x03, value: .bytes(token.value))
         case .authority(let s):
             return KeyValuePair(type: 0x05, value: .bytes(Data(s.utf8)))
         case .moqtImplementation(let s):
-            return KeyValuePair(type: 0x07, value: .bytes(Data(s.utf8)))
+            return KeyValuePair(type: 0x06, value: .bytes(Data(s.utf8)))
         }
     }
 }

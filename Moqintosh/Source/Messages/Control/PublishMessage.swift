@@ -13,6 +13,8 @@ struct PublishMessage {
 
     let requestID: UInt64
     let publishedTrack: PublishedTrack
+    let deliveryTimeout: UInt64?
+    let maxCacheDuration: UInt64?
 
     func encode() -> Data {
         var payload: Data = .init()
@@ -57,16 +59,25 @@ struct PublishMessage {
             throw PublishMessageError.invalidForward
         }
         let paramCount: Int = .init(try reader.readVarint())
-        var parameters: [SetupParameter] = []
+        var authorizationTokens: [AuthorizationToken] = []
+        var deliveryTimeout: UInt64?
+        var maxCacheDuration: UInt64?
         for _ in 0 ..< paramCount {
-            if let parameter: SetupParameter = try? SetupParameter.decode(from: reader) {
-                parameters.append(parameter)
+            switch try? ControlMessageParameter.decode(from: reader) {
+            case .authorizationToken(let token):
+                authorizationTokens.append(token)
+            case .deliveryTimeout(let value):
+                deliveryTimeout = value
+            case .maxCacheDuration(let value):
+                maxCacheDuration = value
+            default:
+                break
             }
         }
         let resource: TrackResource = .init(
             trackNamespace: trackNamespace,
             trackName: trackName,
-            authorizationToken: firstAuthorizationToken(in: parameters)
+            authorizationToken: authorizationTokens.first
         )
         let publishedTrack: PublishedTrack = .init(
             requestID: requestID,
@@ -76,23 +87,26 @@ struct PublishMessage {
             contentExist: contentExist,
             forward: forwardValue == 1
         )
-        return .init(requestID: requestID, publishedTrack: publishedTrack)
+        return .init(
+            requestID: requestID,
+            publishedTrack: publishedTrack,
+            deliveryTimeout: deliveryTimeout,
+            maxCacheDuration: maxCacheDuration
+        )
     }
 
-    private var parameters: [SetupParameter] {
-        guard let authorizationToken: AuthorizationToken = publishedTrack.resource.authorizationToken else {
-            return []
+    private var parameters: [ControlMessageParameter] {
+        var parameters: [ControlMessageParameter] = []
+        if let authorizationToken: AuthorizationToken = publishedTrack.resource.authorizationToken {
+            parameters.append(.authorizationToken(authorizationToken))
         }
-        return [.authorizationToken(authorizationToken)]
-    }
-
-    private static func firstAuthorizationToken(in parameters: [SetupParameter]) -> AuthorizationToken? {
-        for parameter in parameters {
-            if case .authorizationToken(let token) = parameter {
-                return token
-            }
+        if let deliveryTimeout {
+            parameters.append(.deliveryTimeout(deliveryTimeout))
         }
-        return nil
+        if let maxCacheDuration {
+            parameters.append(.maxCacheDuration(maxCacheDuration))
+        }
+        return parameters
     }
 }
 

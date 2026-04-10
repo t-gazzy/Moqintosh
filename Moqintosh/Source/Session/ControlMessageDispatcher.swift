@@ -48,11 +48,10 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingPublishNamespace(_ message: PublishNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let authorizationToken: AuthorizationToken? = firstAuthorizationToken(in: message.parameters)
         let isAccepted: Bool = session.delegate?.session(
             session,
             shouldAcceptPublishNamespace: message.trackNamespace,
-            authorizationToken: authorizationToken
+            authorizationToken: message.authorizationTokens.first
         ) ?? false
         let response: Data = isAccepted
             ? PublishNamespaceOKMessage(requestID: message.requestID).encode()
@@ -74,7 +73,7 @@ final class ControlMessageDispatcher {
                 subscriberPriority: 0,
                 groupOrder: message.publishedTrack.groupOrder,
                 filter: .largestObject,
-                parameters: []
+                deliveryTimeout: message.deliveryTimeout
             ).encode()
             : PublishErrorMessage(
                 requestID: message.requestID,
@@ -103,7 +102,8 @@ final class ControlMessageDispatcher {
                 expires: 0,
                 groupOrder: groupOrder,
                 contentExist: .noContent,
-                parameters: []
+                deliveryTimeout: message.deliveryTimeout,
+                maxCacheDuration: nil
             ).encode()
             : SubscribeErrorMessage(
                 requestID: message.requestID,
@@ -115,11 +115,10 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingSubscribeNamespace(_ message: SubscribeNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let authorizationToken: AuthorizationToken? = firstAuthorizationToken(in: message.parameters)
         let isAccepted: Bool = session.delegate?.session(
             session,
             shouldAcceptSubscribeNamespace: message.namespacePrefix,
-            authorizationToken: authorizationToken
+            authorizationToken: message.authorizationTokens.first
         ) ?? false
         let response: Data = isAccepted
             ? SubscribeNamespaceOKMessage(requestID: message.requestID).encode()
@@ -131,12 +130,4 @@ final class ControlMessageDispatcher {
         try? await sessionContext.controlStream.send(bytes: response)
     }
 
-    private func firstAuthorizationToken(in parameters: [SetupParameter]) -> AuthorizationToken? {
-        for parameter in parameters {
-            if case .authorizationToken(let token) = parameter {
-                return token
-            }
-        }
-        return nil
-    }
 }

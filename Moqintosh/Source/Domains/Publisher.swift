@@ -54,7 +54,12 @@ public final class Publisher {
             contentExist: contentExist,
             forward: forward
         )
-        let message: PublishMessage = .init(requestID: requestID, publishedTrack: publishedTrack)
+        let message: PublishMessage = .init(
+            requestID: requestID,
+            publishedTrack: publishedTrack,
+            deliveryTimeout: nil,
+            maxCacheDuration: nil
+        )
         OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
         try await session.context.controlStream.send(bytes: message.encode())
         return try await withCheckedThrowingContinuation { continuation in

@@ -26,18 +26,20 @@ struct SubscribeNamespaceMessage {
 
     let requestID: UInt64
     let namespacePrefix: TrackNamespace
-    let parameters: [SetupParameter]
+    let authorizationTokens: [AuthorizationToken]
 
-    init(requestID: UInt64, namespacePrefix: TrackNamespace, parameters: [SetupParameter] = []) {
+    init(
+        requestID: UInt64,
+        namespacePrefix: TrackNamespace,
+        authorizationTokens: [AuthorizationToken] = []
+    ) {
         self.requestID = requestID
         self.namespacePrefix = namespacePrefix
-        self.parameters = parameters
+        self.authorizationTokens = authorizationTokens
     }
 
-    // MARK: - Encode
-
     func encode() -> Data {
-        var payload = Data()
+        var payload: Data = .init()
         payload.writeVarint(requestID)
         payload.append(namespacePrefix.encode())
         payload.writeVarint(UInt64(parameters.count))
@@ -45,28 +47,34 @@ struct SubscribeNamespaceMessage {
             payload.append(parameter.encode())
         }
 
-        var message = Data()
-        message.writeVarint(SubscribeNamespaceMessage.type.rawValue)
-        let length = UInt16(payload.count)
+        var message: Data = .init()
+        message.writeVarint(Self.type.rawValue)
+        let length: UInt16 = .init(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
         return message
     }
 
-    // MARK: - Decode
-
     static func decode(from payload: Data) throws -> SubscribeNamespaceMessage {
-        let reader = ByteReader(data: payload)
-        let requestID = try reader.readVarint()
-        let namespacePrefix = try TrackNamespace.decode(from: reader)
-        let paramCount = Int(try reader.readVarint())
-        var params: [SetupParameter] = []
+        let reader: ByteReader = .init(data: payload)
+        let requestID: UInt64 = try reader.readVarint()
+        let namespacePrefix: TrackNamespace = try TrackNamespace.decode(from: reader)
+        let paramCount: Int = .init(try reader.readVarint())
+        var authorizationTokens: [AuthorizationToken] = []
         for _ in 0 ..< paramCount {
-            if let param = try? SetupParameter.decode(from: reader) {
-                params.append(param)
+            if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
+                authorizationTokens.append(token)
             }
         }
-        return SubscribeNamespaceMessage(requestID: requestID, namespacePrefix: namespacePrefix, parameters: params)
+        return .init(
+            requestID: requestID,
+            namespacePrefix: namespacePrefix,
+            authorizationTokens: authorizationTokens
+        )
+    }
+
+    private var parameters: [ControlMessageParameter] {
+        authorizationTokens.map { .authorizationToken($0) }
     }
 }

@@ -17,6 +17,7 @@ struct SubscribeMessage {
     let groupOrder: GroupOrder
     let forward: Bool
     let filter: SubscriptionFilter
+    let deliveryTimeout: UInt64?
 
     func encode() -> Data {
         var payload: Data = .init()
@@ -58,16 +59,22 @@ struct SubscribeMessage {
         }
         let filter: SubscriptionFilter = try decodeFilter(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
-        var parameters: [SetupParameter] = []
+        var authorizationTokens: [AuthorizationToken] = []
+        var deliveryTimeout: UInt64?
         for _ in 0 ..< paramCount {
-            if let parameter: SetupParameter = try? SetupParameter.decode(from: reader) {
-                parameters.append(parameter)
+            switch try? ControlMessageParameter.decode(from: reader) {
+            case .authorizationToken(let token):
+                authorizationTokens.append(token)
+            case .deliveryTimeout(let value):
+                deliveryTimeout = value
+            default:
+                break
             }
         }
         let resource: TrackResource = .init(
             trackNamespace: trackNamespace,
             trackName: trackName,
-            authorizationToken: firstAuthorizationToken(in: parameters)
+            authorizationToken: authorizationTokens.first
         )
         return .init(
             requestID: requestID,
@@ -75,15 +82,20 @@ struct SubscribeMessage {
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
             forward: forwardValue == 1,
-            filter: filter
+            filter: filter,
+            deliveryTimeout: deliveryTimeout
         )
     }
 
-    private var parameters: [SetupParameter] {
-        guard let authorizationToken: AuthorizationToken = resource.authorizationToken else {
-            return []
+    private var parameters: [ControlMessageParameter] {
+        var parameters: [ControlMessageParameter] = []
+        if let authorizationToken: AuthorizationToken = resource.authorizationToken {
+            parameters.append(.authorizationToken(authorizationToken))
         }
-        return [.authorizationToken(authorizationToken)]
+        if let deliveryTimeout {
+            parameters.append(.deliveryTimeout(deliveryTimeout))
+        }
+        return parameters
     }
 
     private var filterPayload: Data {
@@ -120,15 +132,6 @@ struct SubscribeMessage {
         default:
             throw SubscribeMessageError.invalidFilterType
         }
-    }
-
-    private static func firstAuthorizationToken(in parameters: [SetupParameter]) -> AuthorizationToken? {
-        for parameter in parameters {
-            if case .authorizationToken(let token) = parameter {
-                return token
-            }
-        }
-        return nil
     }
 }
 

@@ -26,12 +26,16 @@ struct PublishNamespaceMessage {
 
     let requestID: UInt64
     let trackNamespace: TrackNamespace
-    let parameters: [SetupParameter]
+    let authorizationTokens: [AuthorizationToken]
 
-    init(requestID: UInt64, trackNamespace: TrackNamespace, parameters: [SetupParameter] = []) {
+    init(
+        requestID: UInt64,
+        trackNamespace: TrackNamespace,
+        authorizationTokens: [AuthorizationToken] = []
+    ) {
         self.requestID = requestID
         self.trackNamespace = trackNamespace
-        self.parameters = parameters
+        self.authorizationTokens = authorizationTokens
     }
 
     func encode() -> Data {
@@ -57,12 +61,20 @@ struct PublishNamespaceMessage {
         let requestID: UInt64 = try reader.readVarint()
         let trackNamespace: TrackNamespace = try TrackNamespace.decode(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
-        var parameters: [SetupParameter] = []
+        var authorizationTokens: [AuthorizationToken] = []
         for _ in 0 ..< paramCount {
-            if let parameter: SetupParameter = try? SetupParameter.decode(from: reader) {
-                parameters.append(parameter)
+            if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
+                authorizationTokens.append(token)
             }
         }
-        return .init(requestID: requestID, trackNamespace: trackNamespace, parameters: parameters)
+        return .init(
+            requestID: requestID,
+            trackNamespace: trackNamespace,
+            authorizationTokens: authorizationTokens
+        )
+    }
+
+    private var parameters: [ControlMessageParameter] {
+        authorizationTokens.map { .authorizationToken($0) }
     }
 }
