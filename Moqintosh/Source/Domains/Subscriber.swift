@@ -24,12 +24,12 @@ public final class Subscriber {
     /// - Parameter namespacePrefix: The track namespace prefix to subscribe to.
     /// - Throws: `SubscribeNamespaceError.rejected` if the publisher responds with `SUBSCRIBE_NAMESPACE_ERROR`.
     public func subscribeNamespace(namespacePrefix: TrackNamespace) async throws {
-        let requestID = session.issueRequestID()
+        let requestID = session.context.issueRequestID()
         let message = SubscribeNamespaceMessage(requestID: requestID, namespacePrefix: namespacePrefix)
         OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
-        try await session.controlStream.send(bytes: message.encode())
+        try await session.context.controlStream.send(bytes: message.encode())
         try await withCheckedThrowingContinuation { continuation in
-            session.addPendingNamespaceRequest(requestID, continuation: continuation)
+            session.context.addRequest(requestID, continuation: continuation)
         }
     }
 

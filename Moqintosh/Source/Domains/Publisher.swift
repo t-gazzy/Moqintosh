@@ -20,8 +20,14 @@ public final class Publisher {
     // MARK: - Namespace
 
     /// Announces a namespace to the subscriber (Section 9.23).
-    public func publishNamespace() async throws {
-        // TODO: encode and send PUBLISH_NAMESPACE
+    public func publishNamespace(trackNamespace: TrackNamespace) async throws {
+        let requestID = session.context.issueRequestID()
+        let message = PublishNamespaceMessage(namespacePrefix: trackNamespace)
+        OSLogger.debug("Sending PUBLISH_NAMESPACE (namespacePrefix: \(trackNamespace))")
+        try await session.context.controlStream.send(bytes: message.encode())
+        try await withCheckedThrowingContinuation { continuation in
+            session.context.addRequest(requestID, continuation: continuation)
+        }
     }
 
     /// Ends a previously announced namespace (Section 9.26).
