@@ -59,32 +59,27 @@ final class MessageFrameReader {
     /// Attempt to extract and decode one complete message from `buffer`.
     /// Returns `nil` if more data is needed without consuming any bytes.
     private func extractMessage() throws -> MOQTMessage? {
-        var offset: Int = 0
+        let reader = ByteReader(data: buffer)
 
         // 1. Decode Type (varint)
-        guard let rawType = try? buffer.readVarint(at: &offset) else { return nil }
-        let type = UInt64(rawType)
+        guard let type = try? reader.readVarint() else { return nil }
 
         // 2. Decode Length (16-bit big-endian)
-        guard offset + 2 <= buffer.count else { return nil }
-        let high = UInt16(buffer[buffer.startIndex + offset])
-        let low  = UInt16(buffer[buffer.startIndex + offset + 1])
-        let payloadLength = Int((high << 8) | low)
-        offset += 2
+        guard let payloadLength = try? Int(reader.readUInt16BE()) else { return nil }
 
         // 3. Wait until the full payload has arrived
-        guard offset + payloadLength <= buffer.count else { return nil }
+        guard reader.remainingCount >= payloadLength else { return nil }
 
         // 4. Extract payload and advance buffer
-        let payload = Data(buffer[buffer.startIndex + offset ..< buffer.startIndex + offset + payloadLength])
-        buffer = Data(buffer[(buffer.startIndex + offset + payloadLength)...])
+        let payload = try reader.readBytes(length: payloadLength)
+        buffer = Data(buffer[(buffer.startIndex + buffer.count - reader.remainingCount)...])
 
         // 5. Decode according to message type and wrap in MOQTMessage
         switch MessageType(rawValue: type) {
         case .clientSetup:
-            return .clientSetup(try ClientSetupMessage.decode(type: type, payload: payload))
+            return .clientSetup(try ClientSetupMessage.decode(from: payload))
         case .serverSetup:
-            return .serverSetup(try ServerSetupMessage.decode(type: type, payload: payload))
+            return .serverSetup(try ServerSetupMessage.decode(from: payload))
         default:
             return .unknown(type: type, payload: payload)
         }

@@ -49,61 +49,21 @@ struct ServerSetupMessage {
 
     // MARK: - Decode
 
-    static func decode(from data: Data) throws -> ServerSetupMessage {
-        var offset: Int = 0
+    /// Decodes a `ServerSetupMessage` from a payload ``ByteReader``.
+    /// The frame header (Type + Length) must have already been consumed by the caller.
+    static func decode(from payload: Data) throws -> ServerSetupMessage {
+        let reader = ByteReader(data: payload)
 
-        let type: Int = try data.readVarint(at: &offset)
-        guard type == ServerSetupMessage.type.rawValue else {
-            throw ServerSetupMessageError.unexpectedType(UInt64(type))
-        }
+        let version = UInt32(try reader.readVarint())
 
-        // Length (16-bit big-endian)
-        guard offset + 2 <= data.count else {
-            throw DataReadError.insufficientData(requested: 2, available: data.count - offset)
-        }
-        offset += 2
-
-        let version: Int = try data.readVarint(at: &offset)
-
-        let paramCount: Int = try data.readVarint(at: &offset)
+        let paramCount = Int(try reader.readVarint())
         var params: [SetupParameter] = []
         for _ in 0 ..< paramCount {
-            if let param = try? SetupParameter.decode(from: data, at: &offset) {
+            if let param = try? SetupParameter.decode(from: reader) {
                 params.append(param)
             }
         }
 
-        return ServerSetupMessage(selectedVersion: UInt32(version), parameters: params)
+        return ServerSetupMessage(selectedVersion: version, parameters: params)
     }
-
-    /// Decodes a `ServerSetupMessage` from a pre-parsed frame.
-    ///
-    /// Use this variant when the frame header (Type + Length) has already been
-    /// consumed by ``MessageFrameReader`` and only the raw payload remains.
-    ///
-    /// - Parameters:
-    ///   - type: The MOQT message type decoded from the frame header.
-    ///   - payload: The payload bytes following the Length field.
-    static func decode(type: UInt64, payload: Data) throws -> ServerSetupMessage {
-        guard type == ServerSetupMessage.type.rawValue else {
-            throw ServerSetupMessageError.unexpectedType(type)
-        }
-        var offset = 0
-
-        let version: Int = try payload.readVarint(at: &offset)
-
-        let paramCount: Int = try payload.readVarint(at: &offset)
-        var params: [SetupParameter] = []
-        for _ in 0 ..< paramCount {
-            if let param = try? SetupParameter.decode(from: payload, at: &offset) {
-                params.append(param)
-            }
-        }
-
-        return ServerSetupMessage(selectedVersion: UInt32(version), parameters: params)
-    }
-}
-
-enum ServerSetupMessageError: Error {
-    case unexpectedType(UInt64)
 }

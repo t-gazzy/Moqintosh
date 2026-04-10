@@ -54,66 +54,25 @@ struct ClientSetupMessage {
 
     // MARK: - Decode
 
-    static func decode(from data: Data) throws -> ClientSetupMessage {
-        var offset: Int = 0
+    /// Decodes a `ClientSetupMessage` from a payload ``ByteReader``.
+    /// The frame header (Type + Length) must have already been consumed by the caller.
+    static func decode(from payload: Data) throws -> ClientSetupMessage {
+        let reader = ByteReader(data: payload)
 
-        let type: Int = try data.readVarint(at: &offset)
-        guard type == ClientSetupMessage.type.rawValue else {
-            throw ClientSetupMessageError.unexpectedType(UInt64(type))
-        }
-
-        // Length (16-bit big-endian)
-        guard offset + 2 <= data.count else {
-            throw DataReadError.insufficientData(requested: 2, available: data.count - offset)
-        }
-        offset += 2 // Length field is informational; payload follows immediately
-
-        let versionCount: Int = try data.readVarint(at: &offset)
+        let versionCount = Int(try reader.readVarint())
         var versions: [UInt32] = []
         for _ in 0 ..< versionCount {
-            let v: Int = try data.readVarint(at: &offset)
-            versions.append(UInt32(v))
+            versions.append(UInt32(try reader.readVarint()))
         }
 
-        let paramCount: Int = try data.readVarint(at: &offset)
+        let paramCount = Int(try reader.readVarint())
         var params: [SetupParameter] = []
         for _ in 0 ..< paramCount {
-            if let param = try? SetupParameter.decode(from: data, at: &offset) {
+            if let param = try? SetupParameter.decode(from: reader) {
                 params.append(param)
             }
         }
 
         return ClientSetupMessage(supportedVersions: versions, parameters: params)
     }
-
-    /// Decodes a `ClientSetupMessage` from a pre-parsed frame.
-    /// Use this variant when the frame header (Type + Length) has already been
-    /// consumed by ``MessageFrameReader`` and only the raw payload remains.
-    static func decode(type: UInt64, payload: Data) throws -> ClientSetupMessage {
-        guard type == ClientSetupMessage.type.rawValue else {
-            throw ClientSetupMessageError.unexpectedType(type)
-        }
-        var offset: Int = 0
-
-        let versionCount: Int = try payload.readVarint(at: &offset)
-        var versions: [UInt32] = []
-        for _ in 0 ..< versionCount {
-            let v: Int = try payload.readVarint(at: &offset)
-            versions.append(UInt32(v))
-        }
-
-        let paramCount: Int = try payload.readVarint(at: &offset)
-        var params: [SetupParameter] = []
-        for _ in 0 ..< paramCount {
-            if let param = try? SetupParameter.decode(from: payload, at: &offset) {
-                params.append(param)
-            }
-        }
-
-        return ClientSetupMessage(supportedVersions: versions, parameters: params)
-    }
-}
-
-enum ClientSetupMessageError: Error {
-    case unexpectedType(UInt64)
 }

@@ -34,13 +34,13 @@ enum SetupParameter {
 
     // MARK: - Decode
 
-    static func decode(from data: Data, at offset: inout Int) throws -> SetupParameter {
-        let pair = try KeyValuePair.decode(from: data, at: &offset)
+    static func decode(from reader: ByteReader) throws -> SetupParameter {
+        let pair = try KeyValuePair.decode(from: reader)
         switch pair.type {
         case 0x01:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
-                throw DataReadError.invalidUTF8
+                throw ByteReaderError.invalidUTF8
             }
             return .path(string)
         case 0x02:
@@ -51,13 +51,13 @@ enum SetupParameter {
         case 0x05:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
-                throw DataReadError.invalidUTF8
+                throw ByteReaderError.invalidUTF8
             }
             return .authority(string)
         case 0x07:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
-                throw DataReadError.invalidUTF8
+                throw ByteReaderError.invalidUTF8
             }
             return .moqtImplementation(string)
         default:

@@ -38,23 +38,17 @@ struct KeyValuePair {
 
     // MARK: - Decode
 
-    static func decode(from data: Data, at offset: inout Int) throws -> KeyValuePair {
-        let type: Int = try data.readVarint(at: &offset)
+    static func decode(from reader: ByteReader) throws -> KeyValuePair {
+        let type: UInt64 = try reader.readVarint()
         let value: Value
         if type % 2 == 0 {
             // Even: varint value
-            let v: Int = try data.readVarint(at: &offset)
-            value = .varint(UInt64(v))
+            value = .varint(try reader.readVarint())
         } else {
             // Odd: length-prefixed byte sequence
-            let length: Int = try data.readVarint(at: &offset)
-            guard offset + length <= data.count else {
-                throw DataReadError.insufficientData(requested: length, available: data.count - offset)
-            }
-            let bytes = data[data.startIndex + offset ..< data.startIndex + offset + length]
-            offset += length
-            value = .bytes(Data(bytes))
+            let length = Int(try reader.readVarint())
+            value = .bytes(try reader.readBytes(length: length))
         }
-        return KeyValuePair(type: UInt64(type), value: value)
+        return KeyValuePair(type: type, value: value)
     }
 }
