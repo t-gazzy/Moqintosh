@@ -21,9 +21,9 @@ public final class Publisher {
 
     /// Announces a namespace to the subscriber (Section 9.23).
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
-        let requestID = session.context.issueRequestID()
-        let message = PublishNamespaceMessage(namespacePrefix: trackNamespace)
-        OSLogger.debug("Sending PUBLISH_NAMESPACE (namespacePrefix: \(trackNamespace))")
+        let requestID: UInt64 = session.context.issueRequestID()
+        let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
+        OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
         try await session.context.controlStream.send(bytes: message.encode())
         try await withCheckedThrowingContinuation { continuation in
             session.context.addRequest(requestID, continuation: continuation)

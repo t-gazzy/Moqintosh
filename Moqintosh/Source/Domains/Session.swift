@@ -14,6 +14,7 @@ public final class Session {
 
     init(sessionContext: SessionContext) {
         self.context = sessionContext
+        self.context.session = self
     }
 
     // MARK: - Factory
@@ -29,5 +30,10 @@ public final class Session {
 
 /// Errors thrown when a namespace subscription is rejected by the remote publisher.
 public enum SubscribeNamespaceError: Error {
+    case rejected(code: UInt64, reason: String)
+}
+
+/// Errors thrown when a namespace publish request is rejected by the remote subscriber.
+public enum PublishNamespaceError: Error {
     case rejected(code: UInt64, reason: String)
 }

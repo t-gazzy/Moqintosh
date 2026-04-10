@@ -1,18 +1,18 @@
 //
-//  SubscribeNamespaceErrorMessage.swift
+//  PublishNamespaceErrorMessage.swift
 //  Moqintosh
 //
-//  Created by takemasa kaji on 2026/04/10.
+//  Created by Codex on 2026/04/10.
 //
 
 import Foundation
 
-/// MOQT SUBSCRIBE_NAMESPACE_ERROR message (Section 9.30, Type = 0x13)
+/// MOQT PUBLISH_NAMESPACE_ERROR message (Section 9.25, Type = 0x08)
 ///
 /// Wire format:
 /// ```
-/// SUBSCRIBE_NAMESPACE_ERROR {
-///   Type (i) = 0x13,
+/// PUBLISH_NAMESPACE_ERROR {
+///   Type (i) = 0x08,
 ///   Length (16),
 ///   Request ID (i),
 ///   Error Code (i),
@@ -20,9 +20,9 @@ import Foundation
 ///   Reason Phrase Value (..),
 /// }
 /// ```
-struct SubscribeNamespaceErrorMessage {
+struct PublishNamespaceErrorMessage {
 
-    static let type: MessageType = .subscribeNamespaceError
+    static let type: MessageType = .publishNamespaceError
 
     let requestID: UInt64
     let errorCode: UInt64
@@ -43,13 +43,11 @@ struct SubscribeNamespaceErrorMessage {
         return message
     }
 
-    // MARK: - Decode
-
-    static func decode(from payload: Data) throws -> SubscribeNamespaceErrorMessage {
-        let reader = ByteReader(data: payload)
-        let requestID = try reader.readVarint()
-        let errorCode = try reader.readVarint()
-        let reasonPhrase = try reader.readString()
-        return SubscribeNamespaceErrorMessage(requestID: requestID, errorCode: errorCode, reasonPhrase: reasonPhrase)
+    static func decode(from payload: Data) throws -> PublishNamespaceErrorMessage {
+        let reader: ByteReader = .init(data: payload)
+        let requestID: UInt64 = try reader.readVarint()
+        let errorCode: UInt64 = try reader.readVarint()
+        let reasonPhrase: String = try reader.readString()
+        return .init(requestID: requestID, errorCode: errorCode, reasonPhrase: reasonPhrase)
     }
 }

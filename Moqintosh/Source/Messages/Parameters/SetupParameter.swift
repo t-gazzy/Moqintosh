@@ -15,6 +15,9 @@ enum SetupParameter {
     /// PATH parameter (Type 0x01, odd → bytes)
     case path(String)
 
+    /// AUTHORIZATION TOKEN parameter (Type 0x03, odd → bytes)
+    case authorizationToken(AuthorizationToken)
+
     /// MAX_REQUEST_ID parameter (Type 0x02, even → varint)
     case maxRequestId(UInt64)
 
@@ -43,6 +46,11 @@ enum SetupParameter {
                 throw ByteReaderError.invalidUTF8
             }
             return .path(string)
+        case 0x03:
+            guard case .bytes(let bytes) = pair.value else {
+                throw SetupParameterError.typeMismatch(type: pair.type)
+            }
+            return .authorizationToken(.init(value: bytes))
         case 0x02:
             guard case .varint(let v) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
@@ -71,6 +79,8 @@ enum SetupParameter {
         switch self {
         case .path(let s):
             return KeyValuePair(type: 0x01, value: .bytes(Data(s.utf8)))
+        case .authorizationToken(let token):
+            return KeyValuePair(type: 0x03, value: .bytes(token.value))
         case .maxRequestId(let v):
             return KeyValuePair(type: 0x02, value: .varint(v))
         case .authority(let s):

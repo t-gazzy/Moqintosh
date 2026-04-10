@@ -23,6 +23,19 @@ struct SubscribeNamespaceOKMessage {
 
     let requestID: UInt64
 
+    func encode() -> Data {
+        var payload: Data = .init()
+        payload.writeVarint(requestID)
+
+        var message: Data = .init()
+        message.writeVarint(Self.type.rawValue)
+        let length: UInt16 = .init(payload.count)
+        message.append(UInt8(length >> 8))
+        message.append(UInt8(length & 0xFF))
+        message.append(payload)
+        return message
+    }
+
     // MARK: - Decode
 
     static func decode(from payload: Data) throws -> SubscribeNamespaceOKMessage {

@@ -97,7 +97,11 @@ final class MessageFrameReader {
         case .publishDone:
             return .publishDone
         case .publishNamespace:
-            return .publishNamespace
+            return .publishNamespace(try PublishNamespaceMessage.decode(from: payload))
+        case .publishNamespaceOK:
+            return .publishNamespaceOK(try PublishNamespaceOKMessage.decode(from: payload))
+        case .publishNamespaceError:
+            return .publishNamespaceError(try PublishNamespaceErrorMessage.decode(from: payload))
         case .publishNamespaceDone:
             return .publishNamespaceDone
         case .subscribeNamespace:

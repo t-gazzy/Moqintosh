@@ -19,7 +19,9 @@ enum MOQTMessage {
     case trackStatus
     case publish
     case publishDone
-    case publishNamespace
+    case publishNamespace(PublishNamespaceMessage)
+    case publishNamespaceOK(PublishNamespaceOKMessage)
+    case publishNamespaceError(PublishNamespaceErrorMessage)
     case publishNamespaceDone
     case subscribeNamespace(SubscribeNamespaceMessage)
     case subscribeNamespaceOK(SubscribeNamespaceOKMessage)
