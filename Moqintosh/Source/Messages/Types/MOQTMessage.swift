@@ -11,6 +11,19 @@ import Foundation
 enum MOQTMessage {
     case clientSetup(ClientSetupMessage)
     case serverSetup(ServerSetupMessage)
+    case subscribe
+    case subscribeUpdate
+    case unsubscribe
+    case fetch
+    case fetchCancel
+    case trackStatus
+    case publish
+    case publishDone
+    case publishNamespace
+    case publishNamespaceDone
+    case subscribeNamespace(SubscribeNamespaceMessage)
+    case subscribeNamespaceOK(SubscribeNamespaceOKMessage)
+    case subscribeNamespaceError(SubscribeNamespaceErrorMessage)
     /// A recognized message type that is not yet implemented.
     case unknown(type: UInt64, payload: Data)
 }

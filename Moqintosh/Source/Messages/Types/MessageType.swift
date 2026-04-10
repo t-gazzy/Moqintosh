@@ -8,7 +8,7 @@
 import Foundation
 
 /// MOQT control message type identifiers (Table 1, draft-ietf-moq-transport-14).
-enum MessageType: UInt64 {
+public enum MessageType: UInt64 {
     // MARK: - Session
     case clientSetup             = 0x20  // Section 9.3
     case serverSetup             = 0x21  // Section 9.3

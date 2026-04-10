@@ -18,6 +18,6 @@ final class SessionFactory {
         let serverSetup = try await handshaker.handshake()
         OSLogger.info("Handshake completed (selectedVersion: \(serverSetup.selectedVersion))")
 
-        return Session(connection: connection)
+        return Session(connection: connection, controlStream: controlStream)
     }
 }

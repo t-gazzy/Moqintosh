@@ -80,6 +80,32 @@ final class MessageFrameReader {
             return .clientSetup(try ClientSetupMessage.decode(from: payload))
         case .serverSetup:
             return .serverSetup(try ServerSetupMessage.decode(from: payload))
+        case .subscribe:
+            return .subscribe
+        case .subscribeUpdate:
+            return .subscribeUpdate
+        case .unsubscribe:
+            return .unsubscribe
+        case .fetch:
+            return .fetch
+        case .fetchCancel:
+            return .fetchCancel
+        case .trackStatus:
+            return .trackStatus
+        case .publish:
+            return .publish
+        case .publishDone:
+            return .publishDone
+        case .publishNamespace:
+            return .publishNamespace
+        case .publishNamespaceDone:
+            return .publishNamespaceDone
+        case .subscribeNamespace:
+            return .subscribeNamespace(try SubscribeNamespaceMessage.decode(from: payload))
+        case .subscribeNamespaceOK:
+            return .subscribeNamespaceOK(try SubscribeNamespaceOKMessage.decode(from: payload))
+        case .subscribeNamespaceError:
+            return .subscribeNamespaceError(try SubscribeNamespaceErrorMessage.decode(from: payload))
         default:
             return .unknown(type: type, payload: payload)
         }

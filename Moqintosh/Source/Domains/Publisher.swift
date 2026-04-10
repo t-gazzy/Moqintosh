@@ -6,11 +6,38 @@
 //
 
 /// Represents a MOQT publisher created from a Session.
+///
+/// A publisher is the sending side of a track.
+/// Use the methods below to announce tracks and namespaces.
 public final class Publisher {
 
     public let session: Session
 
     init(session: Session) {
         self.session = session
+    }
+
+    // MARK: - Namespace
+
+    /// Announces a namespace to the subscriber (Section 9.23).
+    public func publishNamespace() async throws {
+        // TODO: encode and send PUBLISH_NAMESPACE
+    }
+
+    /// Ends a previously announced namespace (Section 9.26).
+    public func publishNamespaceDone() async throws {
+        // TODO: encode and send PUBLISH_NAMESPACE_DONE
+    }
+
+    // MARK: - Publish
+
+    /// Initiates a publish for a track (Section 9.13).
+    public func publish() async throws {
+        // TODO: encode and send PUBLISH
+    }
+
+    /// Signals the end of a publish (Section 9.12).
+    public func publishDone() async throws {
+        // TODO: encode and send PUBLISH_DONE
     }
 }
