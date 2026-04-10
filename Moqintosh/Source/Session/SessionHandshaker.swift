@@ -12,7 +12,7 @@ import Foundation
 final class SessionHandshaker {
 
     private let stream: TransportBiStream
-    private var delegate: SessionHandshakerDelegate?
+    private let frameReader = MessageFrameReader()
 
     init(stream: TransportBiStream) {
         self.stream = stream
@@ -30,29 +30,15 @@ final class SessionHandshaker {
         try await stream.send(bytes: clientSetup.encode())
 
         OSLogger.debug("Waiting for SERVER_SETUP")
-        return try await withCheckedThrowingContinuation { continuation in
-            let delegate = SessionHandshakerDelegate(continuation: continuation)
-            self.delegate = delegate
-            stream.delegate = delegate
+        let message = try await frameReader.read(from: stream)
+        guard case .serverSetup(let serverSetup) = message else {
+            throw SessionHandshakerError.unexpectedMessage(message)
         }
+        OSLogger.info("Received SERVER_SETUP (selectedVersion: \(serverSetup.selectedVersion))")
+        return serverSetup
     }
 }
 
-// MARK: - Private
-
-private final class SessionHandshakerDelegate: TransportBiStreamDelegate {
-
-    private let continuation: CheckedContinuation<ServerSetupMessage, Error>
-    private var buffer: Data = .init()
-
-    init(continuation: CheckedContinuation<ServerSetupMessage, Error>) {
-        self.continuation = continuation
-    }
-
-    func stream(_ stream: TransportBiStream, didReceive bytes: Data) {
-        buffer.append(bytes)
-        guard let message = try? ServerSetupMessage.decode(from: buffer) else { return }
-        OSLogger.info("Received SERVER_SETUP (selectedVersion: \(message.selectedVersion))")
-        continuation.resume(returning: message)
-    }
+enum SessionHandshakerError: Error {
+    case unexpectedMessage(MOQTMessage)
 }

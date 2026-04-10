@@ -21,7 +21,7 @@ import Foundation
 /// ```
 struct ServerSetupMessage {
 
-    static let type: UInt64 = 0x21
+    static let type: MessageType = .serverSetup
 
     let selectedVersion: UInt32
     let parameters: [SetupParameter]
@@ -39,7 +39,7 @@ struct ServerSetupMessage {
         }
 
         var message = Data()
-        message.writeVarint(ServerSetupMessage.type)
+        message.writeVarint(ServerSetupMessage.type.rawValue)
         let length = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
@@ -53,7 +53,7 @@ struct ServerSetupMessage {
         var offset: Int = 0
 
         let type: Int = try data.readVarint(at: &offset)
-        guard type == ServerSetupMessage.type else {
+        guard type == ServerSetupMessage.type.rawValue else {
             throw ServerSetupMessageError.unexpectedType(UInt64(type))
         }
 
@@ -69,6 +69,33 @@ struct ServerSetupMessage {
         var params: [SetupParameter] = []
         for _ in 0 ..< paramCount {
             if let param = try? SetupParameter.decode(from: data, at: &offset) {
+                params.append(param)
+            }
+        }
+
+        return ServerSetupMessage(selectedVersion: UInt32(version), parameters: params)
+    }
+
+    /// Decodes a `ServerSetupMessage` from a pre-parsed frame.
+    ///
+    /// Use this variant when the frame header (Type + Length) has already been
+    /// consumed by ``MessageFrameReader`` and only the raw payload remains.
+    ///
+    /// - Parameters:
+    ///   - type: The MOQT message type decoded from the frame header.
+    ///   - payload: The payload bytes following the Length field.
+    static func decode(type: UInt64, payload: Data) throws -> ServerSetupMessage {
+        guard type == ServerSetupMessage.type.rawValue else {
+            throw ServerSetupMessageError.unexpectedType(type)
+        }
+        var offset = 0
+
+        let version: Int = try payload.readVarint(at: &offset)
+
+        let paramCount: Int = try payload.readVarint(at: &offset)
+        var params: [SetupParameter] = []
+        for _ in 0 ..< paramCount {
+            if let param = try? SetupParameter.decode(from: payload, at: &offset) {
                 params.append(param)
             }
         }

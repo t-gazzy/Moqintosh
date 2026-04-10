@@ -44,6 +44,7 @@ Apply the narrowest modifier that satisfies the requirement.
 - Never add code "just in case" — only implement what is explicitly required.
 - One class or struct per file, and one test struct per file (matching the type under test).
 - After writing unit tests, always run them and confirm they pass before finishing.
+- After implementing any change, build the project and confirm there are no errors before finishing.
 - For specifications, refer to the PDFs placed in the `RFC` directory. Only follow sections describing Client behavior — Relay is out of scope.
 
 ## Logging
