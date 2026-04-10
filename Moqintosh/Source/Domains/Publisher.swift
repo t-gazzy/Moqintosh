@@ -23,10 +23,16 @@ public final class Publisher {
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
         let requestID: UInt64 = session.context.issueRequestID()
         let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
-        OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
-        try await session.context.controlStream.send(bytes: message.encode())
         try await withCheckedThrowingContinuation { continuation in
             session.context.addRequest(requestID, continuation: continuation)
+            Task {
+                do {
+                    OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
+                    try await self.session.context.controlStream.send(bytes: message.encode())
+                } catch {
+                    self.session.context.failRequest(requestID, error: error)
+                }
+            }
         }
     }
 
@@ -60,10 +66,16 @@ public final class Publisher {
             deliveryTimeout: nil,
             maxCacheDuration: nil
         )
-        OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
-        try await session.context.controlStream.send(bytes: message.encode())
         return try await withCheckedThrowingContinuation { continuation in
             session.context.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+            Task {
+                do {
+                    OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
+                    try await self.session.context.controlStream.send(bytes: message.encode())
+                } catch {
+                    self.session.context.failPublishRequest(requestID, error: error)
+                }
+            }
         }
     }
 

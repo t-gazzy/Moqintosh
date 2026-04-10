@@ -24,12 +24,18 @@ public final class Subscriber {
     /// - Parameter namespacePrefix: The track namespace prefix to subscribe to.
     /// - Throws: `SubscribeNamespaceError.rejected` if the publisher responds with `SUBSCRIBE_NAMESPACE_ERROR`.
     public func subscribeNamespace(namespacePrefix: TrackNamespace) async throws {
-        let requestID = session.context.issueRequestID()
-        let message = SubscribeNamespaceMessage(requestID: requestID, namespacePrefix: namespacePrefix)
-        OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
-        try await session.context.controlStream.send(bytes: message.encode())
+        let requestID: UInt64 = session.context.issueRequestID()
+        let message: SubscribeNamespaceMessage = .init(requestID: requestID, namespacePrefix: namespacePrefix)
         try await withCheckedThrowingContinuation { continuation in
             session.context.addRequest(requestID, continuation: continuation)
+            Task {
+                do {
+                    OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
+                    try await self.session.context.controlStream.send(bytes: message.encode())
+                } catch {
+                    self.session.context.failRequest(requestID, error: error)
+                }
+            }
         }
     }
 
@@ -53,8 +59,6 @@ public final class Subscriber {
             filter: filter,
             deliveryTimeout: nil
         )
-        OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
-        try await session.context.controlStream.send(bytes: message.encode())
         return try await withCheckedThrowingContinuation { continuation in
             session.context.addSubscribeRequest(
                 requestID,
@@ -65,6 +69,14 @@ public final class Subscriber {
                 filter: filter,
                 continuation: continuation
             )
+            Task {
+                do {
+                    OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
+                    try await self.session.context.controlStream.send(bytes: message.encode())
+                } catch {
+                    self.session.context.failSubscribeRequest(requestID, error: error)
+                }
+            }
         }
     }
 
