@@ -12,22 +12,16 @@ public enum ContentExist {
     case noContent
     case exists(Location)
 
-    var flag: UInt8 {
+    public func encode() -> Data {
+        var data: Data = .init()
         switch self {
         case .noContent:
-            return 0
-        case .exists:
-            return 1
-        }
-    }
-
-    var largestLocation: Location? {
-        switch self {
-        case .noContent:
-            return nil
+            data.append(0)
         case .exists(let location):
-            return location
+            data.append(1)
+            data.append(location.encode())
         }
+        return data
     }
 
     static func decode(from reader: ByteReader) throws -> ContentExist {

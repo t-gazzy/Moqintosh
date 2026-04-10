@@ -25,10 +25,7 @@ struct SubscribeOKMessage {
         payload.writeVarint(trackAlias)
         payload.writeVarint(expires)
         payload.append(groupOrder.rawValue)
-        payload.append(contentExist.flag)
-        if let largestLocation: Location = contentExist.largestLocation {
-            payload.append(largestLocation.encode())
-        }
+        payload.append(contentExist.encode())
         payload.writeVarint(UInt64(parameters.count))
         for parameter in parameters {
             payload.append(parameter.encode())

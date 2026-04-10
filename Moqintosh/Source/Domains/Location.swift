@@ -18,7 +18,7 @@ public struct Location {
         self.object = object
     }
 
-    func encode() -> Data {
+    public func encode() -> Data {
         var data: Data = .init()
         data.writeVarint(group)
         data.writeVarint(object)

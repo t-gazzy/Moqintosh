@@ -24,10 +24,7 @@ struct PublishMessage {
         payload.append(publishedTrack.resource.trackName)
         payload.writeVarint(publishedTrack.trackAlias)
         payload.append(publishedTrack.groupOrder.rawValue)
-        payload.append(publishedTrack.contentExist.flag)
-        if let largestLocation: Location = publishedTrack.contentExist.largestLocation {
-            payload.append(largestLocation.encode())
-        }
+        payload.append(publishedTrack.contentExist.encode())
         payload.append(publishedTrack.forward ? 1 : 0)
         payload.writeVarint(UInt64(parameters.count))
         for parameter in parameters {

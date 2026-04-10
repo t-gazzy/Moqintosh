@@ -24,7 +24,7 @@ struct PublishOKMessage {
         payload.append(forward ? 1 : 0)
         payload.append(subscriberPriority)
         payload.append(groupOrder.rawValue)
-        payload.append(filterPayload)
+        payload.append(filter.encode())
         payload.writeVarint(UInt64(parameters.count))
         for parameter in parameters {
             payload.append(parameter.encode())
@@ -50,7 +50,7 @@ struct PublishOKMessage {
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw PublishOKMessageError.invalidGroupOrder
         }()
-        let filter: SubscriptionFilter = try decodeFilter(from: reader)
+        let filter: SubscriptionFilter = try .decode(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
         var deliveryTimeout: UInt64?
         for _ in 0 ..< paramCount {
@@ -71,42 +71,6 @@ struct PublishOKMessage {
     private var parameters: [ControlMessageParameter] {
         guard let deliveryTimeout else { return [] }
         return [.deliveryTimeout(deliveryTimeout)]
-    }
-
-    private var filterPayload: Data {
-        var data: Data = .init()
-        switch filter {
-        case .nextGroupStart:
-            data.writeVarint(0x01)
-        case .largestObject:
-            data.writeVarint(0x02)
-        case .absoluteStart(let location):
-            data.writeVarint(0x03)
-            data.append(location.encode())
-        case .absoluteRange(let start, let endGroup):
-            data.writeVarint(0x04)
-            data.append(start.encode())
-            data.writeVarint(endGroup)
-        }
-        return data
-    }
-
-    private static func decodeFilter(from reader: ByteReader) throws -> SubscriptionFilter {
-        let filterType: UInt64 = try reader.readVarint()
-        switch filterType {
-        case 0x01:
-            return .nextGroupStart
-        case 0x02:
-            return .largestObject
-        case 0x03:
-            return .absoluteStart(try .decode(from: reader))
-        case 0x04:
-            let start: Location = try .decode(from: reader)
-            let endGroup: UInt64 = try reader.readVarint()
-            return .absoluteRange(start: start, endGroup: endGroup)
-        default:
-            throw PublishOKMessageError.invalidFilterType
-        }
     }
 }
 
