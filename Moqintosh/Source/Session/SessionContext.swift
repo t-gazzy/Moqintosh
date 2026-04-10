@@ -13,56 +13,56 @@ final class SessionContext {
     let controlStream: TransportBiStream
     /// Client-side Request IDs start at 0 and increment by 2 (even numbers, Section 9.1).
     private var nextRequestID: UInt64 = 0
+    private var nextTrackAlias: UInt64 = 0
 
     /// Pending continuations keyed by Request ID, waiting for a namespace subscription response.
     private var requests: [UInt64: CheckedContinuation<Void, Error>] = [:]
+    private var publishRequests: [UInt64: (publishedTrack: PublishedTrack, continuation: CheckedContinuation<PublishedTrack, Error>)] = [:]
+    private var subscribeRequests: [UInt64: (
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        requestedGroupOrder: GroupOrder,
+        forward: Bool,
+        filter: SubscriptionFilter,
+        continuation: CheckedContinuation<Subscription, Error>
+    )] = [:]
 
     init(connection: TransportConnection, controlStream: TransportBiStream) {
         self.connection = connection
         self.controlStream = controlStream
-        startReceiveLoop()
-    }
-
-    // MARK: - Receive loop
-
-    private func startReceiveLoop() {
-        let reader = MessageFrameReader()
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                while true {
-                    let message = try await reader.read(from: controlStream)
-                    handle(message)
-                }
-            } catch {
-                OSLogger.error("Control stream receive error: \(error)")
-            }
-        }
-    }
-
-    private func handle(_ message: MOQTMessage) {
-        switch message {
-        case .publishNamespace(let message):
-            handleIncomingPublishNamespace(message)
-        case .publishNamespaceOK(let msg):
-            resolveRequest(with: msg)
-        case .publishNamespaceError(let msg):
-            rejectRequest(with: msg)
-        case .subscribeNamespace(let message):
-            handleIncomingSubscribeNamespace(message)
-        case .subscribeNamespaceOK(let msg):
-            resolveRequest(with: msg)
-        case .subscribeNamespaceError(let msg):
-            rejectRequest(with: msg)
-        default:
-            OSLogger.debug("Unhandled message: \(message)")
-        }
     }
 
     // MARK: - Pending request tracking
 
     func addRequest(_ id: UInt64, continuation: CheckedContinuation<Void, Error>) {
         requests[id] = continuation
+    }
+
+    func addPublishRequest(
+        _ id: UInt64,
+        publishedTrack: PublishedTrack,
+        continuation: CheckedContinuation<PublishedTrack, Error>
+    ) {
+        publishRequests[id] = (publishedTrack: publishedTrack, continuation: continuation)
+    }
+
+    func addSubscribeRequest(
+        _ id: UInt64,
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        requestedGroupOrder: GroupOrder,
+        forward: Bool,
+        filter: SubscriptionFilter,
+        continuation: CheckedContinuation<Subscription, Error>
+    ) {
+        subscribeRequests[id] = (
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            requestedGroupOrder: requestedGroupOrder,
+            forward: forward,
+            filter: filter,
+            continuation: continuation
+        )
     }
 
     func resolveRequest(with message: PublishNamespaceOKMessage) {
@@ -75,6 +75,16 @@ final class SessionContext {
         continuation.resume(throwing: PublishNamespaceError.rejected(code: message.errorCode, reason: message.reasonPhrase))
     }
 
+    func resolvePublishRequest(with message: PublishOKMessage) {
+        guard let request = publishRequests.removeValue(forKey: message.requestID) else { return }
+        request.continuation.resume(returning: request.publishedTrack)
+    }
+
+    func rejectPublishRequest(with message: PublishErrorMessage) {
+        guard let request = publishRequests.removeValue(forKey: message.requestID) else { return }
+        request.continuation.resume(throwing: PublishError.rejected(code: message.errorCode, reason: message.reasonPhrase))
+    }
+
     func resolveRequest(with message: SubscribeNamespaceOKMessage) {
         guard let continuation = requests.removeValue(forKey: message.requestID) else { return }
         continuation.resume()
@@ -83,6 +93,32 @@ final class SessionContext {
     func rejectRequest(with message: SubscribeNamespaceErrorMessage) {
         guard let continuation = requests.removeValue(forKey: message.requestID) else { return }
         continuation.resume(throwing: SubscribeNamespaceError.rejected(code: message.errorCode, reason: message.reasonPhrase))
+    }
+
+    func resolveSubscribeRequest(with message: SubscribeOKMessage) {
+        guard let request = subscribeRequests.removeValue(forKey: message.requestID) else { return }
+        let publishedTrack: PublishedTrack = .init(
+            requestID: message.requestID,
+            resource: request.resource,
+            trackAlias: message.trackAlias,
+            groupOrder: message.groupOrder,
+            contentExists: message.contentExists,
+            largestLocation: message.largestLocation,
+            forward: request.forward
+        )
+        let subscription: Subscription = .init(
+            requestID: message.requestID,
+            publishedTrack: publishedTrack,
+            expires: message.expires,
+            subscriberPriority: request.subscriberPriority,
+            filter: request.filter
+        )
+        request.continuation.resume(returning: subscription)
+    }
+
+    func rejectSubscribeRequest(with message: SubscribeErrorMessage) {
+        guard let request = subscribeRequests.removeValue(forKey: message.requestID) else { return }
+        request.continuation.resume(throwing: SubscribeError.rejected(code: message.errorCode, reason: message.reasonPhrase))
     }
 
     // MARK: - Request ID
@@ -94,52 +130,9 @@ final class SessionContext {
         return id
     }
 
-    private func handleIncomingPublishNamespace(_ message: PublishNamespaceMessage) {
-        guard let session else { return }
-        let authorizationToken: AuthorizationToken? = firstAuthorizationToken(in: message.parameters)
-        let isAccepted: Bool = session.delegate?.session(
-            session,
-            shouldAcceptPublishNamespace: message.trackNamespace,
-            authorizationToken: authorizationToken
-        ) ?? false
-        let response: Data = isAccepted
-            ? PublishNamespaceOKMessage(requestID: message.requestID).encode()
-            : PublishNamespaceErrorMessage(
-                requestID: message.requestID,
-                errorCode: 0x1,
-                reasonPhrase: "Rejected"
-            ).encode()
-        Task {
-            try await controlStream.send(bytes: response)
-        }
-    }
-
-    private func handleIncomingSubscribeNamespace(_ message: SubscribeNamespaceMessage) {
-        guard let session else { return }
-        let authorizationToken: AuthorizationToken? = firstAuthorizationToken(in: message.parameters)
-        let isAccepted: Bool = session.delegate?.session(
-            session,
-            shouldAcceptSubscribeNamespace: message.namespacePrefix,
-            authorizationToken: authorizationToken
-        ) ?? false
-        let response: Data = isAccepted
-            ? SubscribeNamespaceOKMessage(requestID: message.requestID).encode()
-            : SubscribeNamespaceErrorMessage(
-                requestID: message.requestID,
-                errorCode: 0x1,
-                reasonPhrase: "Rejected"
-            ).encode()
-        Task {
-            try await controlStream.send(bytes: response)
-        }
-    }
-
-    private func firstAuthorizationToken(in parameters: [SetupParameter]) -> AuthorizationToken? {
-        for parameter in parameters {
-            if case .authorizationToken(let token) = parameter {
-                return token
-            }
-        }
-        return nil
+    func issueTrackAlias() -> UInt64 {
+        let alias: UInt64 = nextTrackAlias
+        nextTrackAlias += 1
+        return alias
     }
 }

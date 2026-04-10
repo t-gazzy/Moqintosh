@@ -10,11 +10,14 @@
 public final class Session {
 
     let context: SessionContext
+    private let controlMessageReceiver: ControlMessageReceiver
     public weak var delegate: (any SessionDelegate)?
 
-    init(sessionContext: SessionContext) {
+    init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
+        self.controlMessageReceiver = controlMessageReceiver
         self.context.session = self
+        self.controlMessageReceiver.start()
     }
 
     // MARK: - Factory
@@ -33,7 +36,17 @@ public enum SubscribeNamespaceError: Error {
     case rejected(code: UInt64, reason: String)
 }
 
+/// Errors thrown when a subscription request is rejected by the remote publisher.
+public enum SubscribeError: Error {
+    case rejected(code: UInt64, reason: String)
+}
+
 /// Errors thrown when a namespace publish request is rejected by the remote subscriber.
 public enum PublishNamespaceError: Error {
+    case rejected(code: UInt64, reason: String)
+}
+
+/// Errors thrown when a publish request is rejected by the remote subscriber.
+public enum PublishError: Error {
     case rejected(code: UInt64, reason: String)
 }

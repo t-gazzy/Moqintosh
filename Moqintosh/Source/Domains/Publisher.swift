@@ -38,8 +38,30 @@ public final class Publisher {
     // MARK: - Publish
 
     /// Initiates a publish for a track (Section 9.13).
-    public func publish() async throws {
-        // TODO: encode and send PUBLISH
+    public func publish(
+        resource: TrackResource,
+        groupOrder: GroupOrder = .ascending,
+        contentExists: Bool = false,
+        largestLocation: Location? = nil,
+        forward: Bool = true
+    ) async throws -> PublishedTrack {
+        let requestID: UInt64 = session.context.issueRequestID()
+        let trackAlias: UInt64 = session.context.issueTrackAlias()
+        let publishedTrack: PublishedTrack = .init(
+            requestID: requestID,
+            resource: resource,
+            trackAlias: trackAlias,
+            groupOrder: groupOrder,
+            contentExists: contentExists,
+            largestLocation: largestLocation,
+            forward: forward
+        )
+        let message: PublishMessage = .init(requestID: requestID, publishedTrack: publishedTrack)
+        OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
+        try await session.context.controlStream.send(bytes: message.encode())
+        return try await withCheckedThrowingContinuation { continuation in
+            session.context.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+        }
     }
 
     /// Signals the end of a publish (Section 9.12).

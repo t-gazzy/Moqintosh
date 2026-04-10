@@ -19,6 +19,8 @@ final class SessionFactory {
         OSLogger.info("Handshake completed (selectedVersion: \(serverSetup.selectedVersion))")
 
         let context = SessionContext(connection: connection, controlStream: controlStream)
-        return Session(sessionContext: context)
+        let dispatcher = ControlMessageDispatcher(sessionContext: context)
+        let receiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: dispatcher)
+        return Session(sessionContext: context, controlMessageReceiver: receiver)
     }
 }

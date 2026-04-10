@@ -36,8 +36,35 @@ public final class Subscriber {
     // MARK: - Subscribe
 
     /// Requests a subscription to a track (Section 9.7).
-    public func subscribe() async throws {
-        // TODO: encode and send SUBSCRIBE
+    public func subscribe(
+        resource: TrackResource,
+        subscriberPriority: UInt8 = 0,
+        groupOrder: GroupOrder = .publisherDefault,
+        forward: Bool = true,
+        filter: SubscriptionFilter = .largestObject
+    ) async throws -> Subscription {
+        let requestID: UInt64 = session.context.issueRequestID()
+        let message: SubscribeMessage = .init(
+            requestID: requestID,
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            groupOrder: groupOrder,
+            forward: forward,
+            filter: filter
+        )
+        OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
+        try await session.context.controlStream.send(bytes: message.encode())
+        return try await withCheckedThrowingContinuation { continuation in
+            session.context.addSubscribeRequest(
+                requestID,
+                resource: resource,
+                subscriberPriority: subscriberPriority,
+                requestedGroupOrder: groupOrder,
+                forward: forward,
+                filter: filter,
+                continuation: continuation
+            )
+        }
     }
 
     /// Updates an existing subscription (Section 9.10).

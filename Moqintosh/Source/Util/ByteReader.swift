@@ -78,6 +78,10 @@ final class ByteReader {
         return string
     }
 
+    func readUInt8Value() throws -> UInt8 {
+        try readUInt8()
+    }
+
     // MARK: - Private primitive readers
 
     private func readUInt8() throws -> UInt8 {

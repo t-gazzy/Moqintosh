@@ -21,7 +21,7 @@ public protocol SessionDelegate: AnyObject {
     ) -> Bool
 
     /// The remote subscriber requested a new subscription (Section 9.7).
-    func session(_ session: Session, didReceiveSubscribe message: String)
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool
 
     /// The remote subscriber updated an existing subscription (Section 9.10).
     func session(_ session: Session, didReceiveSubscribeUpdate message: String)
@@ -48,7 +48,7 @@ public protocol SessionDelegate: AnyObject {
     ) -> Bool
 
     /// The remote publisher initiated a publish for a track (Section 9.13).
-    func session(_ session: Session, didReceivePublish message: String)
+    func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool
 
     /// The remote publisher signalled end of publish (Section 9.12).
     func session(_ session: Session, didReceivePublishDone message: String)
@@ -68,7 +68,9 @@ public extension SessionDelegate {
         false
     }
 
-    func session(_ session: Session, didReceiveSubscribe message: String) {}
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool {
+        false
+    }
     func session(_ session: Session, didReceiveSubscribeUpdate message: String) {}
     func session(_ session: Session, didReceiveUnsubscribe message: String) {}
     func session(_ session: Session, didReceiveFetch message: String) {}
@@ -82,7 +84,9 @@ public extension SessionDelegate {
         false
     }
 
-    func session(_ session: Session, didReceivePublish message: String) {}
+    func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool {
+        false
+    }
     func session(_ session: Session, didReceivePublishDone message: String) {}
     func session(_ session: Session, didReceivePublishNamespaceDone message: String) {}
 }

@@ -81,7 +81,11 @@ final class MessageFrameReader {
         case .serverSetup:
             return .serverSetup(try ServerSetupMessage.decode(from: payload))
         case .subscribe:
-            return .subscribe
+            return .subscribe(try SubscribeMessage.decode(from: payload))
+        case .subscribeOK:
+            return .subscribeOK(try SubscribeOKMessage.decode(from: payload))
+        case .subscribeError:
+            return .subscribeError(try SubscribeErrorMessage.decode(from: payload))
         case .subscribeUpdate:
             return .subscribeUpdate
         case .unsubscribe:
@@ -93,7 +97,11 @@ final class MessageFrameReader {
         case .trackStatus:
             return .trackStatus
         case .publish:
-            return .publish
+            return .publish(try PublishMessage.decode(from: payload))
+        case .publishOK:
+            return .publishOK(try PublishOKMessage.decode(from: payload))
+        case .publishError:
+            return .publishError(try PublishErrorMessage.decode(from: payload))
         case .publishDone:
             return .publishDone
         case .publishNamespace:
