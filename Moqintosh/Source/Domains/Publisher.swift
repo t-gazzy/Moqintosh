@@ -41,8 +41,7 @@ public final class Publisher {
     public func publish(
         resource: TrackResource,
         groupOrder: GroupOrder = .ascending,
-        contentExists: Bool = false,
-        largestLocation: Location? = nil,
+        contentExist: ContentExist = .noContent,
         forward: Bool = true
     ) async throws -> PublishedTrack {
         let requestID: UInt64 = session.context.issueRequestID()
@@ -52,8 +51,7 @@ public final class Publisher {
             resource: resource,
             trackAlias: trackAlias,
             groupOrder: groupOrder,
-            contentExists: contentExists,
-            largestLocation: largestLocation,
+            contentExist: contentExist,
             forward: forward
         )
         let message: PublishMessage = .init(requestID: requestID, publishedTrack: publishedTrack)

@@ -12,8 +12,7 @@ public struct PublishedTrack {
     public let resource: TrackResource
     public let trackAlias: UInt64
     public let groupOrder: GroupOrder
-    public let contentExists: Bool
-    public let largestLocation: Location?
+    public let contentExist: ContentExist
     public let forward: Bool
 
     public init(
@@ -21,16 +20,14 @@ public struct PublishedTrack {
         resource: TrackResource,
         trackAlias: UInt64,
         groupOrder: GroupOrder,
-        contentExists: Bool,
-        largestLocation: Location?,
+        contentExist: ContentExist,
         forward: Bool
     ) {
         self.requestID = requestID
         self.resource = resource
         self.trackAlias = trackAlias
         self.groupOrder = groupOrder
-        self.contentExists = contentExists
-        self.largestLocation = largestLocation
+        self.contentExist = contentExist
         self.forward = forward
     }
 }

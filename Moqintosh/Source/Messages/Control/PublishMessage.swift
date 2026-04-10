@@ -22,8 +22,8 @@ struct PublishMessage {
         payload.append(publishedTrack.resource.trackName)
         payload.writeVarint(publishedTrack.trackAlias)
         payload.append(publishedTrack.groupOrder.rawValue)
-        payload.append(publishedTrack.contentExists ? 1 : 0)
-        if let largestLocation: Location = publishedTrack.largestLocation {
+        payload.append(publishedTrack.contentExist.flag)
+        if let largestLocation: Location = publishedTrack.contentExist.largestLocation {
             payload.append(largestLocation.encode())
         }
         payload.append(publishedTrack.forward ? 1 : 0)
@@ -51,11 +51,7 @@ struct PublishMessage {
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw PublishMessageError.invalidGroupOrder
         }()
-        let contentExistsValue: UInt8 = try reader.readUInt8Value()
-        guard contentExistsValue <= 1 else {
-            throw PublishMessageError.invalidContentExists
-        }
-        let largestLocation: Location? = contentExistsValue == 1 ? try .decode(from: reader) : nil
+        let contentExist: ContentExist = try .decode(from: reader)
         let forwardValue: UInt8 = try reader.readUInt8Value()
         guard forwardValue <= 1 else {
             throw PublishMessageError.invalidForward
@@ -77,8 +73,7 @@ struct PublishMessage {
             resource: resource,
             trackAlias: trackAlias,
             groupOrder: groupOrder,
-            contentExists: contentExistsValue == 1,
-            largestLocation: largestLocation,
+            contentExist: contentExist,
             forward: forwardValue == 1
         )
         return .init(requestID: requestID, publishedTrack: publishedTrack)
@@ -102,7 +97,6 @@ struct PublishMessage {
 }
 
 enum PublishMessageError: Error {
-    case invalidContentExists
     case invalidForward
     case invalidGroupOrder
 }

@@ -15,8 +15,7 @@ struct SubscribeOKMessage {
     let trackAlias: UInt64
     let expires: UInt64
     let groupOrder: GroupOrder
-    let contentExists: Bool
-    let largestLocation: Location?
+    let contentExist: ContentExist
     let parameters: [SetupParameter]
 
     func encode() -> Data {
@@ -25,8 +24,8 @@ struct SubscribeOKMessage {
         payload.writeVarint(trackAlias)
         payload.writeVarint(expires)
         payload.append(groupOrder.rawValue)
-        payload.append(contentExists ? 1 : 0)
-        if let largestLocation {
+        payload.append(contentExist.flag)
+        if let largestLocation: Location = contentExist.largestLocation {
             payload.append(largestLocation.encode())
         }
         payload.writeVarint(UInt64(parameters.count))
@@ -51,11 +50,7 @@ struct SubscribeOKMessage {
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw SubscribeOKMessageError.invalidGroupOrder
         }()
-        let contentExistsValue: UInt8 = try reader.readUInt8Value()
-        guard contentExistsValue <= 1 else {
-            throw SubscribeOKMessageError.invalidContentExists
-        }
-        let largestLocation: Location? = contentExistsValue == 1 ? try .decode(from: reader) : nil
+        let contentExist: ContentExist = try .decode(from: reader)
         let paramCount: Int = .init(try reader.readVarint())
         var parameters: [SetupParameter] = []
         for _ in 0 ..< paramCount {
@@ -68,14 +63,12 @@ struct SubscribeOKMessage {
             trackAlias: trackAlias,
             expires: expires,
             groupOrder: groupOrder,
-            contentExists: contentExistsValue == 1,
-            largestLocation: largestLocation,
+            contentExist: contentExist,
             parameters: parameters
         )
     }
 }
 
 enum SubscribeOKMessageError: Error {
-    case invalidContentExists
     case invalidGroupOrder
 }

@@ -92,8 +92,7 @@ final class ControlMessageDispatcher {
             resource: message.resource,
             trackAlias: sessionContext.issueTrackAlias(),
             groupOrder: groupOrder,
-            contentExists: false,
-            largestLocation: nil,
+            contentExist: .noContent,
             forward: message.forward
         )
         let isAccepted: Bool = session.delegate?.session(session, didReceiveSubscribe: publishedTrack) ?? false
@@ -103,8 +102,7 @@ final class ControlMessageDispatcher {
                 trackAlias: publishedTrack.trackAlias,
                 expires: 0,
                 groupOrder: groupOrder,
-                contentExists: false,
-                largestLocation: nil,
+                contentExist: .noContent,
                 parameters: []
             ).encode()
             : SubscribeErrorMessage(

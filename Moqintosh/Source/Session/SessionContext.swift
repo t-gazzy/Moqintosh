@@ -102,8 +102,7 @@ final class SessionContext {
             resource: request.resource,
             trackAlias: message.trackAlias,
             groupOrder: message.groupOrder,
-            contentExists: message.contentExists,
-            largestLocation: message.largestLocation,
+            contentExist: message.contentExist,
             forward: request.forward
         )
         let subscription: Subscription = .init(
