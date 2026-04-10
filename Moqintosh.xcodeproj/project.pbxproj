@@ -23,7 +23,7 @@
 /* Begin PBXFileReference section */
 		6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Moqintosh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoqintoshTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		6FF20BC32F88F6A400FDC2C5 /* SwiftMOQTSample.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftMOQTSample.xcodeproj; path = SwiftMOQTSample/SwiftMOQTSample.xcodeproj; sourceTree = "<group>"; };
+		6FF20BC32F88F6A400FDC2C5 /* MoqintoshSample.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = MoqintoshSample.xcodeproj; path = SwiftMOQTSample/MoqintoshSample.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -93,16 +93,9 @@
 		6FF20B622F88F62F00FDC2C5 /* Example */ = {
 			isa = PBXGroup;
 			children = (
-				6FF20BC32F88F6A400FDC2C5 /* SwiftMOQTSample.xcodeproj */,
+				6FF20BC32F88F6A400FDC2C5 /* MoqintoshSample.xcodeproj */,
 			);
 			path = Example;
-			sourceTree = "<group>";
-		};
-		6FF20BC42F88F6A400FDC2C5 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -195,12 +188,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6FA3E62D2D38EEA800BB51A5 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 6FF20BC42F88F6A400FDC2C5 /* Products */;
-					ProjectRef = 6FF20BC32F88F6A400FDC2C5 /* SwiftMOQTSample.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				6FA3E62B2D38EEA800BB51A5 /* Moqintosh */,
