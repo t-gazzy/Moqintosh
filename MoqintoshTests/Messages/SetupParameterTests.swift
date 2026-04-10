@@ -5,52 +5,41 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
+import Foundation
 import Testing
 @testable import Moqintosh
 
 struct SetupParameterTests {
 
-    @Test func encodePath() throws {
-        let encoded = SetupParameter.path("/live").encode()
-        var offset: Int = 0
-        let decoded = try SetupParameter.decode(from: encoded, at: &offset)
-        guard case .path(let s) = decoded else {
-            Issue.record("Expected path")
-            return
-        }
-        #expect(s == "/live")
-    }
+    @Test func roundTrip() throws {
+        let parameters: [SetupParameter] = [
+            .path("/live"),
+            .maxRequestId(128),
+            .maxAuthTokenCacheSize(32),
+            .authorizationToken(.init(value: Data([0xAA, 0xBB]))),
+            .authority("example.com"),
+            .moqtImplementation("Moqintosh")
+        ]
 
-    @Test func encodeMaxRequestId() throws {
-        let encoded = SetupParameter.maxRequestId(128).encode()
-        var offset: Int = 0
-        let decoded = try SetupParameter.decode(from: encoded, at: &offset)
-        guard case .maxRequestId(let v) = decoded else {
-            Issue.record("Expected maxRequestId")
-            return
-        }
-        #expect(v == 128)
-    }
+        for parameter in parameters {
+            let decoded: SetupParameter = try .decode(from: .init(data: parameter.encode()))
 
-    @Test func encodeAuthority() throws {
-        let encoded = SetupParameter.authority("example.com").encode()
-        var offset: Int = 0
-        let decoded = try SetupParameter.decode(from: encoded, at: &offset)
-        guard case .authority(let s) = decoded else {
-            Issue.record("Expected authority")
-            return
+            switch (parameter, decoded) {
+            case (.path(let lhs), .path(let rhs)):
+                #expect(lhs == rhs)
+            case (.maxRequestId(let lhs), .maxRequestId(let rhs)):
+                #expect(lhs == rhs)
+            case (.maxAuthTokenCacheSize(let lhs), .maxAuthTokenCacheSize(let rhs)):
+                #expect(lhs == rhs)
+            case (.authorizationToken(let lhs), .authorizationToken(let rhs)):
+                #expect(lhs.value == rhs.value)
+            case (.authority(let lhs), .authority(let rhs)):
+                #expect(lhs == rhs)
+            case (.moqtImplementation(let lhs), .moqtImplementation(let rhs)):
+                #expect(lhs == rhs)
+            default:
+                Issue.record("Decoded parameter did not match original")
+            }
         }
-        #expect(s == "example.com")
-    }
-
-    @Test func encodeMoqtImplementation() throws {
-        let encoded = SetupParameter.moqtImplementation("Moqintosh").encode()
-        var offset: Int = 0
-        let decoded = try SetupParameter.decode(from: encoded, at: &offset)
-        guard case .moqtImplementation(let s) = decoded else {
-            Issue.record("Expected moqtImplementation")
-            return
-        }
-        #expect(s == "Moqintosh")
     }
 }

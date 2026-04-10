@@ -27,9 +27,8 @@ enum SetupParameter {
     /// AUTHORITY parameter (Type 0x05, odd → bytes)
     case authority(String)
 
-    /// MOQT_IMPLEMENTATION parameter (Type 0x06, even → bytes)
-    /// Note: Type 0x06 is even but carries a UTF-8 string; encoded as length-prefixed bytes
-    /// per the Key-Value-Pair spec (odd type). Draft-14 Section 9.3.2.6.
+    /// MOQT_IMPLEMENTATION parameter (Type 0x07, odd → bytes)
+    /// This is a debug-only extension and not part of the draft.
     case moqtImplementation(String)
 
     // MARK: - Encode
@@ -41,7 +40,7 @@ enum SetupParameter {
     // MARK: - Decode
 
     static func decode(from reader: ByteReader) throws -> SetupParameter {
-        let pair = try KeyValuePair.decode(from: reader)
+        let pair: KeyValuePair = try .decode(from: reader)
         switch pair.type {
         case 0x01:
             guard case .bytes(let bytes) = pair.value,
@@ -49,28 +48,28 @@ enum SetupParameter {
                 throw ByteReaderError.invalidUTF8
             }
             return .path(string)
+        case 0x02:
+            guard case .varint(let value) = pair.value else {
+                throw SetupParameterError.typeMismatch(type: pair.type)
+            }
+            return .maxRequestId(value)
         case 0x03:
             guard case .bytes(let bytes) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
             }
             return .authorizationToken(.init(value: bytes))
-        case 0x02:
-            guard case .varint(let v) = pair.value else {
-                throw SetupParameterError.typeMismatch(type: pair.type)
-            }
-            return .maxRequestId(v)
         case 0x04:
-            guard case .varint(let v) = pair.value else {
+            guard case .varint(let value) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
             }
-            return .maxAuthTokenCacheSize(v)
+            return .maxAuthTokenCacheSize(value)
         case 0x05:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
                 throw ByteReaderError.invalidUTF8
             }
             return .authority(string)
-        case 0x06:
+        case 0x07:
             guard case .bytes(let bytes) = pair.value,
                   let string = String(bytes: bytes, encoding: .utf8) else {
                 throw ByteReaderError.invalidUTF8
@@ -96,7 +95,7 @@ enum SetupParameter {
         case .authority(let s):
             return KeyValuePair(type: 0x05, value: .bytes(Data(s.utf8)))
         case .moqtImplementation(let s):
-            return KeyValuePair(type: 0x06, value: .bytes(Data(s.utf8)))
+            return KeyValuePair(type: 0x07, value: .bytes(Data(s.utf8)))
         }
     }
 }
