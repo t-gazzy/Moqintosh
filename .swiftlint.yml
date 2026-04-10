@@ -1,0 +1,108 @@
+disabled_rules:
+    #- block_based_kvo # Swift3.2以降の場合、keypathをもつ新しいブロックベースのKVO APIを使う
+    #- closing_brace # }の後に)が続く場合は、それらの間に空白が無いように
+    #- closure_parameter_position # クロージャのパラメータは開き括弧({)と同じ行に
+    #- colon # コロン(:)は、型を指定するときは識別子の後ろ、Dictonaryではkeyの後ろに
+    #- comma # カンマ(,)の前にスペースがあるべきではない。カンマの後ろにはスペースがある
+    #- comment_spacing # コメントする場合、スラッシュ(//)の後ろにスペースを入れる
+    #- compiler_protocol_init # コンパイラプロトコルで定義されているイニシャライザは直接呼び出さない
+    - computed_accessors_order # getterとsetterの順を統一する。基本はgetter→setterの順
+    #- deployment_target # @availableなどを使う場合は、Deployment Target 未満を設定しない
+    - duplicate_imports # import の重複を許さない
+    #- dynamic_inline # dynamicと@inline(__always)を同時に使うべきではない
+    #- file_length # ファイルの行数 → 行数を別途指定する
+    #- function_body_length # 関数内はあまりにも多くの行にまたがるべきではない
+    #- generic_type_name # ジェネリック型名は英数字のみを使用し、大文字で始め、1~20文字にするべき
+    #- implicit_getter # 計算された読み取り専用プロパティと添え字は、get キーワードの使用を避けるべき
+    #- inert_defer # deferが親スコープの最後にある場合(親スコープの処理がdeferのみの場合も)、その場で実行される
+    - line_length # 1行に多くの文字を含めない
+    #- mark # MARKコメントは有効な形式にするべき
+    #- multiple_closures_with_trailing_closure # 複数のクロージャを引数とする場合、トレイリングクロージャを使うべきではない
+    #- nesting # ネストの深さ深くしすぎない → 深さを別途指定
+    #- opening_brace # {は宣言と同じ行に置き、スペースを1つ入れるべき
+    #- operator_whitespace # 演算子を定義する時、1つのスペースで囲むべき。
+    #- orphaned_doc_comment # ドキュメントコメントは宣言の上部に書くべき。
+    - protocol_property_accessors_order # プロトコルでプロパティを宣言する場合、アクセサの順番をget``setの順にする
+    #- redundant_objc_attribute # 冗長な@objc宣言は避けるべき。
+    #- redundant_set_access_control # プロパティのセッターのアクセスレベルが、変数のアクセスレベルと同じ場合、明示的に指定すべきではない
+    #- return_arrow_whitespace # 戻り値の矢印と型は1つのスペースを開けるか、別の行で区切るべき
+    #- shorthand_operator # 省略系の演算子を使うべき。
+    #- switch_case_alignment # case文はそれを囲むswitch文と同じインデントにすべき
+    #- trailing_newline # ファイルは末尾に1つの改行を持つべき
+    #- trailing_whitespace # 行の末尾のスペース廃止
+    #- unneeded_break_in_switch # 不要なbreakの使用は避ける
+    #- unused_capture_list # キャプチャリスト内の未使用の参照は削除すべき
+    #- unused_closure_parameter # クロージャで使用されてないパラメータは_に置き換えるべき
+    #- unused_setter_value # セッターの値は使われるべき
+    #- valid_ibinspectable # @IBInspectableはサポートされている型の変数のみに適用されるべきであり、その型を明示的にする必要がある
+    #- vertical_parameter_alignment # 関数の定義時、パラメータが複数行にまたがっている場合は垂直方向に揃えるべき。
+    #- vertical_whitespace # 空白行は1行に抑えるべき
+    #- void_return # -> ()より-> Voidを使う
+    #- xctfail_message # XCTFailの呼び出しには、アサーションの説明を含めるべき
+    - class_delegate_protocol # Delegate protocolはweakで保持される可能性があるため、class-onlyにする
+    - duplicated_key_in_dictionary_literal # Dictionary でkeyの重複を許さない
+    - control_statement # if, for, guard, switch, while, catchは条件式や引数を、必要以上に括弧(())で囲むべきではない
+    - cyclomatic_complexity # 関数内の処理の循環的複雑度に応じてワーニングやエラー表示
+    - discouraged_direct_init # 有害な可能性のある型を直接初期化すべきではない
+    - duplicate_enum_cases # enum 内に同じケース名を含めれない
+    - empty_enum_arguments # enum の  associated values が空(_)の場合省略する
+    - empty_parameters # Void -> よりも () -> を採用
+    - empty_parentheses_with_trailing_closure # トレイリングクロージャを使う場合、メソッド呼び出し後に空括弧()を書くべきではない
+    - for_where # for文内にif文が1つしかない場合はwhereを使う
+    - force_cast # 強制キャスト(as!)は使用すべきではない
+    - force_try # 強制トライ(try!)は使用すべきではない
+    - function_parameter_count # 関数の引数の数は少なくするべき(5つ以下にするべき)
+    - identifier_name # 識別子名は英数字のみを含み、小文字で始まるか、大文字のみを含むべきである。上記の例外として、変数名が静的であると宣言されている場合は、大文字で始めてもよい。変数名は長すぎても短すぎてもいけません。
+    - inclusive_language # 識別子は、人種、性別、または社会経済的地位に基づく人々のグループに対する差別を避ける言葉を使用する必要がある
+    - is_disjoint  # Set.intersection(_:).isEmptyよりSet.isDisjoint(with:)を使うべき
+    - large_tuple # タプルのメンバーは多すぎてはいけない。多い場合は代わりにカスタムタイプを作成するべき。
+    - leading_whitespace # ファイルの先頭に空白があってはいけない
+    - legacy_cggeometry_functions # 構造体のエクステンションのプロパティとメソッドは、従来の関数より優先すべき
+    - legacy_constant # 構造スコープ定数は従来のグローバル定数よりも優先すべき
+    - legacy_constructor # Swiftのコンストラクタは従来のコンビニエンス関数よりも優先すべき
+    - legacy_hashing # hasValueをoverrideするのではなく、hash(into:)関数を使うべき
+    - legacy_nsgeometry_functions # 構造体のエクステンションのプロパティとメソッドは、従来の関数より優先すべき
+    - no_fallthrough_only # fallthroughは、caseに少なくとも1つのステートメントが含まれている場合にのみ使うべき
+    - no_space_in_method_call # メソッド名と括弧()の間にスペースを入れてはいけない
+    - notification_center_detachment # NotificationCenterに登録した自分自身のobserverはクラスのdeinit内で除去するべき
+    - nsobject_prefer_isequal # NSObjectのサブクラスは、==の代わりにisEqualを実装するべき
+    - private_over_fileprivate # fileprivate より private を使用するべき
+    - private_unit_test # privateのUnit Testは暗黙的にスキップされる(privateにすべきではない)
+    - reduce_boolean # reduce(true)やreduce(false)よりも.allSatisfy()や.contains()を使うべき
+    - redundant_discardable_let # 関数の戻り値を使わず実行する場合、let _ = foo()より_ = foo()を使うべき。
+    - redundant_string_enum_value # 文字列の列挙値は、caseと同じ場合省略できる
+    - redundant_void_return # 関数宣言でVoidを返すのは冗長である
+    - statement_position # elseとcatchは前の宣言に1つのスペースを入れ、同じ行に配置されるべき
+    - superfluous_disable_command # 無効化されたルールが無効化された領域で違反を起こさなかった場合、SwiftLintのdisableコマンドは不要
+    - redundant_optional_initialization # Optional型の変数をnilで初期化するのは冗長
+    - syntactic_sugar # シンタックスシュガー（糖衣構文）を使うべき。Arrayの代わりに[Int]を使うなど
+    - todo # TODO, FIXME 使えなくする
+    - trailing_comma # 配列とDictionaryの末尾のカンマはつけるべきでない
+    - trailing_semicolon # 行の末尾にセミコロン;を付けるべきではない
+    - type_body_length # 型内はあまりにも多くの行にまたがってはいけない
+    - type_name # 型名は英数字のみを含み、大文字で始まり、3~40文字の長さにする必要がある
+    - unused_control_flow_label # 未使用の制御フローラベルは削除すべき
+    - unused_enumerated # インデックスかアイテムが使用されてない場合は、.enumerated()を削除すべき
+    - unused_optional_binding # let _ =より!= nilを使用すべき
+    - weak_delegate # Delegateは循環参照を避けるために弱参照とすべき
+
+opt_in_rules:
+    - empty_count # 空のコレクションをカウントする場合の最適化をチェック
+    - implicit_return # 暗黙的なreturn
+    - explicit_init # .init() の明示的な使用を強制
+
+
+included:
+    - Moqintosh   # 適用したいProject名
+
+excluded:
+
+
+# detail setting
+line_length:
+    warning: 500
+    error: 5000
+
+function_body_length:
+    warning: 200
+    error: 1000
