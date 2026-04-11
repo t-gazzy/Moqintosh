@@ -43,6 +43,7 @@ Apply the narrowest modifier that satisfies the requirement.
 - Do not write code for future extensibility.
 - Never add code "just in case" — only implement what is explicitly required.
 - One class or struct per file, and one test struct per file (matching the type under test).
+- When the presence of one field depends on the value or presence of another field, represent that relationship with an enum so invalid states cannot be expressed.
 - After writing unit tests, always run them and confirm they pass before finishing.
 - If a test run does not finish within 1 minute, abort the test execution itself and investigate and fix the cause before retrying.
 - After implementing any change, build the project and confirm there are no errors before finishing.
