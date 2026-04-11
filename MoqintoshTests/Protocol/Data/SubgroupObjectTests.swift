@@ -12,7 +12,7 @@ import Testing
 struct SubgroupObjectTests {
 
     @Test func roundTripPayload() throws {
-        let header: SubgroupHeader = .init(
+        let header: SubgroupHeader = SubgroupHeader(
             trackAlias: 1,
             groupID: 2,
             subgroupID: .explicit(3),
@@ -22,7 +22,7 @@ struct SubgroupObjectTests {
         let object: SubgroupObject = header.makeObject(
             previousObjectID: 9,
             objectID: 10,
-            extensions: [.init(type: 0x03, value: .bytes(Data([0xAA])))],
+            extensions: [KeyValuePair(type: 0x03, value: .bytes(Data([0xAA])))],
             content: .payload(Data("abcd".utf8))
         )
 
@@ -38,7 +38,7 @@ struct SubgroupObjectTests {
     }
 
     @Test func firstObjectUsesAbsoluteObjectID() throws {
-        let header: SubgroupHeader = .init(
+        let header: SubgroupHeader = SubgroupHeader(
             trackAlias: 1,
             groupID: 2,
             subgroupID: .firstObject,

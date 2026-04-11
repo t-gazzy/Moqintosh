@@ -37,7 +37,7 @@ public struct SubgroupObject: Sendable {
     }
 
     func encode() -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(objectIDDelta)
         if header.usesExtensions {
             let encodedExtensions: Data = encodeExtensions(extensions)
@@ -60,7 +60,7 @@ public struct SubgroupObject: Sendable {
         header: SubgroupHeader,
         previousObjectID: UInt64? = nil
     ) throws -> SubgroupObject {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         return try decode(from: reader, header: header, previousObjectID: previousObjectID)
     }
 
@@ -91,7 +91,7 @@ public struct SubgroupObject: Sendable {
         } else {
             content = .payload(try reader.readBytes(length: payloadLength))
         }
-        return .init(
+        return SubgroupObject(
             header: header,
             previousObjectID: previousObjectID,
             objectID: objectID,
@@ -109,7 +109,7 @@ public struct SubgroupObject: Sendable {
     }
 
     private func encodeExtensions(_ extensions: [KeyValuePair]) -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         for header in extensions {
             data.append(header.encode())
         }
@@ -117,7 +117,7 @@ public struct SubgroupObject: Sendable {
     }
 
     private static func decodeExtensions(from data: Data) throws -> [KeyValuePair] {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         var extensions: [KeyValuePair] = []
         while reader.remainingCount > 0 {
             extensions.append(try .decode(from: reader))

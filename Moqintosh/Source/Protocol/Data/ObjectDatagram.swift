@@ -120,7 +120,7 @@ public struct ObjectDatagram {
 
     public func encode() -> Data {
         let datagramType: DatagramType = resolvedType()
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(datagramType.rawValue)
         data.writeVarint(trackAlias)
         data.writeVarint(groupID)
@@ -146,9 +146,9 @@ public struct ObjectDatagram {
     }
 
     public static func decode(_ data: Data) throws -> ObjectDatagram {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         let datagramTypeRawValue: UInt64 = try reader.readVarint()
-        guard let datagramType: DatagramType = .init(rawValue: datagramTypeRawValue) else {
+        guard let datagramType: DatagramType = DatagramType(rawValue: datagramTypeRawValue) else {
             throw ObjectDatagramError.invalidType(datagramTypeRawValue)
         }
         let trackAlias: UInt64 = try reader.readVarint()
@@ -175,7 +175,7 @@ public struct ObjectDatagram {
         case .status:
             content = .status(try reader.readVarint())
         }
-        return .init(
+        return ObjectDatagram(
             trackAlias: trackAlias,
             groupID: groupID,
             objectID: objectID,
@@ -216,7 +216,7 @@ public struct ObjectDatagram {
     }
 
     private func encodeExtensions(_ extensions: [KeyValuePair]) -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         for header in extensions {
             data.append(header.encode())
         }
@@ -224,7 +224,7 @@ public struct ObjectDatagram {
     }
 
     private static func decodeExtensions(from data: Data) throws -> [KeyValuePair] {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         var extensions: [KeyValuePair] = []
         while reader.remainingCount > 0 {
             extensions.append(try .decode(from: reader))

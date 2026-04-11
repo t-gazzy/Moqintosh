@@ -12,7 +12,7 @@ import Testing
 struct FetchSenderTests {
 
     @Test func sendEncodesObjectAndEndsFetch() async throws {
-        let stream: MockTransportUniSendStream = .init()
+        let stream: MockTransportUniSendStream = MockTransportUniSendStream()
         let sender: FetchSender = try await .init(stream: stream, requestID: 9)
 
         try await sender.send(
@@ -28,7 +28,7 @@ struct FetchSenderTests {
         #expect(stream.endOfStreamFlags == [false, true])
         #expect(stream.sentBytes[0] == FetchHeader(requestID: 9).encode())
 
-        let reader: FetchObjectFrameReader = .init(initialData: stream.sentBytes[1])
+        let reader: FetchObjectFrameReader = FetchObjectFrameReader(initialData: stream.sentBytes[1])
         let object: SubgroupObject = try await reader.read(from: MockTransportUniReceiveStream(receiveQueue: [], receiveError: nil))
         #expect(object.groupID == 2)
         #expect(object.objectID == 4)

@@ -14,14 +14,14 @@ struct GoAwayMessage {
     let newSessionURI: String?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         if let newSessionURI {
             payload.writeString(newSessionURI)
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -30,10 +30,10 @@ struct GoAwayMessage {
 
     static func decode(from payload: Data) throws -> GoAwayMessage {
         guard !payload.isEmpty else {
-            return .init(newSessionURI: nil)
+            return GoAwayMessage(newSessionURI: nil)
         }
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let newSessionURI: String = try reader.readString()
-        return .init(newSessionURI: newSessionURI)
+        return GoAwayMessage(newSessionURI: newSessionURI)
     }
 }

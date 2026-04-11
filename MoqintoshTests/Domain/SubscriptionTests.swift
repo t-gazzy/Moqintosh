@@ -12,20 +12,20 @@ import Testing
 struct SubscriptionTests {
 
     @Test func initializerStoresMetadata() {
-        let publishedTrack: PublishedTrack = .init(
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: 2,
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
             trackAlias: 3,
             groupOrder: .ascending,
             contentExist: .noContent,
             forward: true
         )
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: 4,
             publishedTrack: publishedTrack,
             expires: 5,
             subscriberPriority: 6,
-            filter: .absoluteRange(start: .init(group: 7, object: 8), endGroup: 9)
+            filter: .absoluteRange(start: Location(group: 7, object: 8), endGroup: 9)
         )
 
         #expect(subscription.requestID == 4)

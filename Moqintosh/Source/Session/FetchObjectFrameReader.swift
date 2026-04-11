@@ -12,7 +12,7 @@ final class FetchObjectFrameReader {
     private var buffer: Data
     private var isStreamComplete: Bool
 
-    init(initialData: Data = .init()) {
+    init(initialData: Data = Data()) {
         self.buffer = initialData
         self.isStreamComplete = false
     }
@@ -32,7 +32,7 @@ final class FetchObjectFrameReader {
     }
 
     private func extractObject() throws -> SubgroupObject? {
-        let reader: ByteReader = .init(data: buffer)
+        let reader: ByteReader = ByteReader(data: buffer)
         guard let groupID: UInt64 = try? reader.readVarint() else {
             return nil
         }
@@ -67,14 +67,14 @@ final class FetchObjectFrameReader {
             content = .payload(payload)
         }
         let extensions: [KeyValuePair] = try decodeExtensions(from: encodedExtensions)
-        let header: SubgroupHeader = .init(
+        let header: SubgroupHeader = SubgroupHeader(
             trackAlias: 0,
             groupID: groupID,
             subgroupID: .explicit(subgroupID),
             publisherPriority: publisherPriority,
             usesExtensions: true
         )
-        let object: SubgroupObject = .init(
+        let object: SubgroupObject = SubgroupObject(
             header: header,
             previousObjectID: nil,
             objectID: objectID,
@@ -87,7 +87,7 @@ final class FetchObjectFrameReader {
     }
 
     private func decodeExtensions(from data: Data) throws -> [KeyValuePair] {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         var extensions: [KeyValuePair] = []
         while reader.remainingCount > 0 {
             extensions.append(try .decode(from: reader))

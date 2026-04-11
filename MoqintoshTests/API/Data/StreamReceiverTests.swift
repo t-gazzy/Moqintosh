@@ -12,19 +12,19 @@ import Testing
 struct StreamReceiverTests {
 
     @Test func inboundObjectNotifiesDelegate() async {
-        let header: SubgroupHeader = .init(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
+        let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
-        let stream: MockTransportUniReceiveStream = .init(
-            receiveQueue: [.init(bytes: object.encode(), isComplete: true)],
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
+            receiveQueue: [TransportUniReceiveResult(bytes: object.encode(), isComplete: true)],
             receiveError: nil
         )
-        let receiver: StreamReceiver = .init(
+        let receiver: StreamReceiver = StreamReceiver(
             stream: stream,
-            subscription: .init(
+            subscription: Subscription(
                 requestID: 1,
-                publishedTrack: .init(
+                publishedTrack: PublishedTrack(
                     requestID: 1,
-                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     trackAlias: 7,
                     groupOrder: .ascending,
                     contentExist: .noContent,
@@ -37,7 +37,7 @@ struct StreamReceiverTests {
             header: header,
             initialData: .init()
         )
-        let delegate: TestStreamReceiverDelegate = .init()
+        let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
         receiver.delegate = delegate
 
         receiver.start()
@@ -51,23 +51,23 @@ struct StreamReceiverTests {
     }
 
     @Test func chunkedObjectNotifiesDelegate() async {
-        let header: SubgroupHeader = .init(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
+        let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abcdef".utf8)))
         let encoded: Data = object.encode()
-        let stream: MockTransportUniReceiveStream = .init(
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 .init(bytes: Data(encoded.prefix(2)), isComplete: false),
                 .init(bytes: Data(encoded.dropFirst(2)), isComplete: true)
             ],
             receiveError: nil
         )
-        let receiver: StreamReceiver = .init(
+        let receiver: StreamReceiver = StreamReceiver(
             stream: stream,
-            subscription: .init(
+            subscription: Subscription(
                 requestID: 1,
-                publishedTrack: .init(
+                publishedTrack: PublishedTrack(
                     requestID: 1,
-                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     trackAlias: 7,
                     groupOrder: .ascending,
                     contentExist: .noContent,
@@ -80,7 +80,7 @@ struct StreamReceiverTests {
             header: header,
             initialData: .init()
         )
-        let delegate: TestStreamReceiverDelegate = .init()
+        let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
         receiver.delegate = delegate
 
         receiver.start()

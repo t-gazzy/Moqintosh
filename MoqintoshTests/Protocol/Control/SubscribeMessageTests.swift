@@ -12,17 +12,17 @@ import Testing
 struct SubscribeMessageTests {
 
     @Test func roundTrip() throws {
-        let message: SubscribeMessage = .init(
+        let message: SubscribeMessage = SubscribeMessage(
             requestID: 9,
-            resource: .init(
-                trackNamespace: .init(strings: ["live"]),
+            resource: TrackResource(
+                trackNamespace: TrackNamespace(strings: ["live"]),
                 trackName: Data("audio".utf8),
-                authorizationToken: .init(value: Data([0x20]))
+                authorizationToken: AuthorizationToken(value: Data([0x20]))
             ),
             subscriberPriority: 2,
             groupOrder: .publisherDefault,
             forward: false,
-            filter: .absoluteStart(.init(group: 3, object: 4)),
+            filter: .absoluteStart(Location(group: 3, object: 4)),
             deliveryTimeout: 50
         )
         let decoded: SubscribeMessage = try .decode(from: Data(message.encode().dropFirst(3)))

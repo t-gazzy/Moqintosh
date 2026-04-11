@@ -20,10 +20,10 @@ public final class FetchReceiverFactory {
 
     init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) {
         self.fetchSubscription = fetchSubscription
-        self.delegateQueue = .init(label: "Moqintosh.FetchReceiverFactoryDelegate")
+        self.delegateQueue = DispatchQueue(label: "Moqintosh.FetchReceiverFactoryDelegate")
         sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
             guard let self else { return }
-            let receiver: FetchReceiver = .init(
+            let receiver: FetchReceiver = FetchReceiver(
                 stream: stream,
                 fetchSubscription: fetchSubscription,
                 initialData: initialData

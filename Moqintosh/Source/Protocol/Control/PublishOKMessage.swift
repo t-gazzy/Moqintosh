@@ -19,7 +19,7 @@ struct PublishOKMessage {
     let deliveryTimeout: UInt64?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(forward ? 1 : 0)
         payload.append(subscriberPriority)
@@ -30,9 +30,9 @@ struct PublishOKMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -40,7 +40,7 @@ struct PublishOKMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishOKMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let forwardValue: UInt8 = try reader.readUInt8Value()
         guard forwardValue <= 1 else {
@@ -51,14 +51,14 @@ struct PublishOKMessage {
             throw PublishOKMessageError.invalidGroupOrder
         }()
         let filter: SubscriptionFilter = try .decode(from: reader)
-        let paramCount: Int = .init(try reader.readVarint())
+        let paramCount: Int = Int(try reader.readVarint())
         var deliveryTimeout: UInt64?
         for _ in 0 ..< paramCount {
             if case .deliveryTimeout(let value) = try? ControlMessageParameter.decode(from: reader) {
                 deliveryTimeout = value
             }
         }
-        return .init(
+        return PublishOKMessage(
             requestID: requestID,
             forward: forwardValue == 1,
             subscriberPriority: subscriberPriority,

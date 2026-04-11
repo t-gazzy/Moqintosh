@@ -53,12 +53,12 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
     }
 
     private func readHeader(from stream: TransportUniReceiveStream) async throws -> StreamHeader {
-        var buffer: Data = .init()
+        var buffer: Data = Data()
         while true {
             do {
-                let reader: ByteReader = .init(data: buffer)
+                let reader: ByteReader = ByteReader(data: buffer)
                 let type: UInt64 = try reader.readVarint()
-                let headerReader: ByteReader = .init(data: buffer)
+                let headerReader: ByteReader = ByteReader(data: buffer)
                 if type == FetchHeader.type {
                     let header: FetchHeader = try .decode(from: headerReader)
                     let consumedBytes: Int = buffer.count - headerReader.remainingCount

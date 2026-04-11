@@ -24,14 +24,14 @@ public final class Publisher {
     /// Announces a namespace to the subscriber (Section 9.23).
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
+        let message: PublishNamespaceMessage = PublishNamespaceMessage(requestID: requestID, trackNamespace: trackNamespace)
         OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
         try await controlMessageChannel.performPublishNamespaceRequest(requestID: requestID, bytes: message.encode())
     }
 
     /// Ends a previously announced namespace (Section 9.26).
     public func publishNamespaceDone(trackNamespace: TrackNamespace) async throws {
-        let message: PublishNamespaceDoneMessage = .init(trackNamespace: trackNamespace)
+        let message: PublishNamespaceDoneMessage = PublishNamespaceDoneMessage(trackNamespace: trackNamespace)
         OSLogger.debug("Sending PUBLISH_NAMESPACE_DONE")
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
@@ -47,7 +47,7 @@ public final class Publisher {
     ) async throws -> PublishedTrack {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let trackAlias: UInt64 = controlMessageChannel.issueTrackAlias()
-        let publishedTrack: PublishedTrack = .init(
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: requestID,
             resource: resource,
             trackAlias: trackAlias,
@@ -55,7 +55,7 @@ public final class Publisher {
             contentExist: contentExist,
             forward: forward
         )
-        let message: PublishMessage = .init(
+        let message: PublishMessage = PublishMessage(
             requestID: requestID,
             publishedTrack: publishedTrack,
             deliveryTimeout: nil,
@@ -76,7 +76,7 @@ public final class Publisher {
         streamCount: UInt64,
         reasonPhrase: String = ""
     ) async throws {
-        let message: PublishDoneMessage = .init(
+        let message: PublishDoneMessage = PublishDoneMessage(
             requestID: publishedTrack.requestID,
             statusCode: statusCode,
             streamCount: streamCount,
@@ -87,15 +87,15 @@ public final class Publisher {
     }
 
     public func makeStreamSenderFactory(for publishedTrack: PublishedTrack) -> StreamSenderFactory {
-        .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
+        StreamSenderFactory(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 
     public func makeDatagramSender(for publishedTrack: PublishedTrack) -> DatagramSender {
-        .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
+        DatagramSender(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 
     public func makeFetchSender(for fetchRequest: FetchRequest) async throws -> FetchSender {
         let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
-        return try await .init(stream: stream, requestID: fetchRequest.requestID)
+        return try await FetchSender(stream: stream, requestID: fetchRequest.requestID)
     }
 }

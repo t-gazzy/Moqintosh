@@ -20,8 +20,8 @@ public final class Session {
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
-        self.streamReceiverCoordinator = .init(sessionContext: sessionContext)
-        self.delegateQueue = .init(label: "Moqintosh.SessionDelegate")
+        self.streamReceiverCoordinator = StreamReceiverCoordinator(sessionContext: sessionContext)
+        self.delegateQueue = DispatchQueue(label: "Moqintosh.SessionDelegate")
         self.context.session = self
         self.context.connection.delegate = streamReceiverCoordinator
         self.controlMessageReceiver.start()
@@ -38,7 +38,7 @@ public final class Session {
     }
 
     public func goAway(newSessionURI: String? = nil) async throws {
-        let message: GoAwayMessage = .init(newSessionURI: newSessionURI)
+        let message: GoAwayMessage = GoAwayMessage(newSessionURI: newSessionURI)
         OSLogger.info("Sending GOAWAY")
         try await context.sendControlMessage(bytes: message.encode())
     }

@@ -12,7 +12,7 @@ import Testing
 struct SessionContextTests {
 
     @Test func issueRequestIDIncrementsByTwo() async throws {
-        let context: SessionContext = .init(
+        let context: SessionContext = SessionContext(
             connection: MockTransportConnection(),
             controlStream: MockTransportBiStream(),
             remoteMaxRequestID: 4
@@ -23,8 +23,8 @@ struct SessionContextTests {
     }
 
     @Test func issueRequestIDSendsRequestsBlockedWhenRemoteLimitIsReached() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(
             connection: MockTransportConnection(),
             controlStream: stream,
             remoteMaxRequestID: 0
@@ -40,17 +40,17 @@ struct SessionContextTests {
     }
 
     @Test func issueTrackAliasIncrementsByOne() {
-        let context: SessionContext = .init(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
         #expect(context.issueTrackAlias() == 0)
         #expect(context.issueTrackAlias() == 1)
         #expect(context.issueTrackAlias() == 2)
     }
 
     @Test func resolvePublishRequestReturnsPublishedTrack() async throws {
-        let context: SessionContext = .init(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
-        let publishedTrack: PublishedTrack = .init(
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: 2,
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
             trackAlias: 3,
             groupOrder: .ascending,
             contentExist: .noContent,
@@ -78,12 +78,12 @@ struct SessionContextTests {
     }
 
     @Test func rejectSubscribeRequestThrows() async {
-        let context: SessionContext = .init(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
         let task: Task<Subscription, Error> = .init {
             try await withCheckedThrowingContinuation { continuation in
                 context.requestStore.addSubscribeRequest(
                     4,
-                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                     subscriberPriority: 0,
                     requestedGroupOrder: .ascending,
                     forward: true,

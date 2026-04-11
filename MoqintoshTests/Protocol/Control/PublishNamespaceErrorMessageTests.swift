@@ -11,7 +11,7 @@ import Testing
 struct PublishNamespaceErrorMessageTests {
 
     @Test func roundTrip() throws {
-        let message: PublishNamespaceErrorMessage = .init(requestID: 3, errorCode: 9, reasonPhrase: "nope")
+        let message: PublishNamespaceErrorMessage = PublishNamespaceErrorMessage(requestID: 3, errorCode: 9, reasonPhrase: "nope")
         let decoded: PublishNamespaceErrorMessage = try .decode(from: Data(message.encode().dropFirst(3)))
         #expect(decoded.requestID == 3)
         #expect(decoded.errorCode == 9)

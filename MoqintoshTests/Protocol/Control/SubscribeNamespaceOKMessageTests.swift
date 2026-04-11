@@ -11,7 +11,7 @@ import Testing
 struct SubscribeNamespaceOKMessageTests {
 
     @Test func roundTrip() throws {
-        let message: SubscribeNamespaceOKMessage = .init(requestID: 5)
+        let message: SubscribeNamespaceOKMessage = SubscribeNamespaceOKMessage(requestID: 5)
         let decoded: SubscribeNamespaceOKMessage = try .decode(from: Data(message.encode().dropFirst(3)))
         #expect(decoded.requestID == 5)
     }

@@ -27,7 +27,7 @@ public final class Subscriber {
     /// - Throws: `SubscribeNamespaceError.rejected` if the publisher responds with `SUBSCRIBE_NAMESPACE_ERROR`.
     public func subscribeNamespace(namespacePrefix: TrackNamespace) async throws {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: SubscribeNamespaceMessage = .init(requestID: requestID, namespacePrefix: namespacePrefix)
+        let message: SubscribeNamespaceMessage = SubscribeNamespaceMessage(requestID: requestID, namespacePrefix: namespacePrefix)
         OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
         try await controlMessageChannel.performSubscribeNamespaceRequest(requestID: requestID, bytes: message.encode())
     }
@@ -43,7 +43,7 @@ public final class Subscriber {
         filter: SubscriptionFilter = .largestObject
     ) async throws -> Subscription {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: SubscribeMessage = .init(
+        let message: SubscribeMessage = SubscribeMessage(
             requestID: requestID,
             resource: resource,
             subscriberPriority: subscriberPriority,
@@ -73,7 +73,7 @@ public final class Subscriber {
         forward: Bool? = nil,
         authorizationToken: AuthorizationToken? = nil
     ) async throws {
-        let message: SubscribeUpdateMessage = .init(
+        let message: SubscribeUpdateMessage = SubscribeUpdateMessage(
             requestID: subscription.requestID,
             start: start,
             endGroup: endGroup,
@@ -87,7 +87,7 @@ public final class Subscriber {
 
     /// Cancels a subscription (Section 9.11).
     public func unsubscribe(for subscription: Subscription) async throws {
-        let message: UnsubscribeMessage = .init(requestID: subscription.requestID)
+        let message: UnsubscribeMessage = UnsubscribeMessage(requestID: subscription.requestID)
         OSLogger.debug("Sending UNSUBSCRIBE (requestID: \(subscription.requestID))")
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
@@ -103,7 +103,7 @@ public final class Subscriber {
         end: Location
     ) async throws -> FetchSubscription {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: FetchMessage = .init(
+        let message: FetchMessage = FetchMessage(
             requestID: requestID,
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
@@ -125,7 +125,7 @@ public final class Subscriber {
         startGroupOffset: UInt64
     ) async throws -> FetchSubscription {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: FetchMessage = .init(
+        let message: FetchMessage = FetchMessage(
             requestID: requestID,
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
@@ -150,7 +150,7 @@ public final class Subscriber {
         startGroup: UInt64
     ) async throws -> FetchSubscription {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: FetchMessage = .init(
+        let message: FetchMessage = FetchMessage(
             requestID: requestID,
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,
@@ -170,7 +170,7 @@ public final class Subscriber {
 
     /// Cancels an in-progress fetch (Section 9.19).
     public func fetchCancel(for fetchSubscription: FetchSubscription) async throws {
-        let message: FetchCancelMessage = .init(requestID: fetchSubscription.requestID)
+        let message: FetchCancelMessage = FetchCancelMessage(requestID: fetchSubscription.requestID)
         OSLogger.debug("Sending FETCH_CANCEL (requestID: \(fetchSubscription.requestID))")
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
@@ -186,7 +186,7 @@ public final class Subscriber {
         filter: SubscriptionFilter = .largestObject
     ) async throws -> TrackStatus {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let message: TrackStatusMessage = .init(
+        let message: TrackStatusMessage = TrackStatusMessage(
             requestID: requestID,
             resource: resource,
             subscriberPriority: subscriberPriority,
@@ -203,7 +203,7 @@ public final class Subscriber {
         errorCode: UInt64,
         reasonPhrase: String
     ) async throws {
-        let message: PublishNamespaceCancelMessage = .init(
+        let message: PublishNamespaceCancelMessage = PublishNamespaceCancelMessage(
             trackNamespace: trackNamespace,
             errorCode: errorCode,
             reasonPhrase: reasonPhrase
@@ -213,20 +213,20 @@ public final class Subscriber {
     }
 
     public func unsubscribeNamespace(namespacePrefix: TrackNamespace) async throws {
-        let message: UnsubscribeNamespaceMessage = .init(namespacePrefix: namespacePrefix)
+        let message: UnsubscribeNamespaceMessage = UnsubscribeNamespaceMessage(namespacePrefix: namespacePrefix)
         OSLogger.debug("Sending UNSUBSCRIBE_NAMESPACE")
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {
-        .init(sessionContext: sessionContext, subscription: subscription)
+        StreamReceiverFactory(sessionContext: sessionContext, subscription: subscription)
     }
 
     public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
-        .init(sessionContext: sessionContext, subscription: subscription)
+        DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
     }
 
     public func makeFetchReceiverFactory(for fetchSubscription: FetchSubscription) -> FetchReceiverFactory {
-        .init(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
+        FetchReceiverFactory(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
     }
 }

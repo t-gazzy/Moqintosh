@@ -39,7 +39,7 @@ struct PublishNamespaceMessage {
     }
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(trackNamespace.encode())
         payload.writeVarint(UInt64(parameters.count))
@@ -47,9 +47,9 @@ struct PublishNamespaceMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -57,17 +57,17 @@ struct PublishNamespaceMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishNamespaceMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let trackNamespace: TrackNamespace = try TrackNamespace.decode(from: reader)
-        let paramCount: Int = .init(try reader.readVarint())
+        let paramCount: Int = Int(try reader.readVarint())
         var authorizationTokens: [AuthorizationToken] = []
         for _ in 0 ..< paramCount {
             if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
                 authorizationTokens.append(token)
             }
         }
-        return .init(
+        return PublishNamespaceMessage(
             requestID: requestID,
             trackNamespace: trackNamespace,
             authorizationTokens: authorizationTokens

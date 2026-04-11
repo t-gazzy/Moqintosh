@@ -20,7 +20,7 @@ struct SubscribeMessage {
     let deliveryTimeout: UInt64?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(resource.trackNamespace.encode())
         payload.writeVarint(UInt64(resource.trackName.count))
@@ -34,9 +34,9 @@ struct SubscribeMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -44,10 +44,10 @@ struct SubscribeMessage {
     }
 
     static func decode(from payload: Data) throws -> SubscribeMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let trackNamespace: TrackNamespace = try TrackNamespace.decode(from: reader)
-        let trackNameLength: Int = .init(try reader.readVarint())
+        let trackNameLength: Int = Int(try reader.readVarint())
         let trackName: Data = try reader.readBytes(length: trackNameLength)
         let subscriberPriority: UInt8 = try reader.readUInt8Value()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
@@ -58,7 +58,7 @@ struct SubscribeMessage {
             throw SubscribeMessageError.invalidForward
         }
         let filter: SubscriptionFilter = try .decode(from: reader)
-        let paramCount: Int = .init(try reader.readVarint())
+        let paramCount: Int = Int(try reader.readVarint())
         var authorizationTokens: [AuthorizationToken] = []
         var deliveryTimeout: UInt64?
         for _ in 0 ..< paramCount {
@@ -71,12 +71,12 @@ struct SubscribeMessage {
                 break
             }
         }
-        let resource: TrackResource = .init(
+        let resource: TrackResource = TrackResource(
             trackNamespace: trackNamespace,
             trackName: trackName,
             authorizationToken: authorizationTokens.first
         )
-        return .init(
+        return SubscribeMessage(
             requestID: requestID,
             resource: resource,
             subscriberPriority: subscriberPriority,

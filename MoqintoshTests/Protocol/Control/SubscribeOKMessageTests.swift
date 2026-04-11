@@ -11,12 +11,12 @@ import Testing
 struct SubscribeOKMessageTests {
 
     @Test func roundTrip() throws {
-        let message: SubscribeOKMessage = .init(
+        let message: SubscribeOKMessage = SubscribeOKMessage(
             requestID: 10,
             trackAlias: 11,
             expires: 12,
             groupOrder: .ascending,
-            contentExist: .exists(.init(group: 13, object: 14)),
+            contentExist: .exists(Location(group: 13, object: 14)),
             deliveryTimeout: 15,
             maxCacheDuration: 16
         )

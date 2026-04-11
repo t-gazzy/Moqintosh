@@ -29,14 +29,14 @@ struct PublishNamespaceErrorMessage {
     let reasonPhrase: String
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.writeVarint(errorCode)
         payload.writeString(reasonPhrase)
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -44,10 +44,10 @@ struct PublishNamespaceErrorMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishNamespaceErrorMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let errorCode: UInt64 = try reader.readVarint()
         let reasonPhrase: String = try reader.readString()
-        return .init(requestID: requestID, errorCode: errorCode, reasonPhrase: reasonPhrase)
+        return PublishNamespaceErrorMessage(requestID: requestID, errorCode: errorCode, reasonPhrase: reasonPhrase)
     }
 }

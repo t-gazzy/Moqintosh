@@ -12,14 +12,14 @@ import Testing
 struct ControlMessageDispatcherTests {
 
     @Test func handlePublishNamespaceSendsOKWhenDelegateAccepts() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.publishNamespaceResult = true
         session.delegate = delegate
 
@@ -27,8 +27,8 @@ struct ControlMessageDispatcherTests {
             .publishNamespace(
                 .init(
                     requestID: 2,
-                    trackNamespace: .init(strings: ["live"]),
-                    authorizationTokens: [.init(value: Data([0x01]))]
+                    trackNamespace: TrackNamespace(strings: ["live"]),
+                    authorizationTokens: [AuthorizationToken(value: Data([0x01]))]
                 )
             )
         )
@@ -40,14 +40,14 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleSubscribeSendsErrorWhenDelegateRejects() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeResult = false
         session.delegate = delegate
 
@@ -55,7 +55,7 @@ struct ControlMessageDispatcherTests {
             .subscribe(
                 .init(
                     requestID: 4,
-                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     subscriberPriority: 1,
                     groupOrder: .publisherDefault,
                     forward: true,
@@ -72,15 +72,15 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleTrackStatusSendsOKWhenDelegateReturnsStatus() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
-        delegate.trackStatusResult = .init(
+        let delegate: TestSessionDelegate = TestSessionDelegate()
+        delegate.trackStatusResult = TrackStatus(
             expires: 5,
             groupOrder: .ascending,
             contentExist: .noContent,
@@ -93,7 +93,7 @@ struct ControlMessageDispatcherTests {
             .trackStatus(
                 .init(
                     requestID: 8,
-                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     subscriberPriority: 1,
                     groupOrder: .ascending,
                     forward: true,
@@ -108,18 +108,18 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleFetchSendsOKWhenDelegateReturnsResponse() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
-        delegate.fetchResponse = .init(
+        let delegate: TestSessionDelegate = TestSessionDelegate()
+        delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: true,
-            endLocation: .init(group: 7, object: 8),
+            endLocation: Location(group: 7, object: 8),
             maxCacheDuration: 9
         )
         session.delegate = delegate
@@ -131,9 +131,9 @@ struct ControlMessageDispatcherTests {
                     subscriberPriority: 1,
                     groupOrder: .ascending,
                     mode: .standalone(
-                        resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
-                        start: .init(group: 1, object: 2),
-                        end: .init(group: 3, object: 4)
+                        resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
+                        start: Location(group: 1, object: 2),
+                        end: Location(group: 3, object: 4)
                     )
                 )
             )
@@ -154,14 +154,14 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleFetchCancelDispatchesToDelegate() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
         await dispatcher.handle(.fetchCancel(.init(requestID: 12)))
@@ -170,24 +170,24 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleJoiningRelativeFetchSendsOKWhenSubscriptionExists() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
-        delegate.fetchResponse = .init(
+        let delegate: TestSessionDelegate = TestSessionDelegate()
+        delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: false,
-            endLocation: .init(group: 13, object: 14),
+            endLocation: Location(group: 13, object: 14),
             maxCacheDuration: nil
         )
         session.delegate = delegate
         context.registerInboundSubscriptionResource(
             requestID: 4,
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8))
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8))
         )
 
         await dispatcher.handle(
@@ -223,12 +223,12 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleJoiningFetchSendsErrorWhenSubscriptionDoesNotExist() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
         #expect(type(of: session) == Session.self)
 
@@ -257,14 +257,14 @@ struct ControlMessageDispatcherTests {
     }
 
     @Test func handleGoAwayDispatchesToDelegate() async {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let session: Session = .init(
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
         )
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
         await dispatcher.handle(.goaway(.init(newSessionURI: "https://example.com")))

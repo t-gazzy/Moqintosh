@@ -18,7 +18,7 @@ struct FetchOKMessage {
     let maxCacheDuration: UInt64?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(groupOrder.rawValue)
         payload.append(endOfTrack ? 1 : 0)
@@ -28,9 +28,9 @@ struct FetchOKMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -38,7 +38,7 @@ struct FetchOKMessage {
     }
 
     static func decode(from payload: Data) throws -> FetchOKMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw FetchOKMessageError.invalidGroupOrder
@@ -48,14 +48,14 @@ struct FetchOKMessage {
             throw FetchOKMessageError.invalidEndOfTrack
         }
         let endLocation: Location = try .decode(from: reader)
-        let parameterCount: Int = .init(try reader.readVarint())
+        let parameterCount: Int = Int(try reader.readVarint())
         var maxCacheDuration: UInt64?
         for _ in 0 ..< parameterCount {
             if case .maxCacheDuration(let value) = try? ControlMessageParameter.decode(from: reader) {
                 maxCacheDuration = value
             }
         }
-        return .init(
+        return FetchOKMessage(
             requestID: requestID,
             groupOrder: groupOrder,
             endOfTrack: endOfTrackValue == 1,

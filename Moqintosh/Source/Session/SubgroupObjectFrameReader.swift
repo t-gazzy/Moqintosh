@@ -20,7 +20,7 @@ final class SubgroupObjectFrameReader {
     private var previousObjectID: UInt64?
     private var isStreamComplete: Bool
 
-    init(header: SubgroupHeader, initialData: Data = .init()) {
+    init(header: SubgroupHeader, initialData: Data = Data()) {
         self.header = header
         self.buffer = initialData
         self.previousObjectID = nil
@@ -42,7 +42,7 @@ final class SubgroupObjectFrameReader {
     }
 
     private func extractObject() throws -> SubgroupObject? {
-        let reader: ByteReader = .init(data: buffer)
+        let reader: ByteReader = ByteReader(data: buffer)
         guard let object: SubgroupObject = try? .decode(
             from: reader,
             header: header,

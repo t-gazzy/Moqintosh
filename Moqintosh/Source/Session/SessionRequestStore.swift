@@ -35,7 +35,7 @@ final class SessionRequestStore {
     private var requests: [UInt64: PendingRequest]
 
     init() {
-        self.stateQueue = .init(label: "Moqintosh.SessionRequestStore")
+        self.stateQueue = DispatchQueue(label: "Moqintosh.SessionRequestStore")
         self.requests = [:]
     }
 
@@ -173,7 +173,7 @@ final class SessionRequestStore {
             let filter,
             let continuation
         ) = request else { return }
-        let publishedTrack: PublishedTrack = .init(
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: message.requestID,
             resource: resource,
             trackAlias: message.trackAlias,
@@ -181,7 +181,7 @@ final class SessionRequestStore {
             contentExist: message.contentExist,
             forward: forward
         )
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: message.requestID,
             publishedTrack: publishedTrack,
             expires: message.expires,
@@ -236,7 +236,7 @@ final class SessionRequestStore {
             requests.removeValue(forKey: message.requestID)
         }
         guard case .fetch(let resource, let subscriberPriority, let continuation) = request else { return }
-        let fetchSubscription: FetchSubscription = .init(
+        let fetchSubscription: FetchSubscription = FetchSubscription(
             requestID: message.requestID,
             resource: resource,
             subscriberPriority: subscriberPriority,

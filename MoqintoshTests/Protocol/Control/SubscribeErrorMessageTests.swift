@@ -11,7 +11,7 @@ import Testing
 struct SubscribeErrorMessageTests {
 
     @Test func roundTrip() throws {
-        let message: SubscribeErrorMessage = .init(requestID: 12, errorCode: 4, reasonPhrase: "no-sub")
+        let message: SubscribeErrorMessage = SubscribeErrorMessage(requestID: 12, errorCode: 4, reasonPhrase: "no-sub")
         let decoded: SubscribeErrorMessage = try .decode(from: Data(message.encode().dropFirst(3)))
         #expect(decoded.requestID == 12)
         #expect(decoded.errorCode == 4)

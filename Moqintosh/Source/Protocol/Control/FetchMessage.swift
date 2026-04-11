@@ -29,7 +29,7 @@ struct FetchMessage {
     let mode: Mode
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(subscriberPriority)
         payload.append(groupOrder.rawValue)
@@ -53,9 +53,9 @@ struct FetchMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -63,26 +63,26 @@ struct FetchMessage {
     }
 
     static func decode(from payload: Data) throws -> FetchMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let subscriberPriority: UInt8 = try reader.readUInt8Value()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw FetchMessageError.invalidGroupOrder
         }()
         let fetchTypeRawValue: UInt64 = try reader.readVarint()
-        guard let fetchType: FetchType = .init(rawValue: fetchTypeRawValue) else {
+        guard let fetchType: FetchType = FetchType(rawValue: fetchTypeRawValue) else {
             throw FetchMessageError.invalidFetchType(fetchTypeRawValue)
         }
         let mode: Mode
         switch fetchType {
         case .standalone:
             let trackNamespace: TrackNamespace = try .decode(from: reader)
-            let trackNameLength: Int = .init(try reader.readVarint())
+            let trackNameLength: Int = Int(try reader.readVarint())
             let trackName: Data = try reader.readBytes(length: trackNameLength)
             let start: Location = try .decode(from: reader)
             let end: Location = try .decode(from: reader)
             mode = .standalone(
-                resource: .init(trackNamespace: trackNamespace, trackName: trackName),
+                resource: TrackResource(trackNamespace: trackNamespace, trackName: trackName),
                 start: start,
                 end: end
             )
@@ -97,7 +97,7 @@ struct FetchMessage {
                 startGroup: try reader.readVarint()
             )
         }
-        let parameterCount: Int = .init(try reader.readVarint())
+        let parameterCount: Int = Int(try reader.readVarint())
         var authorizationToken: AuthorizationToken?
         for _ in 0 ..< parameterCount {
             if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
@@ -108,7 +108,7 @@ struct FetchMessage {
         switch mode {
         case .standalone(let resource, let start, let end):
             adjustedMode = .standalone(
-                resource: .init(
+                resource: TrackResource(
                     trackNamespace: resource.trackNamespace,
                     trackName: resource.trackName,
                     authorizationToken: authorizationToken
@@ -119,7 +119,7 @@ struct FetchMessage {
         case .joiningRelative, .joiningAbsolute:
             adjustedMode = mode
         }
-        return .init(
+        return FetchMessage(
             requestID: requestID,
             subscriberPriority: subscriberPriority,
             groupOrder: groupOrder,

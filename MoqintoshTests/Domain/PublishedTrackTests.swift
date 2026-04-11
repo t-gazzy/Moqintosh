@@ -12,16 +12,16 @@ import Testing
 struct PublishedTrackTests {
 
     @Test func initializerStoresMetadata() {
-        let resource: TrackResource = .init(
-            trackNamespace: .init(strings: ["live"]),
+        let resource: TrackResource = TrackResource(
+            trackNamespace: TrackNamespace(strings: ["live"]),
             trackName: Data("video".utf8)
         )
-        let track: PublishedTrack = .init(
+        let track: PublishedTrack = PublishedTrack(
             requestID: 2,
             resource: resource,
             trackAlias: 3,
             groupOrder: .descending,
-            contentExist: .exists(.init(group: 4, object: 5)),
+            contentExist: .exists(Location(group: 4, object: 5)),
             forward: false
         )
 

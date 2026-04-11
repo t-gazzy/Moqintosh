@@ -24,8 +24,8 @@ public final class FetchReceiver: @unchecked Sendable {
     init(stream: TransportUniReceiveStream, fetchSubscription: FetchSubscription, initialData: Data) {
         self.stream = stream
         self.fetchSubscription = fetchSubscription
-        self.frameReader = .init(initialData: initialData)
-        self.delegateQueue = .init(label: "Moqintosh.FetchReceiverDelegate")
+        self.frameReader = FetchObjectFrameReader(initialData: initialData)
+        self.delegateQueue = DispatchQueue(label: "Moqintosh.FetchReceiverDelegate")
     }
 
     func start() {

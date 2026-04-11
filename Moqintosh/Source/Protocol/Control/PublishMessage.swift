@@ -17,7 +17,7 @@ struct PublishMessage {
     let maxCacheDuration: UInt64?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(publishedTrack.resource.trackNamespace.encode())
         payload.writeVarint(UInt64(publishedTrack.resource.trackName.count))
@@ -31,9 +31,9 @@ struct PublishMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -41,10 +41,10 @@ struct PublishMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let trackNamespace: TrackNamespace = try TrackNamespace.decode(from: reader)
-        let trackNameLength: Int = .init(try reader.readVarint())
+        let trackNameLength: Int = Int(try reader.readVarint())
         let trackName: Data = try reader.readBytes(length: trackNameLength)
         let trackAlias: UInt64 = try reader.readVarint()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
@@ -55,7 +55,7 @@ struct PublishMessage {
         guard forwardValue <= 1 else {
             throw PublishMessageError.invalidForward
         }
-        let paramCount: Int = .init(try reader.readVarint())
+        let paramCount: Int = Int(try reader.readVarint())
         var authorizationTokens: [AuthorizationToken] = []
         var deliveryTimeout: UInt64?
         var maxCacheDuration: UInt64?
@@ -71,12 +71,12 @@ struct PublishMessage {
                 break
             }
         }
-        let resource: TrackResource = .init(
+        let resource: TrackResource = TrackResource(
             trackNamespace: trackNamespace,
             trackName: trackName,
             authorizationToken: authorizationTokens.first
         )
-        let publishedTrack: PublishedTrack = .init(
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: requestID,
             resource: resource,
             trackAlias: trackAlias,
@@ -84,7 +84,7 @@ struct PublishMessage {
             contentExist: contentExist,
             forward: forwardValue == 1
         )
-        return .init(
+        return PublishMessage(
             requestID: requestID,
             publishedTrack: publishedTrack,
             deliveryTimeout: deliveryTimeout,

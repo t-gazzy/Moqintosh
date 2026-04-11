@@ -11,7 +11,7 @@ import Testing
 struct SubgroupHeaderTests {
 
     @Test func roundTripExplicitSubgroupID() throws {
-        let header: SubgroupHeader = .init(
+        let header: SubgroupHeader = SubgroupHeader(
             trackAlias: 2,
             groupID: 3,
             subgroupID: .explicit(4),

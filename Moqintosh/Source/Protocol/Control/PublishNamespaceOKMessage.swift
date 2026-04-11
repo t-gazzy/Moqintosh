@@ -24,12 +24,12 @@ struct PublishNamespaceOKMessage {
     let requestID: UInt64
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -37,8 +37,8 @@ struct PublishNamespaceOKMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishNamespaceOKMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
-        return .init(requestID: requestID)
+        return PublishNamespaceOKMessage(requestID: requestID)
     }
 }

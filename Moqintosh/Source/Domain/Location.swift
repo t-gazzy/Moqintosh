@@ -19,7 +19,7 @@ public struct Location {
     }
 
     public func encode() -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(group)
         data.writeVarint(object)
         return data
@@ -28,6 +28,6 @@ public struct Location {
     static func decode(from reader: ByteReader) throws -> Location {
         let group: UInt64 = try reader.readVarint()
         let object: UInt64 = try reader.readVarint()
-        return .init(group: group, object: object)
+        return Location(group: group, object: object)
     }
 }

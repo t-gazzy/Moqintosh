@@ -19,7 +19,7 @@ struct SubscribeUpdateMessage {
     let authorizationToken: AuthorizationToken?
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(start.encode())
         payload.writeVarint(endGroup)
@@ -30,9 +30,9 @@ struct SubscribeUpdateMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -40,7 +40,7 @@ struct SubscribeUpdateMessage {
     }
 
     static func decode(from payload: Data) throws -> SubscribeUpdateMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let start: Location = try .decode(from: reader)
         let endGroup: UInt64 = try reader.readVarint()
@@ -49,14 +49,14 @@ struct SubscribeUpdateMessage {
         guard forwardValue <= 1 else {
             throw SubscribeUpdateMessageError.invalidForward
         }
-        let parameterCount: Int = .init(try reader.readVarint())
+        let parameterCount: Int = Int(try reader.readVarint())
         var authorizationToken: AuthorizationToken?
         for _ in 0 ..< parameterCount {
             if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
                 authorizationToken = token
             }
         }
-        return .init(
+        return SubscribeUpdateMessage(
             requestID: requestID,
             start: start,
             endGroup: endGroup,

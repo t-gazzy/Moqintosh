@@ -131,7 +131,7 @@ final class ControlMessageDispatcher {
     private func handleIncomingSubscribe(_ message: SubscribeMessage) async {
         guard let session: Session = sessionContext.session else { return }
         let groupOrder: GroupOrder = message.groupOrder == .publisherDefault ? .ascending : message.groupOrder
-        let publishedTrack: PublishedTrack = .init(
+        let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: message.requestID,
             resource: message.resource,
             trackAlias: sessionContext.issueTrackAlias(),
@@ -182,7 +182,7 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingSubscribeUpdate(_ message: SubscribeUpdateMessage) {
         guard let session: Session = sessionContext.session else { return }
-        let update: SubscribeUpdate = .init(
+        let update: SubscribeUpdate = SubscribeUpdate(
             requestID: message.requestID,
             start: message.start,
             endGroup: message.endGroup,
@@ -285,7 +285,7 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingTrackStatus(_ message: TrackStatusMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let request: TrackStatusRequest = .init(
+        let request: TrackStatusRequest = TrackStatusRequest(
             requestID: message.requestID,
             resource: message.resource,
             subscriberPriority: message.subscriberPriority,
@@ -318,7 +318,7 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingPublishDone(_ message: PublishDoneMessage) {
         guard let session: Session = sessionContext.session else { return }
-        let publishDone: PublishDone = .init(
+        let publishDone: PublishDone = PublishDone(
             requestID: message.requestID,
             statusCode: message.statusCode,
             streamCount: message.streamCount,
@@ -334,7 +334,7 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingPublishNamespaceCancel(_ message: PublishNamespaceCancelMessage) {
         guard let session: Session = sessionContext.session else { return }
-        let cancellation: PublishNamespaceCancel = .init(
+        let cancellation: PublishNamespaceCancel = PublishNamespaceCancel(
             trackNamespace: message.trackNamespace,
             errorCode: message.errorCode,
             reasonPhrase: message.reasonPhrase

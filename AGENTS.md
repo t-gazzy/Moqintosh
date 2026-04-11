@@ -12,9 +12,10 @@
 6. **Explicit Type Annotations**:
    - Always provide explicit type annotations for public/internal properties and constants.
    - For local variables, use type annotations if the assigned value's type is not immediately obvious.
-   - *Example*: `let count: Int = 10` or `let user: User = .init()`.
+   - *Example*: `let count: Int = 10` or `let user: User = User()`.
 7. **Initialization**:
-   - Favor `.init()` syntax when the type is explicitly declared.
+   - Do not use shorthand `.init(...)` for type initialization.
+   - Use explicit type names such as `TypeName(...)` for readability, especially in property initialization, tests, and dependency wiring.
    - Perform all property initializations within the `init` method to support Dependency Injection. Avoid inline default values for complex types.
 8. **Safety & Modernity**:
    - Use `async/await` for asynchronous code.

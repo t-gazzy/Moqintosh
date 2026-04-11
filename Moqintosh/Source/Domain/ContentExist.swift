@@ -13,7 +13,7 @@ public enum ContentExist {
     case exists(Location)
 
     public func encode() -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         switch self {
         case .noContent:
             data.append(0)

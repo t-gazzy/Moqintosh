@@ -11,7 +11,7 @@ import Testing
 struct PublishNamespaceOKMessageTests {
 
     @Test func roundTrip() throws {
-        let message: PublishNamespaceOKMessage = .init(requestID: 3)
+        let message: PublishNamespaceOKMessage = PublishNamespaceOKMessage(requestID: 3)
         let decoded: PublishNamespaceOKMessage = try .decode(from: Data(message.encode().dropFirst(3)))
         #expect(decoded.requestID == 3)
     }

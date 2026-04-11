@@ -28,7 +28,7 @@ enum ControlMessageParameter {
             guard case .bytes(let bytes) = pair.value else {
                 throw ControlMessageParameterError.typeMismatch(type: pair.type)
             }
-            return .authorizationToken(.init(value: bytes))
+            return .authorizationToken(AuthorizationToken(value: bytes))
         case 0x04:
             guard case .varint(let value) = pair.value else {
                 throw ControlMessageParameterError.typeMismatch(type: pair.type)
@@ -42,11 +42,11 @@ enum ControlMessageParameter {
     private var keyValuePair: KeyValuePair {
         switch self {
         case .authorizationToken(let token):
-            return .init(type: 0x03, value: .bytes(token.value))
+            return KeyValuePair(type: 0x03, value: .bytes(token.value))
         case .deliveryTimeout(let value):
-            return .init(type: 0x02, value: .varint(value))
+            return KeyValuePair(type: 0x02, value: .varint(value))
         case .maxCacheDuration(let value):
-            return .init(type: 0x04, value: .varint(value))
+            return KeyValuePair(type: 0x04, value: .varint(value))
         }
     }
 }

@@ -12,9 +12,9 @@ import Testing
 struct SessionIntegrationTests {
 
     @Test func connectCreatesSessionOverMockTransport() async throws {
-        let controlStream: MockTransportBiStream = .init(receiveQueue: [makeServerSetupMessage().encode()])
-        let connection: MockTransportConnection = .init(biStream: controlStream)
-        let endpoint: MockTransportEndpoint = .init(connection: connection)
+        let controlStream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [makeServerSetupMessage().encode()])
+        let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+        let endpoint: MockTransportEndpoint = MockTransportEndpoint(connection: connection)
 
         let session: Session = try await SessionFactory().connect(transportEndpoint: endpoint)
 
@@ -29,7 +29,7 @@ struct SessionIntegrationTests {
         let publisher: Publisher = session.makePublisher()
 
         let task: Task<Void, Error> = .init {
-            try await publisher.publishNamespace(trackNamespace: .init(strings: ["live"]))
+            try await publisher.publishNamespace(trackNamespace: TrackNamespace(strings: ["live"]))
         }
 
         while controlStream.sentBytes.count < 2 {
@@ -49,7 +49,7 @@ struct SessionIntegrationTests {
 
         let task: Task<Subscription, Error> = .init {
             try await subscriber.subscribe(
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8))
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8))
             )
         }
 
@@ -81,9 +81,9 @@ struct SessionIntegrationTests {
 
         let task: Task<FetchSubscription, Error> = .init {
             try await subscriber.fetch(
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
-                start: .init(group: 1, object: 2),
-                end: .init(group: 3, object: 4)
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
+                start: Location(group: 1, object: 2),
+                end: Location(group: 3, object: 4)
             )
         }
 
@@ -95,7 +95,7 @@ struct SessionIntegrationTests {
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
-                endLocation: .init(group: 5, object: 6),
+                endLocation: Location(group: 5, object: 6),
                 maxCacheDuration: 7
             ).encode()
         )
@@ -130,7 +130,7 @@ struct SessionIntegrationTests {
                 requestID: 2,
                 groupOrder: .ascending,
                 endOfTrack: false,
-                endLocation: .init(group: 6, object: 7),
+                endLocation: Location(group: 6, object: 7),
                 maxCacheDuration: nil
             ).encode()
         )
@@ -169,7 +169,7 @@ struct SessionIntegrationTests {
                 requestID: 2,
                 groupOrder: .ascending,
                 endOfTrack: false,
-                endLocation: .init(group: 8, object: 9),
+                endLocation: Location(group: 8, object: 9),
                 maxCacheDuration: nil
             ).encode()
         )
@@ -189,14 +189,14 @@ struct SessionIntegrationTests {
 
     @Test func inboundPublishNamespaceDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.publishNamespaceResult = true
         session.delegate = delegate
 
         controlStream.enqueueReceive(
             PublishNamespaceMessage(
                 requestID: 2,
-                trackNamespace: .init(strings: ["live"])
+                trackNamespace: TrackNamespace(strings: ["live"])
             ).encode()
         )
 
@@ -211,14 +211,14 @@ struct SessionIntegrationTests {
 
     @Test func inboundSubscribeDispatchesToSessionDelegateAndSendsError() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeResult = false
         session.delegate = delegate
 
         controlStream.enqueueReceive(
             SubscribeMessage(
                 requestID: 4,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                 subscriberPriority: 1,
                 groupOrder: .ascending,
                 forward: true,
@@ -244,11 +244,11 @@ struct SessionIntegrationTests {
             trackAlias: 3
         )
         let factory: StreamReceiverFactory = session.makeSubscriber().makeStreamReceiverFactory(for: subscription)
-        let delegate: IntegrationStreamDelegate = .init()
+        let delegate: IntegrationStreamDelegate = IntegrationStreamDelegate()
         factory.delegate = delegate
-        let header: SubgroupHeader = .init(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
+        let header: SubgroupHeader = SubgroupHeader(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
-        let stream: MockTransportUniReceiveStream = .init(
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 .init(bytes: header.encode(), isComplete: false),
                 .init(bytes: object.encode(), isComplete: true)
@@ -285,7 +285,7 @@ struct SessionIntegrationTests {
             trackAlias: 6
         )
         let receiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
-        let delegate: TestDatagramReceiverDelegate = .init()
+        let delegate: TestDatagramReceiverDelegate = TestDatagramReceiverDelegate()
         receiver.delegate = delegate
 
         connection.receiveDatagram(
@@ -324,9 +324,9 @@ struct SessionIntegrationTests {
             controlStream: controlStream
         )
         let factory: FetchReceiverFactory = session.makeSubscriber().makeFetchReceiverFactory(for: fetchSubscription)
-        let delegate: TestFetchIntegrationDelegate = .init()
+        let delegate: TestFetchIntegrationDelegate = TestFetchIntegrationDelegate()
         factory.delegate = delegate
-        let stream: MockTransportUniReceiveStream = .init(
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 .init(bytes: FetchHeader(requestID: fetchSubscription.requestID).encode(), isComplete: false),
                 .init(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)
@@ -357,12 +357,12 @@ struct SessionIntegrationTests {
 
     @Test func inboundJoiningRelativeFetchDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeResult = true
-        delegate.fetchResponse = .init(
+        delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: false,
-            endLocation: .init(group: 8, object: 9),
+            endLocation: Location(group: 8, object: 9),
             maxCacheDuration: nil
         )
         session.delegate = delegate
@@ -370,7 +370,7 @@ struct SessionIntegrationTests {
         controlStream.enqueueReceive(
             SubscribeMessage(
                 requestID: 4,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                 subscriberPriority: 1,
                 groupOrder: .ascending,
                 forward: true,
@@ -419,12 +419,12 @@ struct SessionIntegrationTests {
 
     @Test func inboundJoiningAbsoluteFetchDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
-        let delegate: TestSessionDelegate = .init()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeResult = true
-        delegate.fetchResponse = .init(
+        delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: false,
-            endLocation: .init(group: 10, object: 11),
+            endLocation: Location(group: 10, object: 11),
             maxCacheDuration: nil
         )
         session.delegate = delegate
@@ -432,7 +432,7 @@ struct SessionIntegrationTests {
         controlStream.enqueueReceive(
             SubscribeMessage(
                 requestID: 4,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                 subscriberPriority: 1,
                 groupOrder: .ascending,
                 forward: true,
@@ -507,12 +507,12 @@ private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, St
 }
 
 private func makeConnectedSession() async throws -> (Session, MockTransportConnection, MockTransportBiStream) {
-    let controlStream: MockTransportBiStream = .init(
+    let controlStream: MockTransportBiStream = MockTransportBiStream(
         receiveQueue: [makeServerSetupMessage().encode()],
         receiveError: nil
     )
-    let connection: MockTransportConnection = .init(biStream: controlStream)
-    let endpoint: MockTransportEndpoint = .init(connection: connection)
+    let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+    let endpoint: MockTransportEndpoint = MockTransportEndpoint(connection: connection)
     let session: Session = try await SessionFactory().connect(transportEndpoint: endpoint)
     return (session, connection, controlStream)
 }
@@ -535,7 +535,7 @@ private func performSubscribe(
     let subscriber: Subscriber = session.makeSubscriber()
     let task: Task<Subscription, Error> = .init {
         try await subscriber.subscribe(
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("media".utf8))
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("media".utf8))
         )
     }
 
@@ -564,9 +564,9 @@ private func performFetch(
     let subscriber: Subscriber = session.makeSubscriber()
     let task: Task<FetchSubscription, Error> = .init {
         try await subscriber.fetch(
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("media".utf8)),
-            start: .init(group: 1, object: 2),
-            end: .init(group: 3, object: 4)
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("media".utf8)),
+            start: Location(group: 1, object: 2),
+            end: Location(group: 3, object: 4)
         )
     }
 
@@ -578,7 +578,7 @@ private func performFetch(
             requestID: 0,
             groupOrder: .ascending,
             endOfTrack: true,
-            endLocation: .init(group: 5, object: 6),
+            endLocation: Location(group: 5, object: 6),
             maxCacheDuration: nil
         ).encode()
     )
@@ -587,7 +587,7 @@ private func performFetch(
 }
 
 private func makeFetchObjectPayload(payload: Data) -> Data {
-    var data: Data = .init()
+    var data: Data = Data()
     data.writeVarint(4)
     data.writeVarint(5)
     data.writeVarint(6)

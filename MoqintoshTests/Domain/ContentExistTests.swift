@@ -12,7 +12,7 @@ import Testing
 struct ContentExistTests {
 
     @Test func roundTripNoContent() throws {
-        let decoded: ContentExist = try .decode(from: .init(data: ContentExist.noContent.encode()))
+        let decoded: ContentExist = try .decode(from: ByteReader(data: ContentExist.noContent.encode()))
         guard case .noContent = decoded else {
             Issue.record("Expected noContent")
             return
@@ -20,8 +20,8 @@ struct ContentExistTests {
     }
 
     @Test func roundTripExists() throws {
-        let encoded: Data = ContentExist.exists(.init(group: 1, object: 2)).encode()
-        let decoded: ContentExist = try .decode(from: .init(data: encoded))
+        let encoded: Data = ContentExist.exists(Location(group: 1, object: 2)).encode()
+        let decoded: ContentExist = try .decode(from: ByteReader(data: encoded))
         guard case .exists(let location) = decoded else {
             Issue.record("Expected exists")
             return

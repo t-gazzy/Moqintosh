@@ -93,7 +93,7 @@ public struct SubgroupHeader: Sendable {
 
     func encode() -> Data {
         let headerType: HeaderType = resolvedType()
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(headerType.rawValue)
         data.writeVarint(trackAlias)
         data.writeVarint(groupID)
@@ -132,13 +132,13 @@ public struct SubgroupHeader: Sendable {
     }
 
     static func decode(_ data: Data) throws -> SubgroupHeader {
-        let reader: ByteReader = .init(data: data)
+        let reader: ByteReader = ByteReader(data: data)
         return try decode(from: reader)
     }
 
     static func decode(from reader: ByteReader) throws -> SubgroupHeader {
         let typeRawValue: UInt64 = try reader.readVarint()
-        guard let headerType: HeaderType = .init(rawValue: typeRawValue) else {
+        guard let headerType: HeaderType = HeaderType(rawValue: typeRawValue) else {
             throw SubgroupHeaderError.invalidType(typeRawValue)
         }
         let trackAlias: UInt64 = try reader.readVarint()
@@ -150,7 +150,7 @@ public struct SubgroupHeader: Sendable {
             subgroupID = headerType.implicitSubgroupID
         }
         let publisherPriority: UInt8 = try reader.readUInt8Value()
-        return .init(
+        return SubgroupHeader(
             trackAlias: trackAlias,
             groupID: groupID,
             subgroupID: subgroupID,

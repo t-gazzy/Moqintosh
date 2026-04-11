@@ -12,7 +12,7 @@ import Testing
 struct MessageFrameReaderTests {
 
     @Test func readClientSetupAcrossChunks() async throws {
-        let message: ClientSetupMessage = .init(
+        let message: ClientSetupMessage = ClientSetupMessage(
             supportedVersions: [0xff00000E],
             parameters: [.maxRequestId(1)]
         )
@@ -21,8 +21,8 @@ struct MessageFrameReaderTests {
             Data(encoded.prefix(2)),
             Data(encoded.dropFirst(2))
         ]
-        let stream: MockTransportBiStream = .init(receiveQueue: chunks)
-        let reader: MessageFrameReader = .init()
+        let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: chunks)
+        let reader: MessageFrameReader = MessageFrameReader()
 
         let decoded: MOQTMessage = try await reader.read(from: stream)
 
@@ -34,13 +34,13 @@ struct MessageFrameReaderTests {
     }
 
     @Test func readUnknownMessage() async throws {
-        var frame: Data = .init()
+        var frame: Data = Data()
         frame.writeVarint(0x99)
         frame.append(0x00)
         frame.append(0x02)
         frame.append(Data([0xAA, 0xBB]))
-        let stream: MockTransportBiStream = .init(receiveQueue: [frame])
-        let reader: MessageFrameReader = .init()
+        let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [frame])
+        let reader: MessageFrameReader = MessageFrameReader()
 
         let decoded: MOQTMessage = try await reader.read(from: stream)
 

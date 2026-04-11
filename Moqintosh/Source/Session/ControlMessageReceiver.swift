@@ -14,7 +14,7 @@ final class ControlMessageReceiver {
     init(
         controlStream: TransportBiStream,
         dispatcher: ControlMessageDispatcher,
-        frameReader: MessageFrameReader = .init()
+        frameReader: MessageFrameReader = MessageFrameReader()
     ) {
         self.controlStream = controlStream
         self.dispatcher = dispatcher

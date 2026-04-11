@@ -12,13 +12,13 @@ import Testing
 struct ControlMessageReceiverTests {
 
     @Test func startReadsMessageAndDispatchesIt() async {
-        let incoming: PublishNamespaceMessage = .init(requestID: 2, trackNamespace: .init(strings: ["live"]))
-        let stream: MockTransportBiStream = .init(receiveQueue: [incoming.encode()])
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: dispatcher)
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
-        let delegate: TestSessionDelegate = .init()
+        let incoming: PublishNamespaceMessage = PublishNamespaceMessage(requestID: 2, trackNamespace: TrackNamespace(strings: ["live"]))
+        let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [incoming.encode()])
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.publishNamespaceResult = true
         session.delegate = delegate
 

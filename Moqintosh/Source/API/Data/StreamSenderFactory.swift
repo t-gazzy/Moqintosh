@@ -24,7 +24,7 @@ public final class StreamSenderFactory {
         containsEndOfGroup: Bool = false
     ) async throws -> StreamSender {
         let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
-        let header: SubgroupHeader = .init(
+        let header: SubgroupHeader = SubgroupHeader(
             trackAlias: publishedTrack.trackAlias,
             groupID: groupID,
             subgroupID: subgroupID,
@@ -33,6 +33,6 @@ public final class StreamSenderFactory {
             containsEndOfGroup: containsEndOfGroup
         )
         try await stream.send(bytes: header.encode(), endOfStream: false)
-        return .init(stream: stream, header: header)
+        return StreamSender(stream: stream, header: header)
     }
 }

@@ -19,7 +19,7 @@ public final class DatagramReceiver {
 
     init(sessionContext: SessionContext, subscription: Subscription) {
         self.subscription = subscription
-        self.delegateQueue = .init(label: "Moqintosh.DatagramReceiverDelegate")
+        self.delegateQueue = DispatchQueue(label: "Moqintosh.DatagramReceiverDelegate")
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             self.delegateQueue.async { [weak self] in

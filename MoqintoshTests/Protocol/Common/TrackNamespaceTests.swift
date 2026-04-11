@@ -12,13 +12,13 @@ import Testing
 struct TrackNamespaceTests {
 
     @Test func roundTrip() throws {
-        let namespace: TrackNamespace = .init(strings: ["live", "video"])
-        let decoded: TrackNamespace = try .decode(from: .init(data: namespace.encode()))
+        let namespace: TrackNamespace = TrackNamespace(strings: ["live", "video"])
+        let decoded: TrackNamespace = try .decode(from: ByteReader(data: namespace.encode()))
         #expect(decoded.elements == namespace.elements)
     }
 
     @Test func invalidElementCount() throws {
-        let reader: ByteReader = .init(data: Data([0x00]))
+        let reader: ByteReader = ByteReader(data: Data([0x00]))
         #expect(throws: TrackNamespaceError.self) {
             try TrackNamespace.decode(from: reader)
         }

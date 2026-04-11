@@ -56,7 +56,7 @@ final class SessionContext {
             return id
         }
         if let blockedRequestID: UInt64 = result.blockedRequestID {
-            let message: RequestsBlockedMessage = .init(requestID: blockedRequestID)
+            let message: RequestsBlockedMessage = RequestsBlockedMessage(requestID: blockedRequestID)
             OSLogger.debug("Sending REQUESTS_BLOCKED (requestID: \(blockedRequestID))")
             try await controlStream.send(bytes: message.encode())
         }

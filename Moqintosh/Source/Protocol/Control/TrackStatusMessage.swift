@@ -19,7 +19,7 @@ struct TrackStatusMessage {
     let filter: SubscriptionFilter
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.append(resource.trackNamespace.encode())
         payload.writeVarint(UInt64(resource.trackName.count))
@@ -33,9 +33,9 @@ struct TrackStatusMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -43,10 +43,10 @@ struct TrackStatusMessage {
     }
 
     static func decode(from payload: Data) throws -> TrackStatusMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let trackNamespace: TrackNamespace = try .decode(from: reader)
-        let trackNameLength: Int = .init(try reader.readVarint())
+        let trackNameLength: Int = Int(try reader.readVarint())
         let trackName: Data = try reader.readBytes(length: trackNameLength)
         let subscriberPriority: UInt8 = try reader.readUInt8Value()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
@@ -57,19 +57,19 @@ struct TrackStatusMessage {
             throw TrackStatusMessageError.invalidForward
         }
         let filter: SubscriptionFilter = try .decode(from: reader)
-        let parameterCount: Int = .init(try reader.readVarint())
+        let parameterCount: Int = Int(try reader.readVarint())
         var authorizationToken: AuthorizationToken?
         for _ in 0 ..< parameterCount {
             if case .authorizationToken(let token) = try? ControlMessageParameter.decode(from: reader) {
                 authorizationToken = token
             }
         }
-        let resource: TrackResource = .init(
+        let resource: TrackResource = TrackResource(
             trackNamespace: trackNamespace,
             trackName: trackName,
             authorizationToken: authorizationToken
         )
-        return .init(
+        return TrackStatusMessage(
             requestID: requestID,
             resource: resource,
             subscriberPriority: subscriberPriority,

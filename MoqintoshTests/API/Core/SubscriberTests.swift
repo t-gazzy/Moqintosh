@@ -12,14 +12,14 @@ import Testing
 struct SubscriberTests {
 
     @Test func subscribeNamespaceSendsMessage() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<Void, Error> = .init {
-            try await subscriber.subscribeNamespace(namespacePrefix: .init(strings: ["live"]))
+            try await subscriber.subscribeNamespace(namespacePrefix: TrackNamespace(strings: ["live"]))
         }
 
         while stream.sentBytes.isEmpty {
@@ -32,15 +32,15 @@ struct SubscriberTests {
     }
 
     @Test func subscribeSendsMessage() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<Subscription, Error> = .init {
             try await subscriber.subscribe(
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8))
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8))
             )
         }
 
@@ -65,16 +65,16 @@ struct SubscriberTests {
     }
 
     @Test func unsubscribeSendsMessage() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: 6,
-            publishedTrack: .init(
+            publishedTrack: PublishedTrack(
                 requestID: 6,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                 trackAlias: 3,
                 groupOrder: .ascending,
                 contentExist: .noContent,
@@ -92,18 +92,18 @@ struct SubscriberTests {
     }
 
     @Test func fetchSendsMessageAndResolves() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let resource: TrackResource = .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8))
+        let resource: TrackResource = TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8))
 
         let task: Task<FetchSubscription, Error> = .init {
             try await subscriber.fetch(
                 resource: resource,
-                start: .init(group: 1, object: 2),
-                end: .init(group: 3, object: 4)
+                start: Location(group: 1, object: 2),
+                end: Location(group: 3, object: 4)
             )
         }
 
@@ -115,7 +115,7 @@ struct SubscriberTests {
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
-                endLocation: .init(group: 5, object: 6),
+                endLocation: Location(group: 5, object: 6),
                 maxCacheDuration: 7
             )
         )
@@ -131,18 +131,18 @@ struct SubscriberTests {
     }
 
     @Test func fetchCancelSendsMessage() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let fetchSubscription: FetchSubscription = .init(
+        let fetchSubscription: FetchSubscription = FetchSubscription(
             requestID: 10,
-            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+            resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
             subscriberPriority: 0,
             groupOrder: .ascending,
             endOfTrack: false,
-            endLocation: .init(group: 1, object: 2),
+            endLocation: Location(group: 1, object: 2),
             maxCacheDuration: nil
         )
 
@@ -153,16 +153,16 @@ struct SubscriberTests {
     }
 
     @Test func joiningRelativeFetchSendsMessageAndResolves() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: 8,
-            publishedTrack: .init(
+            publishedTrack: PublishedTrack(
                 requestID: 8,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
                 trackAlias: 3,
                 groupOrder: .ascending,
                 contentExist: .noContent,
@@ -185,7 +185,7 @@ struct SubscriberTests {
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: false,
-                endLocation: .init(group: 9, object: 10),
+                endLocation: Location(group: 9, object: 10),
                 maxCacheDuration: nil
             )
         )
@@ -203,16 +203,16 @@ struct SubscriberTests {
     }
 
     @Test func joiningAbsoluteFetchSendsMessageAndResolves() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: 12,
-            publishedTrack: .init(
+            publishedTrack: PublishedTrack(
                 requestID: 12,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                 trackAlias: 4,
                 groupOrder: .ascending,
                 contentExist: .noContent,
@@ -235,7 +235,7 @@ struct SubscriberTests {
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
-                endLocation: .init(group: 11, object: 12),
+                endLocation: Location(group: 11, object: 12),
                 maxCacheDuration: nil
             )
         )
@@ -253,15 +253,15 @@ struct SubscriberTests {
     }
 
     @Test func trackStatusSendsMessageAndResolves() async throws {
-        let stream: MockTransportBiStream = .init()
-        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let stream: MockTransportBiStream = MockTransportBiStream()
+        let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<TrackStatus, Error> = .init {
             try await subscriber.trackStatus(
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8))
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8))
             )
         }
 

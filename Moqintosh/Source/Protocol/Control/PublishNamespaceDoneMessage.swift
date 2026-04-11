@@ -14,12 +14,12 @@ struct PublishNamespaceDoneMessage {
     let trackNamespace: TrackNamespace
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.append(trackNamespace.encode())
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -27,8 +27,8 @@ struct PublishNamespaceDoneMessage {
     }
 
     static func decode(from payload: Data) throws -> PublishNamespaceDoneMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let trackNamespace: TrackNamespace = try .decode(from: reader)
-        return .init(trackNamespace: trackNamespace)
+        return PublishNamespaceDoneMessage(trackNamespace: trackNamespace)
     }
 }

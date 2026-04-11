@@ -14,7 +14,7 @@ public enum SubscriptionFilter {
     case absoluteRange(start: Location, endGroup: UInt64)
 
     func encode() -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         switch self {
         case .nextGroupStart:
             data.writeVarint(0x01)

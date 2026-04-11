@@ -25,7 +25,7 @@ public final class DatagramSender {
         endOfGroup: Bool = false,
         content: ObjectDatagram.Content
     ) async throws {
-        let datagram: ObjectDatagram = .init(
+        let datagram: ObjectDatagram = ObjectDatagram(
             trackAlias: publishedTrack.trackAlias,
             groupID: groupID,
             objectID: objectID,

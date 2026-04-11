@@ -11,12 +11,12 @@ import Testing
 struct PublishOKMessageTests {
 
     @Test func roundTrip() throws {
-        let message: PublishOKMessage = .init(
+        let message: PublishOKMessage = PublishOKMessage(
             requestID: 7,
             forward: true,
             subscriberPriority: 1,
             groupOrder: .descending,
-            filter: .absoluteRange(start: .init(group: 1, object: 2), endGroup: 3),
+            filter: .absoluteRange(start: Location(group: 1, object: 2), endGroup: 3),
             deliveryTimeout: 30
         )
         let decoded: PublishOKMessage = try .decode(from: Data(message.encode().dropFirst(3)))

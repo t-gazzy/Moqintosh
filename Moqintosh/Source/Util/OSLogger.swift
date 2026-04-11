@@ -23,7 +23,7 @@ class OSLogger {
     static var tag: String = "[🍎MOQINTOSH]"
     static var outputLogLevel: LogLevel = .trace
 
-    private static var logger: Logger = .init(
+    private static var logger: Logger = Logger(
         subsystem: Bundle(for: BundleToken.self).bundleIdentifier ?? "Moqintosh",
         category: "Moqintosh"
     )

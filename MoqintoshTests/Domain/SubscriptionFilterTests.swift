@@ -14,12 +14,12 @@ struct SubscriptionFilterTests {
         let filters: [SubscriptionFilter] = [
             .nextGroupStart,
             .largestObject,
-            .absoluteStart(.init(group: 1, object: 2)),
-            .absoluteRange(start: .init(group: 3, object: 4), endGroup: 5)
+            .absoluteStart(Location(group: 1, object: 2)),
+            .absoluteRange(start: Location(group: 3, object: 4), endGroup: 5)
         ]
 
         for filter in filters {
-            let decoded: SubscriptionFilter = try .decode(from: .init(data: filter.encode()))
+            let decoded: SubscriptionFilter = try .decode(from: ByteReader(data: filter.encode()))
 
             switch (filter, decoded) {
             case (.nextGroupStart, .nextGroupStart), (.largestObject, .largestObject):

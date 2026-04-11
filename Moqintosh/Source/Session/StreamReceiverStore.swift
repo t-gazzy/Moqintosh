@@ -15,7 +15,7 @@ final class StreamReceiverStore {
     private var handlers: [UInt64: Handler]
 
     init() {
-        self.stateQueue = .init(label: "Moqintosh.StreamReceiverStore")
+        self.stateQueue = DispatchQueue(label: "Moqintosh.StreamReceiverStore")
         self.handlers = [:]
     }
 

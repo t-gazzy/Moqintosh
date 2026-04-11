@@ -12,7 +12,7 @@ import Testing
 struct AuthorizationTokenTests {
 
     @Test func initializerStoresBytes() {
-        let token: AuthorizationToken = .init(value: Data([0xCA, 0xFE]))
+        let token: AuthorizationToken = AuthorizationToken(value: Data([0xCA, 0xFE]))
 
         #expect(token.value == Data([0xCA, 0xFE]))
     }

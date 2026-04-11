@@ -14,7 +14,7 @@ struct FetchHeader {
     let requestID: UInt64
 
     func encode() -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(Self.type)
         data.writeVarint(requestID)
         return data
@@ -26,7 +26,7 @@ struct FetchHeader {
             throw FetchHeaderError.invalidType(type)
         }
         let requestID: UInt64 = try reader.readVarint()
-        return .init(requestID: requestID)
+        return FetchHeader(requestID: requestID)
     }
 }
 

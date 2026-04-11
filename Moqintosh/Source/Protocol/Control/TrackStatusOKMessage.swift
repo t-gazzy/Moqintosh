@@ -15,7 +15,7 @@ struct TrackStatusOKMessage {
     let trackStatus: TrackStatus
 
     func encode() -> Data {
-        var payload: Data = .init()
+        var payload: Data = Data()
         payload.writeVarint(requestID)
         payload.writeVarint(trackStatus.expires)
         payload.append(trackStatus.groupOrder.rawValue)
@@ -25,9 +25,9 @@ struct TrackStatusOKMessage {
             payload.append(parameter.encode())
         }
 
-        var message: Data = .init()
+        var message: Data = Data()
         message.writeVarint(Self.type.rawValue)
-        let length: UInt16 = .init(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)
@@ -35,14 +35,14 @@ struct TrackStatusOKMessage {
     }
 
     static func decode(from payload: Data) throws -> TrackStatusOKMessage {
-        let reader: ByteReader = .init(data: payload)
+        let reader: ByteReader = ByteReader(data: payload)
         let requestID: UInt64 = try reader.readVarint()
         let expires: UInt64 = try reader.readVarint()
         let groupOrder: GroupOrder = try GroupOrder(rawValue: reader.readUInt8Value()) ?? {
             throw TrackStatusOKMessageError.invalidGroupOrder
         }()
         let contentExist: ContentExist = try .decode(from: reader)
-        let parameterCount: Int = .init(try reader.readVarint())
+        let parameterCount: Int = Int(try reader.readVarint())
         var deliveryTimeout: UInt64?
         var maxCacheDuration: UInt64?
         for _ in 0 ..< parameterCount {
@@ -55,14 +55,14 @@ struct TrackStatusOKMessage {
                 break
             }
         }
-        let trackStatus: TrackStatus = .init(
+        let trackStatus: TrackStatus = TrackStatus(
             expires: expires,
             groupOrder: groupOrder,
             contentExist: contentExist,
             deliveryTimeout: deliveryTimeout,
             maxCacheDuration: maxCacheDuration
         )
-        return .init(requestID: requestID, trackStatus: trackStatus)
+        return TrackStatusOKMessage(requestID: requestID, trackStatus: trackStatus)
     }
 
     private var parameters: [ControlMessageParameter] {

@@ -33,7 +33,7 @@ import Foundation
 /// ```
 final class MessageFrameReader {
 
-    private var buffer: Data = .init()
+    private var buffer: Data = Data()
 
     /// Reads exactly one complete MOQT frame from `stream` and returns the decoded message.
     ///

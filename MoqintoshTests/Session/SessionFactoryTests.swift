@@ -12,12 +12,12 @@ import Testing
 struct SessionFactoryTests {
 
     @Test func connectCreatesSessionAfterHandshake() async throws {
-        let controlStream: MockTransportBiStream = .init(
+        let controlStream: MockTransportBiStream = MockTransportBiStream(
             receiveQueue: [ServerSetupMessage(selectedVersion: 0xff00000E, parameters: [.maxRequestId(10)]).encode()]
         )
-        let connection: MockTransportConnection = .init(biStream: controlStream)
-        let endpoint: MockTransportEndpoint = .init(connection: connection)
-        let factory: SessionFactory = .init()
+        let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+        let endpoint: MockTransportEndpoint = MockTransportEndpoint(connection: connection)
+        let factory: SessionFactory = SessionFactory()
 
         let session: Session = try await factory.connect(transportEndpoint: endpoint)
 

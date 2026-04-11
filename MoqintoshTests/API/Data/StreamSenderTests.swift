@@ -12,8 +12,8 @@ import Testing
 struct StreamSenderTests {
 
     @Test func sendEncodesSequentialObjectsWithDeltas() async throws {
-        let stream: MockTransportUniSendStream = .init()
-        let sender: StreamSender = .init(
+        let stream: MockTransportUniSendStream = MockTransportUniSendStream()
+        let sender: StreamSender = StreamSender(
             stream: stream,
             header: .init(
                 trackAlias: 1,

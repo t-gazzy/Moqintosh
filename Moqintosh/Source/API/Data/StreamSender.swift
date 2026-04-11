@@ -23,7 +23,7 @@ public final class StreamSender {
     init(stream: TransportUniSendStream, header: SubgroupHeader) {
         self.stream = stream
         self.header = header
-        self.stateQueue = .init(label: "Moqintosh.StreamSender")
+        self.stateQueue = DispatchQueue(label: "Moqintosh.StreamSender")
         self.previousObjectID = nil
     }
 

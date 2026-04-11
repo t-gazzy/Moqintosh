@@ -15,7 +15,7 @@ final class FetchReceiverStore {
     private var handlers: [UInt64: Handler]
 
     init() {
-        self.stateQueue = .init(label: "Moqintosh.FetchReceiverStore")
+        self.stateQueue = DispatchQueue(label: "Moqintosh.FetchReceiverStore")
         self.handlers = [:]
     }
 

@@ -22,6 +22,6 @@ final class QuicUniReceiveStream: TransportUniReceiveStream {
         OSLogger.trace(
             "UniStream received \(message.content.count) bytes (streamID: \(stream.streamID), isComplete: \(message.metadata.endOfStream))"
         )
-        return .init(bytes: Data(message.content), isComplete: message.metadata.endOfStream)
+        return TransportUniReceiveResult(bytes: Data(message.content), isComplete: message.metadata.endOfStream)
     }
 }

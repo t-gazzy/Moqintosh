@@ -12,24 +12,24 @@ import Testing
 struct FetchReceiverTests {
 
     @Test func inboundObjectNotifiesDelegateAndCloses() async {
-        let stream: MockTransportUniReceiveStream = .init(
-            receiveQueue: [.init(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)],
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
+            receiveQueue: [TransportUniReceiveResult(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)],
             receiveError: nil
         )
-        let receiver: FetchReceiver = .init(
+        let receiver: FetchReceiver = FetchReceiver(
             stream: stream,
-            fetchSubscription: .init(
+            fetchSubscription: FetchSubscription(
                 requestID: 1,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                 subscriberPriority: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
-                endLocation: .init(group: 3, object: 4),
+                endLocation: Location(group: 3, object: 4),
                 maxCacheDuration: nil
             ),
             initialData: .init()
         )
-        let delegate: TestFetchReceiverDelegate = .init()
+        let delegate: TestFetchReceiverDelegate = TestFetchReceiverDelegate()
         receiver.delegate = delegate
 
         receiver.start()
@@ -54,7 +54,7 @@ struct FetchReceiverTests {
 }
 
 private func makeFetchObjectPayload(payload: Data) -> Data {
-    var data: Data = .init()
+    var data: Data = Data()
     data.writeVarint(4)
     data.writeVarint(5)
     data.writeVarint(6)

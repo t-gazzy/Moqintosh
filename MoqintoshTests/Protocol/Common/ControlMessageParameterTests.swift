@@ -13,13 +13,13 @@ struct ControlMessageParameterTests {
 
     @Test func roundTrip() throws {
         let parameters: [ControlMessageParameter] = [
-            .authorizationToken(.init(value: Data([0x01, 0x02]))),
+            .authorizationToken(AuthorizationToken(value: Data([0x01, 0x02]))),
             .deliveryTimeout(10),
             .maxCacheDuration(20)
         ]
 
         for parameter in parameters {
-            let decoded: ControlMessageParameter = try .decode(from: .init(data: parameter.encode()))
+            let decoded: ControlMessageParameter = try .decode(from: ByteReader(data: parameter.encode()))
 
             switch (parameter, decoded) {
             case (.authorizationToken(let lhs), .authorizationToken(let rhs)):

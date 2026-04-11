@@ -26,8 +26,8 @@ public final class StreamReceiver: @unchecked Sendable {
         self.stream = stream
         self.subscription = subscription
         self.header = header
-        self.frameReader = .init(header: header, initialData: initialData)
-        self.delegateQueue = .init(label: "Moqintosh.StreamReceiverDelegate")
+        self.frameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
+        self.delegateQueue = DispatchQueue(label: "Moqintosh.StreamReceiverDelegate")
     }
 
     func start() {

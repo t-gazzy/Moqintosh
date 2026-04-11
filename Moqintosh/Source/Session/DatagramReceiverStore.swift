@@ -15,7 +15,7 @@ final class DatagramReceiverStore {
     private var handlers: [UInt64: Handler]
 
     init() {
-        self.stateQueue = .init(label: "Moqintosh.DatagramReceiverStore")
+        self.stateQueue = DispatchQueue(label: "Moqintosh.DatagramReceiverStore")
         self.handlers = [:]
     }
 

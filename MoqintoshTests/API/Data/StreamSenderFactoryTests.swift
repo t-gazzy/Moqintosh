@@ -11,19 +11,19 @@ import Testing
 struct StreamSenderFactoryTests {
 
     @Test func makeSenderOpensStreamAndSendsHeader() async throws {
-        let controlStream: MockTransportBiStream = .init()
-        let dataStream: MockTransportUniSendStream = .init()
-        let connection: MockTransportConnection = .init(
+        let controlStream: MockTransportBiStream = MockTransportBiStream()
+        let dataStream: MockTransportUniSendStream = MockTransportUniSendStream()
+        let connection: MockTransportConnection = MockTransportConnection(
             biStream: controlStream,
             additionalUniSendStreams: [dataStream]
         )
-        let context: SessionContext = .init(connection: connection, controlStream: controlStream)
-        let receiver: ControlMessageReceiver = .init(controlStream: controlStream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let factory: StreamSenderFactory = session.makePublisher().makeStreamSenderFactory(
             for: .init(
                 requestID: 1,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: .init()),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: .init()),
                 trackAlias: 9,
                 groupOrder: .ascending,
                 contentExist: .noContent,

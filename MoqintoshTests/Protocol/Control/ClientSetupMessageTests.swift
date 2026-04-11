@@ -12,7 +12,7 @@ import Testing
 struct ClientSetupMessageTests {
 
     @Test func roundTrip() throws {
-        let message: ClientSetupMessage = .init(
+        let message: ClientSetupMessage = ClientSetupMessage(
             supportedVersions: [0xff00000E],
             parameters: [.path("/live"), .maxRequestId(100), .authority("example.com")]
         )
@@ -23,7 +23,7 @@ struct ClientSetupMessageTests {
     }
 
     @Test func typePrefix() {
-        let message: ClientSetupMessage = .init(supportedVersions: [0xff00000E], parameters: [])
+        let message: ClientSetupMessage = ClientSetupMessage(supportedVersions: [0xff00000E], parameters: [])
         #expect(message.encode().first == 0x20)
     }
 }

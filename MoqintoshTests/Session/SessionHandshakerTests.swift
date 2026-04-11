@@ -12,9 +12,9 @@ import Testing
 struct SessionHandshakerTests {
 
     @Test func handshakeSendsClientSetupAndReturnsServerSetup() async throws {
-        let serverSetup: ServerSetupMessage = .init(selectedVersion: 0xff00000E, parameters: [.maxRequestId(10)])
-        let stream: MockTransportBiStream = .init(receiveQueue: [serverSetup.encode()])
-        let handshaker: SessionHandshaker = .init(stream: stream)
+        let serverSetup: ServerSetupMessage = ServerSetupMessage(selectedVersion: 0xff00000E, parameters: [.maxRequestId(10)])
+        let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [serverSetup.encode()])
+        let handshaker: SessionHandshaker = SessionHandshaker(stream: stream)
 
         let result: ServerSetupMessage = try await handshaker.handshake()
 
@@ -24,9 +24,9 @@ struct SessionHandshakerTests {
     }
 
     @Test func handshakeRejectsUnexpectedMessage() async {
-        let publishError: PublishErrorMessage = .init(requestID: 1, errorCode: 2, reasonPhrase: "bad")
-        let stream: MockTransportBiStream = .init(receiveQueue: [publishError.encode()])
-        let handshaker: SessionHandshaker = .init(stream: stream)
+        let publishError: PublishErrorMessage = PublishErrorMessage(requestID: 1, errorCode: 2, reasonPhrase: "bad")
+        let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [publishError.encode()])
+        let handshaker: SessionHandshaker = SessionHandshaker(stream: stream)
 
         await #expect(throws: SessionHandshakerError.self) {
             try await handshaker.handshake()

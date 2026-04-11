@@ -12,19 +12,19 @@ import Testing
 struct PublishMessageTests {
 
     @Test func roundTrip() throws {
-        let track: PublishedTrack = .init(
+        let track: PublishedTrack = PublishedTrack(
             requestID: 6,
-            resource: .init(
-                trackNamespace: .init(strings: ["live"]),
+            resource: TrackResource(
+                trackNamespace: TrackNamespace(strings: ["live"]),
                 trackName: Data("video".utf8),
-                authorizationToken: .init(value: Data([0x10]))
+                authorizationToken: AuthorizationToken(value: Data([0x10]))
             ),
             trackAlias: 1,
             groupOrder: .ascending,
-            contentExist: .exists(.init(group: 7, object: 8)),
+            contentExist: .exists(Location(group: 7, object: 8)),
             forward: true
         )
-        let message: PublishMessage = .init(
+        let message: PublishMessage = PublishMessage(
             requestID: 6,
             publishedTrack: track,
             deliveryTimeout: 9,

@@ -11,7 +11,7 @@ import Testing
 struct PublishErrorMessageTests {
 
     @Test func roundTrip() throws {
-        let message: PublishErrorMessage = .init(requestID: 8, errorCode: 2, reasonPhrase: "rejected")
+        let message: PublishErrorMessage = PublishErrorMessage(requestID: 8, errorCode: 2, reasonPhrase: "rejected")
         let decoded: PublishErrorMessage = try .decode(from: Data(message.encode().dropFirst(3)))
         #expect(decoded.requestID == 8)
         #expect(decoded.errorCode == 2)

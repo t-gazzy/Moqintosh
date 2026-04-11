@@ -12,10 +12,10 @@ import Testing
 struct SubscribeNamespaceMessageTests {
 
     @Test func roundTrip() throws {
-        let message: SubscribeNamespaceMessage = .init(
+        let message: SubscribeNamespaceMessage = SubscribeNamespaceMessage(
             requestID: 4,
-            namespacePrefix: .init(strings: ["live"]),
-            authorizationTokens: [.init(value: Data([0x01, 0x02]))]
+            namespacePrefix: TrackNamespace(strings: ["live"]),
+            authorizationTokens: [AuthorizationToken(value: Data([0x01, 0x02]))]
         )
         let decoded: SubscribeNamespaceMessage = try .decode(from: Data(message.encode().dropFirst(3)))
 

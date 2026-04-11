@@ -12,12 +12,12 @@ import Testing
 struct ObjectDatagramTests {
 
     @Test func roundTripPayloadWithExtensions() throws {
-        let message: ObjectDatagram = .init(
+        let message: ObjectDatagram = ObjectDatagram(
             trackAlias: 2,
             groupID: 3,
             objectID: .explicit(4),
             publisherPriority: 5,
-            extensions: [.init(type: 0x03, value: .bytes(Data([0xAA])))],
+            extensions: [KeyValuePair(type: 0x03, value: .bytes(Data([0xAA])))],
             endOfGroup: true,
             content: .payload(Data("abc".utf8))
         )
@@ -42,7 +42,7 @@ struct ObjectDatagramTests {
     }
 
     @Test func roundTripStatus() throws {
-        let message: ObjectDatagram = .init(
+        let message: ObjectDatagram = ObjectDatagram(
             trackAlias: 2,
             groupID: 3,
             objectID: .explicit(4),

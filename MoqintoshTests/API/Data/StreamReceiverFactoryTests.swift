@@ -12,17 +12,17 @@ import Testing
 struct StreamReceiverFactoryTests {
 
     @Test func inboundUniStreamCreatesReceiver() async {
-        let controlStream: MockTransportBiStream = .init()
-        let connection: MockTransportConnection = .init(biStream: controlStream)
-        let context: SessionContext = .init(connection: connection, controlStream: controlStream)
-        let receiver: ControlMessageReceiver = .init(controlStream: controlStream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let controlStream: MockTransportBiStream = MockTransportBiStream()
+        let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+        let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
-        let subscription: Subscription = .init(
+        let subscription: Subscription = Subscription(
             requestID: 1,
-            publishedTrack: .init(
+            publishedTrack: PublishedTrack(
                 requestID: 1,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                 trackAlias: 7,
                 groupOrder: .ascending,
                 contentExist: .noContent,
@@ -33,11 +33,11 @@ struct StreamReceiverFactoryTests {
             filter: .largestObject
         )
         let factory: StreamReceiverFactory = subscriber.makeStreamReceiverFactory(for: subscription)
-        let delegate: TestStreamReceiverFactoryDelegate = .init()
+        let delegate: TestStreamReceiverFactoryDelegate = TestStreamReceiverFactoryDelegate()
         factory.delegate = delegate
-        let header: SubgroupHeader = .init(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
-        let stream: MockTransportUniReceiveStream = .init(
-            receiveQueue: [.init(bytes: header.encode(), isComplete: false)],
+        let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
+        let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
+            receiveQueue: [TransportUniReceiveResult(bytes: header.encode(), isComplete: false)],
             receiveError: nil
         )
 

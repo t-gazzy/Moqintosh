@@ -57,7 +57,7 @@ enum SetupParameter {
             guard case .bytes(let bytes) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
             }
-            return .authorizationToken(.init(value: bytes))
+            return .authorizationToken(AuthorizationToken(value: bytes))
         case 0x04:
             guard case .varint(let value) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)

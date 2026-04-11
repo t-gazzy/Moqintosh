@@ -16,13 +16,13 @@ struct SetupParameterTests {
             .path("/live"),
             .maxRequestId(128),
             .maxAuthTokenCacheSize(32),
-            .authorizationToken(.init(value: Data([0xAA, 0xBB]))),
+            .authorizationToken(AuthorizationToken(value: Data([0xAA, 0xBB]))),
             .authority("example.com"),
             .moqtImplementation("Moqintosh")
         ]
 
         for parameter in parameters {
-            let decoded: SetupParameter = try .decode(from: .init(data: parameter.encode()))
+            let decoded: SetupParameter = try .decode(from: ByteReader(data: parameter.encode()))
 
             switch (parameter, decoded) {
             case (.path(let lhs), .path(let rhs)):

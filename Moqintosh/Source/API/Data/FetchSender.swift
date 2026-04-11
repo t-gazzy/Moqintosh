@@ -67,7 +67,7 @@ public final class FetchSender {
         endOfFetch: Bool,
         content: Content
     ) async throws {
-        var data: Data = .init()
+        var data: Data = Data()
         data.writeVarint(groupID)
         data.writeVarint(subgroupID)
         data.writeVarint(objectID)
@@ -87,7 +87,7 @@ public final class FetchSender {
     }
 
     private func encodeExtensions(_ extensions: [KeyValuePair]) -> Data {
-        var data: Data = .init()
+        var data: Data = Data()
         for header in extensions {
             data.append(header.encode())
         }

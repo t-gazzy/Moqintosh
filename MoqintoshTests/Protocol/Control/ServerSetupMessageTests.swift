@@ -12,7 +12,7 @@ import Testing
 struct ServerSetupMessageTests {
 
     @Test func roundTrip() throws {
-        let message: ServerSetupMessage = .init(
+        let message: ServerSetupMessage = ServerSetupMessage(
             selectedVersion: 0xff00000E,
             parameters: [.maxRequestId(100), .maxAuthTokenCacheSize(16)]
         )
@@ -23,7 +23,7 @@ struct ServerSetupMessageTests {
     }
 
     @Test func typePrefix() {
-        let message: ServerSetupMessage = .init(selectedVersion: 0xff00000E, parameters: [])
+        let message: ServerSetupMessage = ServerSetupMessage(selectedVersion: 0xff00000E, parameters: [])
         #expect(message.encode().first == 0x21)
     }
 }

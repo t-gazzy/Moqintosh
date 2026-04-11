@@ -12,9 +12,9 @@ import Testing
 struct TrackResourceTests {
 
     @Test func initializerStoresMetadata() {
-        let token: AuthorizationToken = .init(value: Data([0x01, 0x02]))
-        let resource: TrackResource = .init(
-            trackNamespace: .init(strings: ["live", "sports"]),
+        let token: AuthorizationToken = AuthorizationToken(value: Data([0x01, 0x02]))
+        let resource: TrackResource = TrackResource(
+            trackNamespace: TrackNamespace(strings: ["live", "sports"]),
             trackName: Data("video".utf8),
             authorizationToken: token
         )

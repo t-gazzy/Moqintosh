@@ -12,16 +12,16 @@ import Testing
 struct DatagramReceiverTests {
 
     @Test func inboundDatagramNotifiesDelegate() async throws {
-        let controlStream: MockTransportBiStream = .init()
-        let connection: MockTransportConnection = .init(biStream: controlStream)
-        let context: SessionContext = .init(connection: connection, controlStream: controlStream)
-        let receiver: ControlMessageReceiver = .init(controlStream: controlStream, dispatcher: .init(sessionContext: context))
-        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
-        let subscription: Subscription = .init(
+        let controlStream: MockTransportBiStream = MockTransportBiStream()
+        let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+        let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        let subscription: Subscription = Subscription(
             requestID: 1,
-            publishedTrack: .init(
+            publishedTrack: PublishedTrack(
                 requestID: 1,
-                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                 trackAlias: 7,
                 groupOrder: .ascending,
                 contentExist: .noContent,
@@ -32,9 +32,9 @@ struct DatagramReceiverTests {
             filter: .largestObject
         )
         let datagramReceiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
-        let delegate: TestDatagramReceiverDelegate = .init()
+        let delegate: TestDatagramReceiverDelegate = TestDatagramReceiverDelegate()
         datagramReceiver.delegate = delegate
-        let datagram: ObjectDatagram = .init(
+        let datagram: ObjectDatagram = ObjectDatagram(
             trackAlias: 7,
             groupID: 4,
             objectID: .explicit(5),

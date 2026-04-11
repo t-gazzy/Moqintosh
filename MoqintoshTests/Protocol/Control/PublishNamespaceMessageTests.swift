@@ -12,10 +12,10 @@ import Testing
 struct PublishNamespaceMessageTests {
 
     @Test func roundTrip() throws {
-        let message: PublishNamespaceMessage = .init(
+        let message: PublishNamespaceMessage = PublishNamespaceMessage(
             requestID: 2,
-            trackNamespace: .init(strings: ["live", "video"]),
-            authorizationTokens: [.init(value: Data([0xAA]))]
+            trackNamespace: TrackNamespace(strings: ["live", "video"]),
+            authorizationTokens: [AuthorizationToken(value: Data([0xAA]))]
         )
         let decoded: PublishNamespaceMessage = try .decode(from: Data(message.encode().dropFirst(3)))
 

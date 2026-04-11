@@ -133,9 +133,9 @@ final class MockTransportConnection: TransportConnection {
     private(set) var sentDatagrams: [Data]
 
     init(
-        biStream: MockTransportBiStream = .init(),
-        uniSendStream: MockTransportUniSendStream = .init(),
-        uniReceiveStream: MockTransportUniReceiveStream = .init(),
+        biStream: MockTransportBiStream = MockTransportBiStream(),
+        uniSendStream: MockTransportUniSendStream = MockTransportUniSendStream(),
+        uniReceiveStream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(),
         additionalBiStreams: [MockTransportBiStream] = [],
         additionalUniSendStreams: [MockTransportUniSendStream] = []
     ) {
