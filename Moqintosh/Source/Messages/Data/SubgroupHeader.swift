@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct SubgroupHeader {
+public struct SubgroupHeader {
 
-    enum SubgroupID {
+    public enum SubgroupID {
         case zero
         case firstObject
         case explicit(UInt64)
@@ -70,7 +70,7 @@ struct SubgroupHeader {
 
     let trackAlias: UInt64
     let groupID: UInt64
-    let subgroupID: SubgroupID
+    public let subgroupID: SubgroupID
     let publisherPriority: UInt8
     let usesExtensions: Bool
     let containsEndOfGroup: Bool

@@ -83,4 +83,8 @@ public final class Publisher {
     public func publishDone() async throws {
         // TODO: encode and send PUBLISH_DONE
     }
+
+    public func makeStreamFactory(for publishedTrack: PublishedTrack) -> StreamFactory {
+        .init(session: session, publishedTrack: publishedTrack)
+    }
 }
