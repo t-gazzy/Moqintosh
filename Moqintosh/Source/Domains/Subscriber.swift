@@ -11,9 +11,11 @@
 /// Use the methods below to request tracks and namespaces.
 public final class Subscriber {
 
+    private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext
 
     init(sessionContext: SessionContext) {
+        self.controlMessageChannel = sessionContext
         self.sessionContext = sessionContext
     }
 
@@ -24,19 +26,10 @@ public final class Subscriber {
     /// - Parameter namespacePrefix: The track namespace prefix to subscribe to.
     /// - Throws: `SubscribeNamespaceError.rejected` if the publisher responds with `SUBSCRIBE_NAMESPACE_ERROR`.
     public func subscribeNamespace(namespacePrefix: TrackNamespace) async throws {
-        let requestID: UInt64 = sessionContext.issueRequestID()
+        let requestID: UInt64 = controlMessageChannel.issueRequestID()
         let message: SubscribeNamespaceMessage = .init(requestID: requestID, namespacePrefix: namespacePrefix)
-        try await withCheckedThrowingContinuation { continuation in
-            sessionContext.requestStore.addRequest(requestID, continuation: continuation)
-            Task {
-                do {
-                    OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
-                    try await self.sessionContext.controlStream.send(bytes: message.encode())
-                } catch {
-                    self.sessionContext.requestStore.failRequest(requestID, error: error)
-                }
-            }
-        }
+        OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
+        try await controlMessageChannel.performSubscribeNamespaceRequest(requestID: requestID, bytes: message.encode())
     }
 
     // MARK: - Subscribe
@@ -49,7 +42,7 @@ public final class Subscriber {
         forward: Bool = true,
         filter: SubscriptionFilter = .largestObject
     ) async throws -> Subscription {
-        let requestID: UInt64 = sessionContext.issueRequestID()
+        let requestID: UInt64 = controlMessageChannel.issueRequestID()
         let message: SubscribeMessage = .init(
             requestID: requestID,
             resource: resource,
@@ -59,25 +52,16 @@ public final class Subscriber {
             filter: filter,
             deliveryTimeout: nil
         )
-        return try await withCheckedThrowingContinuation { continuation in
-            sessionContext.requestStore.addSubscribeRequest(
-                requestID,
-                resource: resource,
-                subscriberPriority: subscriberPriority,
-                requestedGroupOrder: groupOrder,
-                forward: forward,
-                filter: filter,
-                continuation: continuation
-            )
-            Task {
-                do {
-                    OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
-                    try await self.sessionContext.controlStream.send(bytes: message.encode())
-                } catch {
-                    self.sessionContext.requestStore.failSubscribeRequest(requestID, error: error)
-                }
-            }
-        }
+        OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
+        return try await controlMessageChannel.performSubscribeRequest(
+            requestID: requestID,
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            requestedGroupOrder: groupOrder,
+            forward: forward,
+            filter: filter,
+            bytes: message.encode()
+        )
     }
 
     /// Updates an existing subscription (Section 9.10).

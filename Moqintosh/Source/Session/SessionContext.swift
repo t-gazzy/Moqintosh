@@ -49,3 +49,73 @@ final class SessionContext {
         }
     }
 }
+
+extension SessionContext: ControlMessageChannel {
+    func performPublishNamespaceRequest(requestID: UInt64, bytes: Data) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            requestStore.addRequest(requestID, continuation: continuation)
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+
+    func performPublishRequest(requestID: UInt64, publishedTrack: PublishedTrack, bytes: Data) async throws -> PublishedTrack {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PublishedTrack, Error>) in
+            requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failPublishRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+
+    func performSubscribeNamespaceRequest(requestID: UInt64, bytes: Data) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            requestStore.addRequest(requestID, continuation: continuation)
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+
+    func performSubscribeRequest(
+        requestID: UInt64,
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        requestedGroupOrder: GroupOrder,
+        forward: Bool,
+        filter: SubscriptionFilter,
+        bytes: Data
+    ) async throws -> Subscription {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Subscription, Error>) in
+            requestStore.addSubscribeRequest(
+                requestID,
+                resource: resource,
+                subscriberPriority: subscriberPriority,
+                requestedGroupOrder: requestedGroupOrder,
+                forward: forward,
+                filter: filter,
+                continuation: continuation
+            )
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failSubscribeRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+}

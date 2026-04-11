@@ -11,9 +11,11 @@
 /// Use the methods below to announce tracks and namespaces.
 public final class Publisher {
 
+    private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext
 
     init(sessionContext: SessionContext) {
+        self.controlMessageChannel = sessionContext
         self.sessionContext = sessionContext
     }
 
@@ -21,19 +23,10 @@ public final class Publisher {
 
     /// Announces a namespace to the subscriber (Section 9.23).
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
-        let requestID: UInt64 = sessionContext.issueRequestID()
+        let requestID: UInt64 = controlMessageChannel.issueRequestID()
         let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            sessionContext.requestStore.addRequest(requestID, continuation: continuation)
-            Task {
-                do {
-                    OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
-                    try await self.sessionContext.controlStream.send(bytes: message.encode())
-                } catch {
-                    self.sessionContext.requestStore.failRequest(requestID, error: error)
-                }
-            }
-        }
+        OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
+        try await controlMessageChannel.performPublishNamespaceRequest(requestID: requestID, bytes: message.encode())
     }
 
     /// Ends a previously announced namespace (Section 9.26).
@@ -50,8 +43,8 @@ public final class Publisher {
         contentExist: ContentExist = .noContent,
         forward: Bool = true
     ) async throws -> PublishedTrack {
-        let requestID: UInt64 = sessionContext.issueRequestID()
-        let trackAlias: UInt64 = sessionContext.issueTrackAlias()
+        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let trackAlias: UInt64 = controlMessageChannel.issueTrackAlias()
         let publishedTrack: PublishedTrack = .init(
             requestID: requestID,
             resource: resource,
@@ -66,17 +59,12 @@ public final class Publisher {
             deliveryTimeout: nil,
             maxCacheDuration: nil
         )
-        return try await withCheckedThrowingContinuation { continuation in
-            sessionContext.requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
-            Task {
-                do {
-                    OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
-                    try await self.sessionContext.controlStream.send(bytes: message.encode())
-                } catch {
-                    self.sessionContext.requestStore.failPublishRequest(requestID, error: error)
-                }
-            }
-        }
+        OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
+        return try await controlMessageChannel.performPublishRequest(
+            requestID: requestID,
+            publishedTrack: publishedTrack,
+            bytes: message.encode()
+        )
     }
 
     /// Signals the end of a publish (Section 9.12).
