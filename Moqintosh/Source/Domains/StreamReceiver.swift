@@ -16,11 +16,11 @@ public final class StreamReceiver {
     public weak var delegate: (any StreamReceiverDelegate)?
     public let header: SubgroupHeader
 
-    private let stream: TransportUniStream
+    private let stream: TransportUniReceiveStream
     private let subscription: Subscription
     private let frameReader: SubgroupObjectFrameReader
 
-    init(stream: TransportUniStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
+    init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
         self.stream = stream
         self.subscription = subscription
         self.header = header

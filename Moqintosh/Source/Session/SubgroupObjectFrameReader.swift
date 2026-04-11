@@ -25,7 +25,7 @@ final class SubgroupObjectFrameReader {
         self.previousObjectID = nil
     }
 
-    func read(from stream: any TransportUniStream) async throws -> SubgroupObject {
+    func read(from stream: any TransportUniReceiveStream) async throws -> SubgroupObject {
         while true {
             if let object: SubgroupObject = try extractObject() {
                 return object

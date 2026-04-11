@@ -12,10 +12,10 @@ struct StreamFactoryTests {
 
     @Test func makeSenderOpensStreamAndSendsHeader() async throws {
         let controlStream: MockTransportBiStream = .init()
-        let dataStream: MockTransportUniStream = .init()
+        let dataStream: MockTransportUniSendStream = .init()
         let connection: MockTransportConnection = .init(
             biStream: controlStream,
-            additionalUniStreams: [dataStream]
+            additionalUniSendStreams: [dataStream]
         )
         let context: SessionContext = .init(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = .init(controlStream: controlStream, dispatcher: .init(sessionContext: context))

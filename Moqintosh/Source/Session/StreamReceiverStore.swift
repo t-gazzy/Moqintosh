@@ -9,7 +9,7 @@ import Foundation
 
 final class StreamReceiverStore {
 
-    typealias Handler = (TransportUniStream, SubgroupHeader, Data) -> Void
+    typealias Handler = (TransportUniReceiveStream, SubgroupHeader, Data) -> Void
 
     private let stateQueue: DispatchQueue
     private var handlers: [UInt64: Handler]

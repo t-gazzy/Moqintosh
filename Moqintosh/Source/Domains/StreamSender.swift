@@ -15,12 +15,12 @@ public final class StreamSender {
         case status(UInt64)
     }
 
-    private let stream: TransportUniStream
+    private let stream: TransportUniSendStream
     private let header: SubgroupHeader
     private let stateQueue: DispatchQueue
     private var previousObjectID: UInt64?
 
-    init(stream: TransportUniStream, header: SubgroupHeader) {
+    init(stream: TransportUniSendStream, header: SubgroupHeader) {
         self.stream = stream
         self.header = header
         self.stateQueue = .init(label: "Moqintosh.StreamSender")

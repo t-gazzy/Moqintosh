@@ -24,7 +24,7 @@ final class QuicConnection: TransportConnection {
                     return
                 }
                 OSLogger.debug("Received inbound UniStream (streamID: \(stream.streamID))")
-                delegate?.connection(self, didReceiveUniStream: QuicUniStream(stream: stream))
+                delegate?.connection(self, didReceiveUniStream: QuicUniReceiveStream(stream: stream))
             }
         }
         Task { [weak self] in
@@ -48,11 +48,11 @@ final class QuicConnection: TransportConnection {
         return QuicBiStream(stream: stream)
     }
 
-    func openUniStream() async throws -> TransportUniStream {
+    func openUniStream() async throws -> TransportUniSendStream {
         OSLogger.debug("Opening unidirectional stream")
         let stream = try await connection.openStream(directionality: .unidirectional)
         OSLogger.debug("Opened unidirectional stream (streamID: \(stream.streamID))")
-        return QuicUniStream(stream: stream)
+        return QuicUniSendStream(stream: stream)
     }
 
     func sendDatagram(bytes: Data) async throws {

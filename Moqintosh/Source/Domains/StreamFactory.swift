@@ -23,7 +23,7 @@ public final class StreamFactory {
         usesExtensions: Bool = false,
         containsEndOfGroup: Bool = false
     ) async throws -> StreamSender {
-        let stream: TransportUniStream = try await session.context.connection.openUniStream()
+        let stream: TransportUniSendStream = try await session.context.connection.openUniStream()
         let header: SubgroupHeader = .init(
             trackAlias: publishedTrack.trackAlias,
             groupID: groupID,

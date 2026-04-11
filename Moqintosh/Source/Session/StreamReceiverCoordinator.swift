@@ -15,7 +15,7 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
         self.sessionContext = sessionContext
     }
 
-    func connection(_ connection: TransportConnection, didReceiveUniStream stream: TransportUniStream) {
+    func connection(_ connection: TransportConnection, didReceiveUniStream stream: TransportUniReceiveStream) {
         Task {
             do {
                 let (header, initialData): (SubgroupHeader, Data) = try await readHeader(from: stream)
@@ -43,7 +43,7 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
         }
     }
 
-    private func readHeader(from stream: TransportUniStream) async throws -> (SubgroupHeader, Data) {
+    private func readHeader(from stream: TransportUniReceiveStream) async throws -> (SubgroupHeader, Data) {
         var buffer: Data = .init()
         while true {
             do {

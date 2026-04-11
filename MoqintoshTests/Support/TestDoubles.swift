@@ -46,16 +46,27 @@ final class MockTransportBiStream: TransportBiStream {
     }
 }
 
-final class MockTransportUniStream: TransportUniStream {
+final class MockTransportUniSendStream: TransportUniSendStream {
+
+    private(set) var sentBytes: [Data]
+
+    init() {
+        self.sentBytes = []
+    }
+
+    func send(bytes: Data) async throws {
+        sentBytes.append(bytes)
+    }
+}
+
+final class MockTransportUniReceiveStream: TransportUniReceiveStream {
 
     var receiveQueue: [Data]
     var receiveError: (any Error)?
-    private(set) var sentBytes: [Data]
 
     init(receiveQueue: [Data] = [], receiveError: (any Error)? = CancellationError()) {
         self.receiveQueue = receiveQueue
         self.receiveError = receiveError
-        self.sentBytes = []
     }
 
     func receive() async throws -> Data {
@@ -67,30 +78,31 @@ final class MockTransportUniStream: TransportUniStream {
         }
         return Data()
     }
-
-    func send(bytes: Data) async throws {
-        sentBytes.append(bytes)
-    }
 }
 
 final class MockTransportConnection: TransportConnection {
 
     weak var delegate: (any TransportConnectionDelegate)?
     var biStream: MockTransportBiStream
-    var uniStream: MockTransportUniStream
+    var uniSendStream: MockTransportUniSendStream
+    var uniReceiveStream: MockTransportUniReceiveStream
     var additionalBiStreams: [MockTransportBiStream]
-    var additionalUniStreams: [MockTransportUniStream]
+    var additionalUniSendStreams: [MockTransportUniSendStream]
+    private(set) var sentDatagrams: [Data]
 
     init(
         biStream: MockTransportBiStream = .init(),
-        uniStream: MockTransportUniStream = .init(),
+        uniSendStream: MockTransportUniSendStream = .init(),
+        uniReceiveStream: MockTransportUniReceiveStream = .init(),
         additionalBiStreams: [MockTransportBiStream] = [],
-        additionalUniStreams: [MockTransportUniStream] = []
+        additionalUniSendStreams: [MockTransportUniSendStream] = []
     ) {
         self.biStream = biStream
-        self.uniStream = uniStream
+        self.uniSendStream = uniSendStream
+        self.uniReceiveStream = uniReceiveStream
         self.additionalBiStreams = additionalBiStreams
-        self.additionalUniStreams = additionalUniStreams
+        self.additionalUniSendStreams = additionalUniSendStreams
+        self.sentDatagrams = []
     }
 
     func openBiStream() async throws -> TransportBiStream {
@@ -100,10 +112,22 @@ final class MockTransportConnection: TransportConnection {
         return biStream
     }
 
-    func openUniStream() async throws -> TransportUniStream {
-        if !additionalUniStreams.isEmpty {
-            return additionalUniStreams.removeFirst()
+    func openUniStream() async throws -> TransportUniSendStream {
+        if !additionalUniSendStreams.isEmpty {
+            return additionalUniSendStreams.removeFirst()
         }
-        return uniStream
+        return uniSendStream
+    }
+
+    func sendDatagram(bytes: Data) async throws {
+        sentDatagrams.append(bytes)
+    }
+
+    func receiveDatagram(bytes: Data) {
+        delegate?.connection(self, didReceiveDatagram: bytes)
+    }
+
+    func receiveUniStream(_ stream: MockTransportUniReceiveStream? = nil) {
+        delegate?.connection(self, didReceiveUniStream: stream ?? uniReceiveStream)
     }
 }

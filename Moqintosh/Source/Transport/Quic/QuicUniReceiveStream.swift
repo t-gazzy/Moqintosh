@@ -1,15 +1,15 @@
 //
-//  QuicUniStream.swift
+//  QuicUniReceiveStream.swift
 //  Moqintosh
 //
-//  Created by takemasa kaji on 2026/04/10.
+//  Created by Codex on 2026/04/10.
 //
 
 import Foundation
 import Network
 
-/// A QUIC unidirectional stream.
-final class QuicUniStream: TransportUniStream {
+/// An inbound QUIC unidirectional stream.
+final class QuicUniReceiveStream: TransportUniReceiveStream {
 
     private let stream: QUIC.Stream<QUICStream>
 
@@ -21,10 +21,5 @@ final class QuicUniStream: TransportUniStream {
         let data: Data = try await stream.receive(atLeast: 1, atMost: Int.max).content
         OSLogger.trace("UniStream received \(data.count) bytes (streamID: \(stream.streamID))")
         return data
-    }
-
-    func send(bytes: Data) async throws {
-        OSLogger.trace("UniStream sending \(bytes.count) bytes (streamID: \(stream.streamID))")
-        try await stream.send(bytes)
     }
 }
