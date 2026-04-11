@@ -157,6 +157,7 @@
 				6FA3E6292D38EEA800BB51A5 /* Frameworks */,
 				6FA3E62A2D38EEA800BB51A5 /* Resources */,
 				EBD78651F73943369620D20C /* SwiftLint */,
+				6F1238602F8ABADE00875243 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
@@ -179,6 +180,7 @@
 				6FA3E6322D38EEA900BB51A5 /* Sources */,
 				6FA3E6332D38EEA900BB51A5 /* Frameworks */,
 				6FA3E6342D38EEA900BB51A5 /* Resources */,
+				6F1238612F8ABBED00875243 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
@@ -203,6 +205,7 @@
 				6FB8FA6E2F8A5362009F29F9 /* Frameworks */,
 				6FB8FA6F2F8A5362009F29F9 /* Resources */,
 				6FB8FA8B2F8A53C4009F29F9 /* Embed Frameworks */,
+				6F1238622F8ABC4200875243 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
@@ -286,6 +289,60 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		6F1238602F8ABADE00875243 /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nswift format format -i \\\n-r $(PROJECT_ROOT)/Moqintosh/Source\n";
+		};
+		6F1238612F8ABBED00875243 /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nswift format format -i \\\n-r $(PROJECT_ROOT)/MoqintoshTests\n";
+		};
+		6F1238622F8ABC4200875243 /* SwiftFormat */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftFormat;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nswift format format -i \\\n-r $(PROJECT_ROOT)/Sample\n";
+		};
 		EBD78651F73943369620D20C /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
