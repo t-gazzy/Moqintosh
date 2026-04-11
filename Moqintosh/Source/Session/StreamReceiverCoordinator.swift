@@ -53,7 +53,11 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
                 let remainingBytes: Data = Data(buffer.dropFirst(consumedBytes))
                 return (header, remainingBytes)
             } catch ByteReaderError.insufficientData {
-                buffer.append(try await stream.receive())
+                let result: TransportUniReceiveResult = try await stream.receive()
+                buffer.append(result.bytes)
+                if result.isComplete && buffer.isEmpty {
+                    throw StreamReceiveCompletionError.closed
+                }
             }
         }
     }
