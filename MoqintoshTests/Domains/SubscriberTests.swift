@@ -25,7 +25,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.resolveRequest(with: SubscribeNamespaceOKMessage(requestID: 0))
+        context.requestStore.resolveRequest(with: SubscribeNamespaceOKMessage(requestID: 0))
         try await task.value
 
         #expect(stream.sentBytes[0].first == UInt8(MessageType.subscribeNamespace.rawValue))
@@ -47,7 +47,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.resolveSubscribeRequest(
+        context.requestStore.resolveSubscribeRequest(
             with: .init(
                 requestID: 0,
                 trackAlias: 1,

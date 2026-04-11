@@ -27,13 +27,13 @@ public final class Subscriber {
         let requestID: UInt64 = session.context.issueRequestID()
         let message: SubscribeNamespaceMessage = .init(requestID: requestID, namespacePrefix: namespacePrefix)
         try await withCheckedThrowingContinuation { continuation in
-            session.context.addRequest(requestID, continuation: continuation)
+            session.context.requestStore.addRequest(requestID, continuation: continuation)
             Task {
                 do {
                     OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
                     try await self.session.context.controlStream.send(bytes: message.encode())
                 } catch {
-                    self.session.context.failRequest(requestID, error: error)
+                    self.session.context.requestStore.failRequest(requestID, error: error)
                 }
             }
         }
@@ -60,7 +60,7 @@ public final class Subscriber {
             deliveryTimeout: nil
         )
         return try await withCheckedThrowingContinuation { continuation in
-            session.context.addSubscribeRequest(
+            session.context.requestStore.addSubscribeRequest(
                 requestID,
                 resource: resource,
                 subscriberPriority: subscriberPriority,
@@ -74,7 +74,7 @@ public final class Subscriber {
                     OSLogger.debug("Sending SUBSCRIBE (requestID: \(requestID))")
                     try await self.session.context.controlStream.send(bytes: message.encode())
                 } catch {
-                    self.session.context.failSubscribeRequest(requestID, error: error)
+                    self.session.context.requestStore.failSubscribeRequest(requestID, error: error)
                 }
             }
         }

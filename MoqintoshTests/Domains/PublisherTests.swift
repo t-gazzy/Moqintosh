@@ -25,7 +25,7 @@ struct PublisherTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.resolveRequest(with: PublishNamespaceOKMessage(requestID: 0))
+        context.requestStore.resolveRequest(with: PublishNamespaceOKMessage(requestID: 0))
         try await task.value
 
         let sent: Data = stream.sentBytes[0]
@@ -48,7 +48,7 @@ struct PublisherTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.resolvePublishRequest(
+        context.requestStore.resolvePublishRequest(
             with: .init(
                 requestID: 0,
                 forward: true,

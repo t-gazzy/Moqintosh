@@ -38,8 +38,8 @@ struct SessionContextTests {
 
         let task: Task<PublishedTrack, Error> = .init {
             try await withCheckedThrowingContinuation { continuation in
-                context.addPublishRequest(2, publishedTrack: publishedTrack, continuation: continuation)
-                context.resolvePublishRequest(
+                context.requestStore.addPublishRequest(2, publishedTrack: publishedTrack, continuation: continuation)
+                context.requestStore.resolvePublishRequest(
                     with: .init(
                         requestID: 2,
                         forward: true,
@@ -60,7 +60,7 @@ struct SessionContextTests {
         let context: SessionContext = .init(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
         let task: Task<Subscription, Error> = .init {
             try await withCheckedThrowingContinuation { continuation in
-                context.addSubscribeRequest(
+                context.requestStore.addSubscribeRequest(
                     4,
                     resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
                     subscriberPriority: 0,
@@ -69,7 +69,7 @@ struct SessionContextTests {
                     filter: .largestObject,
                     continuation: continuation
                 )
-                context.rejectSubscribeRequest(with: .init(requestID: 4, errorCode: 5, reasonPhrase: "rejected"))
+                context.requestStore.rejectSubscribeRequest(with: .init(requestID: 4, errorCode: 5, reasonPhrase: "rejected"))
             }
         }
 

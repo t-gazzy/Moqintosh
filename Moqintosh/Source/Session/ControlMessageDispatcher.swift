@@ -20,27 +20,27 @@ final class ControlMessageDispatcher {
         case .publish(let publishMessage):
             await handleIncomingPublish(publishMessage)
         case .publishOK(let publishOKMessage):
-            sessionContext.resolvePublishRequest(with: publishOKMessage)
+            sessionContext.requestStore.resolvePublishRequest(with: publishOKMessage)
         case .publishError(let publishErrorMessage):
-            sessionContext.rejectPublishRequest(with: publishErrorMessage)
+            sessionContext.requestStore.rejectPublishRequest(with: publishErrorMessage)
         case .publishNamespace(let publishNamespaceMessage):
             await handleIncomingPublishNamespace(publishNamespaceMessage)
         case .publishNamespaceOK(let publishNamespaceOKMessage):
-            sessionContext.resolveRequest(with: publishNamespaceOKMessage)
+            sessionContext.requestStore.resolveRequest(with: publishNamespaceOKMessage)
         case .publishNamespaceError(let publishNamespaceErrorMessage):
-            sessionContext.rejectRequest(with: publishNamespaceErrorMessage)
+            sessionContext.requestStore.rejectRequest(with: publishNamespaceErrorMessage)
         case .subscribe(let subscribeMessage):
             await handleIncomingSubscribe(subscribeMessage)
         case .subscribeOK(let subscribeOKMessage):
-            sessionContext.resolveSubscribeRequest(with: subscribeOKMessage)
+            sessionContext.requestStore.resolveSubscribeRequest(with: subscribeOKMessage)
         case .subscribeError(let subscribeErrorMessage):
-            sessionContext.rejectSubscribeRequest(with: subscribeErrorMessage)
+            sessionContext.requestStore.rejectSubscribeRequest(with: subscribeErrorMessage)
         case .subscribeNamespace(let subscribeNamespaceMessage):
             await handleIncomingSubscribeNamespace(subscribeNamespaceMessage)
         case .subscribeNamespaceOK(let subscribeNamespaceOKMessage):
-            sessionContext.resolveRequest(with: subscribeNamespaceOKMessage)
+            sessionContext.requestStore.resolveRequest(with: subscribeNamespaceOKMessage)
         case .subscribeNamespaceError(let subscribeNamespaceErrorMessage):
-            sessionContext.rejectRequest(with: subscribeNamespaceErrorMessage)
+            sessionContext.requestStore.rejectRequest(with: subscribeNamespaceErrorMessage)
         default:
             OSLogger.debug("Unhandled message: \(message)")
         }
