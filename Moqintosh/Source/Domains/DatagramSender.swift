@@ -11,10 +11,10 @@ public final class DatagramSender {
 
     public let publishedTrack: PublishedTrack
 
-    private let session: Session
+    private let sessionContext: SessionContext
 
-    init(session: Session, publishedTrack: PublishedTrack) {
-        self.session = session
+    init(sessionContext: SessionContext, publishedTrack: PublishedTrack) {
+        self.sessionContext = sessionContext
         self.publishedTrack = publishedTrack
     }
 
@@ -34,6 +34,6 @@ public final class DatagramSender {
             content: content
         )
         OSLogger.debug("Sending OBJECT_DATAGRAM (trackAlias: \(publishedTrack.trackAlias), groupID: \(groupID))")
-        try await session.context.connection.sendDatagram(bytes: datagram.encode())
+        try await sessionContext.connection.sendDatagram(bytes: datagram.encode())
     }
 }

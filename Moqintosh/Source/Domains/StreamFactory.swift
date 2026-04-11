@@ -8,11 +8,11 @@
 /// Creates subgroup stream senders for a published track.
 public final class StreamFactory {
 
-    private let session: Session
+    private let sessionContext: SessionContext
     public let publishedTrack: PublishedTrack
 
-    init(session: Session, publishedTrack: PublishedTrack) {
-        self.session = session
+    init(sessionContext: SessionContext, publishedTrack: PublishedTrack) {
+        self.sessionContext = sessionContext
         self.publishedTrack = publishedTrack
     }
 
@@ -23,7 +23,7 @@ public final class StreamFactory {
         usesExtensions: Bool = false,
         containsEndOfGroup: Bool = false
     ) async throws -> StreamSender {
-        let stream: TransportUniSendStream = try await session.context.connection.openUniStream()
+        let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
         let header: SubgroupHeader = .init(
             trackAlias: publishedTrack.trackAlias,
             groupID: groupID,

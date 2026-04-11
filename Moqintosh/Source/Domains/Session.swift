@@ -26,11 +26,11 @@ public final class Session {
     // MARK: - Factory
 
     public func makePublisher() -> Publisher {
-        Publisher(session: self)
+        Publisher(sessionContext: context)
     }
 
     public func makeSubscriber() -> Subscriber {
-        Subscriber(session: self)
+        Subscriber(sessionContext: context)
     }
 }
 

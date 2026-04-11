@@ -16,12 +16,12 @@ public final class StreamReceiverFactory {
     public weak var delegate: (any StreamReceiverFactoryDelegate)?
     public let subscription: Subscription
 
-    private let session: Session
+    private let sessionContext: SessionContext
 
-    init(session: Session, subscription: Subscription) {
-        self.session = session
+    init(sessionContext: SessionContext, subscription: Subscription) {
+        self.sessionContext = sessionContext
         self.subscription = subscription
-        session.context.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
+        sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = .init(
                 stream: stream,

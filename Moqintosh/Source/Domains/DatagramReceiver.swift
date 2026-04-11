@@ -14,9 +14,9 @@ public final class DatagramReceiver {
     public weak var delegate: (any DatagramReceiverDelegate)?
     public let subscription: Subscription
 
-    init(session: Session, subscription: Subscription) {
+    init(sessionContext: SessionContext, subscription: Subscription) {
         self.subscription = subscription
-        session.context.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
+        sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             self.delegate?.datagramReceiver(self, didReceive: datagram)
         }

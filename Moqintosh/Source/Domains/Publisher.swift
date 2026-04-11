@@ -11,26 +11,26 @@
 /// Use the methods below to announce tracks and namespaces.
 public final class Publisher {
 
-    public let session: Session
+    private let sessionContext: SessionContext
 
-    init(session: Session) {
-        self.session = session
+    init(sessionContext: SessionContext) {
+        self.sessionContext = sessionContext
     }
 
     // MARK: - Namespace
 
     /// Announces a namespace to the subscriber (Section 9.23).
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
-        let requestID: UInt64 = session.context.issueRequestID()
+        let requestID: UInt64 = sessionContext.issueRequestID()
         let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            session.context.requestStore.addRequest(requestID, continuation: continuation)
+            sessionContext.requestStore.addRequest(requestID, continuation: continuation)
             Task {
                 do {
                     OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
-                    try await self.session.context.controlStream.send(bytes: message.encode())
+                    try await self.sessionContext.controlStream.send(bytes: message.encode())
                 } catch {
-                    self.session.context.requestStore.failRequest(requestID, error: error)
+                    self.sessionContext.requestStore.failRequest(requestID, error: error)
                 }
             }
         }
@@ -50,8 +50,8 @@ public final class Publisher {
         contentExist: ContentExist = .noContent,
         forward: Bool = true
     ) async throws -> PublishedTrack {
-        let requestID: UInt64 = session.context.issueRequestID()
-        let trackAlias: UInt64 = session.context.issueTrackAlias()
+        let requestID: UInt64 = sessionContext.issueRequestID()
+        let trackAlias: UInt64 = sessionContext.issueTrackAlias()
         let publishedTrack: PublishedTrack = .init(
             requestID: requestID,
             resource: resource,
@@ -67,13 +67,13 @@ public final class Publisher {
             maxCacheDuration: nil
         )
         return try await withCheckedThrowingContinuation { continuation in
-            session.context.requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+            sessionContext.requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
             Task {
                 do {
                     OSLogger.debug("Sending PUBLISH (requestID: \(requestID))")
-                    try await self.session.context.controlStream.send(bytes: message.encode())
+                    try await self.sessionContext.controlStream.send(bytes: message.encode())
                 } catch {
-                    self.session.context.requestStore.failPublishRequest(requestID, error: error)
+                    self.sessionContext.requestStore.failPublishRequest(requestID, error: error)
                 }
             }
         }
@@ -85,10 +85,10 @@ public final class Publisher {
     }
 
     public func makeStreamFactory(for publishedTrack: PublishedTrack) -> StreamFactory {
-        .init(session: session, publishedTrack: publishedTrack)
+        .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 
     public func makeDatagramSender(for publishedTrack: PublishedTrack) -> DatagramSender {
-        .init(session: session, publishedTrack: publishedTrack)
+        .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 }

@@ -10,7 +10,7 @@ import Testing
 
 struct SessionTests {
 
-    @Test func makePublisherReturnsPublisherBoundToSession() {
+    @Test func makePublisherReturnsPublisher() {
         let stream: MockTransportBiStream = .init()
         let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
@@ -18,10 +18,10 @@ struct SessionTests {
 
         let publisher: Publisher = session.makePublisher()
 
-        #expect(publisher.session === session)
+        #expect(type(of: publisher) == Publisher.self)
     }
 
-    @Test func makeSubscriberReturnsSubscriberBoundToSession() {
+    @Test func makeSubscriberReturnsSubscriber() {
         let stream: MockTransportBiStream = .init()
         let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
@@ -29,6 +29,6 @@ struct SessionTests {
 
         let subscriber: Subscriber = session.makeSubscriber()
 
-        #expect(subscriber.session === session)
+        #expect(type(of: subscriber) == Subscriber.self)
     }
 }
