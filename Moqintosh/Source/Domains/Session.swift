@@ -5,6 +5,8 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
+import Foundation
+
 /// Represents a MOQT session created from an Endpoint.
 /// Use this to create a Publisher or Subscriber.
 public final class Session {
@@ -12,12 +14,14 @@ public final class Session {
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
     private let streamReceiverCoordinator: StreamReceiverCoordinator
+    private let delegateQueue: DispatchQueue
     public weak var delegate: (any SessionDelegate)?
 
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
         self.streamReceiverCoordinator = .init(sessionContext: sessionContext)
+        self.delegateQueue = .init(label: "Moqintosh.SessionDelegate")
         self.context.session = self
         self.context.connection.delegate = streamReceiverCoordinator
         self.controlMessageReceiver.start()
@@ -31,6 +35,38 @@ public final class Session {
 
     public func makeSubscriber() -> Subscriber {
         Subscriber(sessionContext: context)
+    }
+
+    func shouldAcceptPublishNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
+        delegateQueue.sync {
+            delegate?.session(
+                self,
+                shouldAcceptPublishNamespace: prefix,
+                authorizationToken: authorizationToken
+            ) ?? false
+        }
+    }
+
+    func shouldAcceptPublish(resource: TrackResource) -> Bool {
+        delegateQueue.sync {
+            delegate?.session(self, didReceivePublish: resource) ?? false
+        }
+    }
+
+    func shouldAcceptSubscribeNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
+        delegateQueue.sync {
+            delegate?.session(
+                self,
+                shouldAcceptSubscribeNamespace: prefix,
+                authorizationToken: authorizationToken
+            ) ?? false
+        }
+    }
+
+    func shouldAcceptSubscribe(publishedTrack: PublishedTrack) -> Bool {
+        delegateQueue.sync {
+            delegate?.session(self, didReceiveSubscribe: publishedTrack) ?? false
+        }
     }
 }
 

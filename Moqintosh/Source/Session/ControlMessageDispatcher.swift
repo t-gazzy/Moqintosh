@@ -48,11 +48,10 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingPublishNamespace(_ message: PublishNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.delegate?.session(
-            session,
-            shouldAcceptPublishNamespace: message.trackNamespace,
+        let isAccepted: Bool = session.shouldAcceptPublishNamespace(
+            prefix: message.trackNamespace,
             authorizationToken: message.authorizationTokens.first
-        ) ?? false
+        )
         let response: Data = isAccepted
             ? PublishNamespaceOKMessage(requestID: message.requestID).encode()
             : PublishNamespaceErrorMessage(
@@ -65,7 +64,7 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingPublish(_ message: PublishMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.delegate?.session(session, didReceivePublish: message.publishedTrack.resource) ?? false
+        let isAccepted: Bool = session.shouldAcceptPublish(resource: message.publishedTrack.resource)
         let response: Data = isAccepted
             ? PublishOKMessage(
                 requestID: message.requestID,
@@ -94,7 +93,7 @@ final class ControlMessageDispatcher {
             contentExist: .noContent,
             forward: message.forward
         )
-        let isAccepted: Bool = session.delegate?.session(session, didReceiveSubscribe: publishedTrack) ?? false
+        let isAccepted: Bool = session.shouldAcceptSubscribe(publishedTrack: publishedTrack)
         let response: Data = isAccepted
             ? SubscribeOKMessage(
                 requestID: message.requestID,
@@ -115,11 +114,10 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingSubscribeNamespace(_ message: SubscribeNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.delegate?.session(
-            session,
-            shouldAcceptSubscribeNamespace: message.namespacePrefix,
+        let isAccepted: Bool = session.shouldAcceptSubscribeNamespace(
+            prefix: message.namespacePrefix,
             authorizationToken: message.authorizationTokens.first
-        ) ?? false
+        )
         let response: Data = isAccepted
             ? SubscribeNamespaceOKMessage(requestID: message.requestID).encode()
             : SubscribeNamespaceErrorMessage(

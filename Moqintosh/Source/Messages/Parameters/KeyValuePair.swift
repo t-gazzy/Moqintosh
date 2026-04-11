@@ -11,9 +11,9 @@ import Foundation
 ///
 /// - Even type: Value is a single varint (no Length field)
 /// - Odd type:  Value is a byte sequence preceded by a Length varint
-struct KeyValuePair {
+struct KeyValuePair: Sendable {
 
-    enum Value {
+    enum Value: Sendable {
         case varint(UInt64)
         case bytes(Data)
     }

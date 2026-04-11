@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct SubgroupHeader {
+public struct SubgroupHeader: Sendable {
 
-    public enum SubgroupID: Equatable {
+    public enum SubgroupID: Equatable, Sendable {
         case zero
         case firstObject
         case explicit(UInt64)

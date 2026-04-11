@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct SubgroupObject {
+public struct SubgroupObject: Sendable {
 
-    public enum Content {
+    public enum Content: Sendable {
         case payload(Data)
         case status(UInt64)
     }

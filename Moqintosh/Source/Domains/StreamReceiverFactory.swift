@@ -17,10 +17,12 @@ public final class StreamReceiverFactory {
     public let subscription: Subscription
 
     private let sessionContext: SessionContext
+    private let delegateQueue: DispatchQueue
 
     init(sessionContext: SessionContext, subscription: Subscription) {
         self.sessionContext = sessionContext
         self.subscription = subscription
+        self.delegateQueue = .init(label: "Moqintosh.StreamReceiverFactoryDelegate")
         sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = .init(
@@ -29,7 +31,10 @@ public final class StreamReceiverFactory {
                 header: header,
                 initialData: initialData
             )
-            self.delegate?.streamReceiverFactory(self, didCreate: receiver)
+            self.delegateQueue.async { [weak self] in
+                guard let self else { return }
+                self.delegate?.streamReceiverFactory(self, didCreate: receiver)
+            }
             receiver.start()
         }
     }
