@@ -28,11 +28,16 @@ public final class StreamSender {
     }
 
     public func send(objectID: UInt64, content: Content) async throws {
-        try await send(objectID: objectID, extensions: [], content: content)
+        try await send(objectID: objectID, endOfGroup: false, extensions: [], content: content)
+    }
+
+    public func send(objectID: UInt64, endOfGroup: Bool, content: Content) async throws {
+        try await send(objectID: objectID, endOfGroup: endOfGroup, extensions: [], content: content)
     }
 
     func send(
         objectID: UInt64,
+        endOfGroup: Bool,
         extensions: [KeyValuePair],
         content: Content
     ) async throws {
@@ -46,7 +51,7 @@ public final class StreamSender {
             previousObjectID = objectID
             return subgroupObject
         }
-        try await stream.send(bytes: subgroupObject.encode())
+        try await stream.send(bytes: subgroupObject.encode(), endOfStream: endOfGroup)
     }
 }
 

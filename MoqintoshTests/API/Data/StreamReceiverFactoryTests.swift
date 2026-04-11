@@ -36,7 +36,10 @@ struct StreamReceiverFactoryTests {
         let delegate: TestStreamReceiverFactoryDelegate = .init()
         factory.delegate = delegate
         let header: SubgroupHeader = .init(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
-        let stream: MockTransportUniReceiveStream = .init(receiveQueue: [header.encode()], receiveError: nil)
+        let stream: MockTransportUniReceiveStream = .init(
+            receiveQueue: [.init(bytes: header.encode(), isComplete: false)],
+            receiveError: nil
+        )
 
         connection.receiveUniStream(stream)
 

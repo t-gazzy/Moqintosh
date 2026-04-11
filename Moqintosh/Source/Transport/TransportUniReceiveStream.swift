@@ -7,7 +7,13 @@
 
 import Foundation
 
+struct TransportUniReceiveResult {
+
+    let bytes: Data
+    let isComplete: Bool
+}
+
 /// Represents an inbound unidirectional transport stream.
 protocol TransportUniReceiveStream: AnyObject {
-    func receive() async throws -> Data
+    func receive() async throws -> TransportUniReceiveResult
 }

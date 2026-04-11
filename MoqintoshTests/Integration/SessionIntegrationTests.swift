@@ -136,16 +136,26 @@ struct SessionIntegrationTests {
         factory.delegate = delegate
         let header: SubgroupHeader = .init(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
-        let stream: MockTransportUniReceiveStream = .init(receiveQueue: [header.encode(), object.encode()], receiveError: CancellationError())
+        let stream: MockTransportUniReceiveStream = .init(
+            receiveQueue: [
+                .init(bytes: header.encode(), isComplete: false),
+                .init(bytes: object.encode(), isComplete: true)
+            ],
+            receiveError: nil
+        )
 
         connection.receiveUniStream(stream)
 
         while delegate.receivedObjects.isEmpty {
             await Task.yield()
         }
+        while delegate.closedReceiverCount < 1 {
+            await Task.yield()
+        }
         controlStream.finishReceiving(with: CancellationError())
 
         #expect(delegate.receivedObjects.count == 1)
+        #expect(delegate.closedReceiverCount == 1)
         #expect(delegate.receivedObjects[0].groupID == 5)
         #expect(delegate.receivedObjects[0].objectID == 0)
         if case .payload(let payload) = delegate.receivedObjects[0].content {
@@ -200,10 +210,12 @@ private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, St
 
     private(set) var receivers: [StreamReceiver]
     private(set) var receivedObjects: [SubgroupObject]
+    private(set) var closedReceiverCount: Int
 
     init() {
         self.receivers = []
         self.receivedObjects = []
+        self.closedReceiverCount = 0
     }
 
     func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) {
@@ -213,6 +225,10 @@ private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, St
 
     func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) {
         receivedObjects.append(object)
+    }
+
+    func streamReceiverDidClose(_ receiver: StreamReceiver) {
+        closedReceiverCount += 1
     }
 }
 

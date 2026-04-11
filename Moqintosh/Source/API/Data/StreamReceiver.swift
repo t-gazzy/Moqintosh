@@ -9,6 +9,7 @@ import Foundation
 
 public protocol StreamReceiverDelegate: AnyObject {
     func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject)
+    func streamReceiverDidClose(_ receiver: StreamReceiver)
 }
 
 public final class StreamReceiver: @unchecked Sendable {
@@ -34,7 +35,11 @@ public final class StreamReceiver: @unchecked Sendable {
             do {
                 try await receiveLoop()
             } catch {
-                OSLogger.error("Stream receive error: \(error)")
+                OSLogger.debug("Stream receive loop ended: \(error)")
+            }
+            delegateQueue.async { [weak self] in
+                guard let self else { return }
+                self.delegate?.streamReceiverDidClose(self)
             }
         }
     }
@@ -48,4 +53,8 @@ public final class StreamReceiver: @unchecked Sendable {
             }
         }
     }
+}
+
+public extension StreamReceiverDelegate {
+    func streamReceiverDidClose(_ receiver: StreamReceiver) {}
 }

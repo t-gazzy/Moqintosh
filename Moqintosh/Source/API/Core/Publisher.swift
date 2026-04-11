@@ -72,7 +72,7 @@ public final class Publisher {
         // TODO: encode and send PUBLISH_DONE
     }
 
-    public func makeStreamFactory(for publishedTrack: PublishedTrack) -> StreamFactory {
+    public func makeStreamSenderFactory(for publishedTrack: PublishedTrack) -> StreamSenderFactory {
         .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 

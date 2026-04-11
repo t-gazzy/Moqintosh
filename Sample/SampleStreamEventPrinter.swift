@@ -50,4 +50,9 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
             )
         }
     }
+
+    func streamReceiverDidClose(_ receiver: StreamReceiver) {
+        receivers.removeAll { $0 === receiver }
+        onEvent("Closed stream receiver")
+    }
 }

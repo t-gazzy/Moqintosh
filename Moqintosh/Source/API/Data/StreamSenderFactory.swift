@@ -1,12 +1,12 @@
 //
-//  StreamFactory.swift
+//  StreamSenderFactory.swift
 //  Moqintosh
 //
 //  Created by Codex on 2026/04/10.
 //
 
 /// Creates subgroup stream senders for a published track.
-public final class StreamFactory {
+public final class StreamSenderFactory {
 
     private let sessionContext: SessionContext
     public let publishedTrack: PublishedTrack
@@ -32,7 +32,7 @@ public final class StreamFactory {
             usesExtensions: usesExtensions,
             containsEndOfGroup: containsEndOfGroup
         )
-        try await stream.send(bytes: header.encode())
+        try await stream.send(bytes: header.encode(), endOfStream: false)
         return .init(stream: stream, header: header)
     }
 }

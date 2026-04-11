@@ -1,5 +1,5 @@
 //
-//  StreamFactoryTests.swift
+//  StreamSenderFactoryTests.swift
 //  MoqintoshTests
 //
 //  Created by Codex on 2026/04/10.
@@ -8,7 +8,7 @@
 import Testing
 @testable import Moqintosh
 
-struct StreamFactoryTests {
+struct StreamSenderFactoryTests {
 
     @Test func makeSenderOpensStreamAndSendsHeader() async throws {
         let controlStream: MockTransportBiStream = .init()
@@ -20,7 +20,7 @@ struct StreamFactoryTests {
         let context: SessionContext = .init(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = .init(controlStream: controlStream, dispatcher: .init(sessionContext: context))
         let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
-        let factory: StreamFactory = session.makePublisher().makeStreamFactory(
+        let factory: StreamSenderFactory = session.makePublisher().makeStreamSenderFactory(
             for: .init(
                 requestID: 1,
                 resource: .init(trackNamespace: .init(strings: ["live"]), trackName: .init()),
@@ -39,6 +39,7 @@ struct StreamFactoryTests {
         _ = sender
         #expect(factory.publishedTrack.trackAlias == 9)
         #expect(dataStream.sentBytes.count == 1)
+        #expect(dataStream.endOfStreamFlags == [false])
         #expect(dataStream.sentBytes[0].first == UInt8(0x14))
     }
 }

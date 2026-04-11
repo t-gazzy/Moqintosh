@@ -17,8 +17,10 @@ final class QuicUniSendStream: TransportUniSendStream {
         self.stream = stream
     }
 
-    func send(bytes: Data) async throws {
-        OSLogger.trace("UniStream sending \(bytes.count) bytes (streamID: \(stream.streamID))")
-        try await stream.send(bytes)
+    func send(bytes: Data, endOfStream: Bool) async throws {
+        OSLogger.trace(
+            "UniStream sending \(bytes.count) bytes (streamID: \(stream.streamID), endOfStream: \(endOfStream))"
+        )
+        try await stream.send(bytes, endOfStream: endOfStream)
     }
 }

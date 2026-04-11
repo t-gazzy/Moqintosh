@@ -35,7 +35,7 @@ final class SampleSessionController {
     private var remotePublishedNamespaces: [String: TrackNamespace]
     private var publishedTrack: PublishedTrack?
     private var subscribedTrack: Subscription?
-    private var streamFactory: StreamFactory?
+    private var streamSenderFactory: StreamSenderFactory?
     private var datagramSender: DatagramSender?
     private var currentStreamSender: StreamSender?
     private var currentStreamSenderGroupID: UInt64?
@@ -79,7 +79,7 @@ final class SampleSessionController {
         self.remotePublishedNamespaces = [:]
         self.publishedTrack = nil
         self.subscribedTrack = nil
-        self.streamFactory = nil
+        self.streamSenderFactory = nil
         self.datagramSender = nil
         self.currentStreamSender = nil
         self.currentStreamSenderGroupID = nil
@@ -132,7 +132,7 @@ final class SampleSessionController {
     }
 
     var canSendStream: Bool {
-        streamFactory != nil && streamSendTask == nil
+        streamSenderFactory != nil && streamSendTask == nil
     }
 
     var canSendDatagram: Bool {
@@ -195,7 +195,7 @@ final class SampleSessionController {
     private func startPublishing(to publishedTrack: PublishedTrack) {
         stopSendLoops()
         self.publishedTrack = publishedTrack
-        self.streamFactory = publisher.makeStreamFactory(for: publishedTrack)
+        self.streamSenderFactory = publisher.makeStreamSenderFactory(for: publishedTrack)
         self.datagramSender = publisher.makeDatagramSender(for: publishedTrack)
         self.currentStreamSender = nil
         self.currentStreamSenderGroupID = nil
@@ -207,7 +207,7 @@ final class SampleSessionController {
     }
 
     func sendStreamTimestamp() async {
-        guard let streamFactory else {
+        guard let streamSenderFactory else {
             appendEvent("No published track is ready for stream sending")
             return
         }
@@ -215,7 +215,7 @@ final class SampleSessionController {
         appendEvent("Started stream timer")
         streamSendTask = Task { [weak self] in
             guard let self else { return }
-            await self.runStreamSendLoop(streamFactory: streamFactory)
+            await self.runStreamSendLoop(streamSenderFactory: streamSenderFactory)
         }
     }
 
@@ -232,9 +232,9 @@ final class SampleSessionController {
         }
     }
 
-    private func runStreamSendLoop(streamFactory: StreamFactory) async {
+    private func runStreamSendLoop(streamSenderFactory: StreamSenderFactory) async {
         while !Task.isCancelled {
-            await sendNextStreamObject(streamFactory: streamFactory)
+            await sendNextStreamObject(streamSenderFactory: streamSenderFactory)
             do {
                 try await Task.sleep(for: .seconds(1))
             } catch {
@@ -256,20 +256,21 @@ final class SampleSessionController {
         datagramSendTask = nil
     }
 
-    private func sendNextStreamObject(streamFactory: StreamFactory) async {
+    private func sendNextStreamObject(streamSenderFactory: StreamSenderFactory) async {
         let groupID: UInt64 = nextStreamGroupID
         let objectID: UInt64 = nextStreamObjectID
+        let endOfGroup: Bool = objectID == 9
         let payload: Data = configuration.makePayload()
         do {
             let sender: StreamSender
             if currentStreamSenderGroupID == groupID, let currentStreamSender {
                 sender = currentStreamSender
             } else {
-                sender = try await streamFactory.makeSender(groupID: groupID)
+                sender = try await streamSenderFactory.makeSender(groupID: groupID)
                 currentStreamSender = sender
                 currentStreamSenderGroupID = groupID
             }
-            try await sender.send(objectID: objectID, content: .payload(payload))
+            try await sender.send(objectID: objectID, endOfGroup: endOfGroup, content: .payload(payload))
             advanceStreamCounters()
         } catch {
             statusText = "Failed: \(error.localizedDescription)"

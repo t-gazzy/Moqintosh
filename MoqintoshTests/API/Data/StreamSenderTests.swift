@@ -24,9 +24,10 @@ struct StreamSenderTests {
         )
 
         try await sender.send(objectID: 7, content: .payload(Data("ab".utf8)))
-        try await sender.send(objectID: 8, content: .status(9))
+        try await sender.send(objectID: 8, endOfGroup: true, content: .status(9))
 
         #expect(stream.sentBytes.count == 2)
+        #expect(stream.endOfStreamFlags == [false, true])
 
         let firstObject: SubgroupObject = try .decode(stream.sentBytes[0], header: .init(
             trackAlias: 1,

@@ -14,7 +14,10 @@ struct StreamReceiverTests {
     @Test func inboundObjectNotifiesDelegate() async {
         let header: SubgroupHeader = .init(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
-        let stream: MockTransportUniReceiveStream = .init(receiveQueue: [object.encode()], receiveError: CancellationError())
+        let stream: MockTransportUniReceiveStream = .init(
+            receiveQueue: [.init(bytes: object.encode(), isComplete: true)],
+            receiveError: nil
+        )
         let receiver: StreamReceiver = .init(
             stream: stream,
             subscription: .init(
@@ -53,10 +56,10 @@ struct StreamReceiverTests {
         let encoded: Data = object.encode()
         let stream: MockTransportUniReceiveStream = .init(
             receiveQueue: [
-                Data(encoded.prefix(2)),
-                Data(encoded.dropFirst(2))
+                .init(bytes: Data(encoded.prefix(2)), isComplete: false),
+                .init(bytes: Data(encoded.dropFirst(2)), isComplete: true)
             ],
-            receiveError: CancellationError()
+            receiveError: nil
         )
         let receiver: StreamReceiver = .init(
             stream: stream,

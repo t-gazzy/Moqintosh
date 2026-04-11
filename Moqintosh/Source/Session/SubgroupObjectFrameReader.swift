@@ -18,11 +18,13 @@ final class SubgroupObjectFrameReader {
     private let header: SubgroupHeader
     private var buffer: Data
     private var previousObjectID: UInt64?
+    private var isStreamComplete: Bool
 
     init(header: SubgroupHeader, initialData: Data = .init()) {
         self.header = header
         self.buffer = initialData
         self.previousObjectID = nil
+        self.isStreamComplete = false
     }
 
     func read(from stream: any TransportUniReceiveStream) async throws -> SubgroupObject {
@@ -30,7 +32,12 @@ final class SubgroupObjectFrameReader {
             if let object: SubgroupObject = try extractObject() {
                 return object
             }
-            buffer.append(try await stream.receive())
+            if isStreamComplete {
+                throw StreamReceiveCompletionError.closed
+            }
+            let result: TransportUniReceiveResult = try await stream.receive()
+            buffer.append(result.bytes)
+            isStreamComplete = result.isComplete
         }
     }
 
@@ -48,4 +55,8 @@ final class SubgroupObjectFrameReader {
         previousObjectID = object.objectID
         return object
     }
+}
+
+enum StreamReceiveCompletionError: Error {
+    case closed
 }
