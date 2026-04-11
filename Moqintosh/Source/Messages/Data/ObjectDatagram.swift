@@ -7,14 +7,14 @@
 
 import Foundation
 
-struct ObjectDatagram {
+public struct ObjectDatagram {
 
-    enum ObjectID {
+    public enum ObjectID {
         case none
         case explicit(UInt64)
     }
 
-    enum Content {
+    public enum Content {
         case payload(Data)
         case status(UInt64)
     }
@@ -73,13 +73,32 @@ struct ObjectDatagram {
         }
     }
 
-    let trackAlias: UInt64
-    let groupID: UInt64
-    let objectID: ObjectID
-    let publisherPriority: UInt8
+    public let trackAlias: UInt64
+    public let groupID: UInt64
+    public let objectID: ObjectID
+    public let publisherPriority: UInt8
     let extensions: [KeyValuePair]
-    let endOfGroup: Bool
-    let content: Content
+    public let endOfGroup: Bool
+    public let content: Content
+
+    public init(
+        trackAlias: UInt64,
+        groupID: UInt64,
+        objectID: ObjectID,
+        publisherPriority: UInt8,
+        endOfGroup: Bool = false,
+        content: Content
+    ) {
+        self.init(
+            trackAlias: trackAlias,
+            groupID: groupID,
+            objectID: objectID,
+            publisherPriority: publisherPriority,
+            extensions: [],
+            endOfGroup: endOfGroup,
+            content: content
+        )
+    }
 
     init(
         trackAlias: UInt64,
@@ -99,7 +118,7 @@ struct ObjectDatagram {
         self.content = content
     }
 
-    func encode() -> Data {
+    public func encode() -> Data {
         let datagramType: DatagramType = resolvedType()
         var data: Data = .init()
         data.writeVarint(datagramType.rawValue)
@@ -126,7 +145,7 @@ struct ObjectDatagram {
         return data
     }
 
-    static func decode(_ data: Data) throws -> ObjectDatagram {
+    public static func decode(_ data: Data) throws -> ObjectDatagram {
         let reader: ByteReader = .init(data: data)
         let datagramTypeRawValue: UInt64 = try reader.readVarint()
         guard let datagramType: DatagramType = .init(rawValue: datagramTypeRawValue) else {

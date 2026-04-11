@@ -87,4 +87,8 @@ public final class Publisher {
     public func makeStreamFactory(for publishedTrack: PublishedTrack) -> StreamFactory {
         .init(session: session, publishedTrack: publishedTrack)
     }
+
+    public func makeDatagramSender(for publishedTrack: PublishedTrack) -> DatagramSender {
+        .init(session: session, publishedTrack: publishedTrack)
+    }
 }

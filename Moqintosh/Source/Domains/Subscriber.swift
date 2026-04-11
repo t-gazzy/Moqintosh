@@ -112,4 +112,8 @@ public final class Subscriber {
     public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {
         .init(session: session, subscription: subscription)
     }
+
+    public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
+        .init(session: session, subscription: subscription)
+    }
 }

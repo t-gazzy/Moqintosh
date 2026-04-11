@@ -15,6 +15,7 @@ final class SessionContext {
     let controlStream: TransportBiStream
     let requestStore: SessionRequestStore
     let streamReceiverStore: StreamReceiverStore
+    let datagramReceiverStore: DatagramReceiverStore
     /// Client-side Request IDs start at 0 and increment by 2 (even numbers, Section 9.1).
     private var nextRequestID: UInt64 = 0
     private var nextTrackAlias: UInt64 = 0
@@ -25,6 +26,7 @@ final class SessionContext {
         self.controlStream = controlStream
         self.requestStore = SessionRequestStore()
         self.streamReceiverStore = StreamReceiverStore()
+        self.datagramReceiverStore = DatagramReceiverStore()
         self.stateQueue = DispatchQueue(label: "Moqintosh.SessionContext")
     }
 

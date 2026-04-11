@@ -27,6 +27,18 @@ final class QuicConnection: TransportConnection {
                 delegate?.connection(self, didReceiveUniStream: QuicUniStream(stream: stream))
             }
         }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let datagrams: QUIC.Datagrams<QUICDatagram> = try await connection.datagrams
+                for try await message in datagrams.messages {
+                    OSLogger.debug("Received inbound datagram")
+                    delegate?.connection(self, didReceiveDatagram: message.content)
+                }
+            } catch {
+                OSLogger.warn("Datagram receive loop stopped: \(error)")
+            }
+        }
     }
 
     func openBiStream() async throws -> TransportBiStream {
@@ -41,5 +53,10 @@ final class QuicConnection: TransportConnection {
         let stream = try await connection.openStream(directionality: .unidirectional)
         OSLogger.debug("Opened unidirectional stream (streamID: \(stream.streamID))")
         return QuicUniStream(stream: stream)
+    }
+
+    func sendDatagram(bytes: Data) async throws {
+        let datagrams: QUIC.Datagrams<QUICDatagram> = try await connection.datagrams
+        try await datagrams.send(bytes)
     }
 }
