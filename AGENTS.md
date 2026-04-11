@@ -42,6 +42,13 @@ Apply the narrowest modifier that satisfies the requirement.
 - `Optional` — use to express absence (i.e., `nil` is a valid, normal result).
 - `Result` — **prohibited**.
 
+## Work Strategy
+- Start by estimating whether the task is small, medium, or large.
+- Prefer the smallest viable unit of work that can be validated independently.
+- For broad changes, split the work by directory, responsibility, or target instead of changing the whole project at once.
+- After each small step, validate with build, diagnostics, or tests before continuing.
+- When the workspace or IDE becomes slow or unstable, reduce scope and continue in smaller batches.
+
 ## Constraints
 - Do not write code for future extensibility.
 - Never add code "just in case" — only implement what is explicitly required.
