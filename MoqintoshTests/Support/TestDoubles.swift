@@ -14,34 +14,73 @@ final class MockTransportBiStream: TransportBiStream {
     var sentBytes: [Data]
     var receiveError: (any Error)?
     private let stateQueue: DispatchQueue
+    private var receiveContinuations: [CheckedContinuation<Data, Error>]
 
     init(receiveQueue: [Data] = [], receiveError: (any Error)? = CancellationError()) {
         self.receiveQueue = receiveQueue
         self.sentBytes = []
         self.receiveError = receiveError
         self.stateQueue = .init(label: "MoqintoshTests.MockTransportBiStream")
+        self.receiveContinuations = []
     }
 
     func receive() async throws -> Data {
-        let nextBytes: Data? = stateQueue.sync {
-            guard !receiveQueue.isEmpty else { return nil }
-            return receiveQueue.removeFirst()
+        enum ReceiveResult {
+            case bytes(Data)
+            case error(any Error)
+            case wait
         }
-        if let nextBytes {
-            return nextBytes
+
+        let result: ReceiveResult = stateQueue.sync {
+            if !receiveQueue.isEmpty {
+                return .bytes(receiveQueue.removeFirst())
+            }
+            if let receiveError {
+                return .error(receiveError)
+            }
+            return .wait
         }
-        let receiveError: (any Error)? = stateQueue.sync {
-            self.receiveError
+
+        switch result {
+        case .bytes(let bytes):
+            return bytes
+        case .error(let error):
+            throw error
+        case .wait:
+            return try await withCheckedThrowingContinuation { continuation in
+                stateQueue.sync {
+                    receiveContinuations.append(continuation)
+                }
+            }
         }
-        if let receiveError {
-            throw receiveError
-        }
-        return Data()
     }
 
     func send(bytes: Data) async throws {
         stateQueue.sync {
             sentBytes.append(bytes)
+        }
+    }
+
+    func enqueueReceive(_ bytes: Data) {
+        let continuation: CheckedContinuation<Data, Error>? = stateQueue.sync {
+            if !receiveContinuations.isEmpty {
+                return receiveContinuations.removeFirst()
+            }
+            receiveQueue.append(bytes)
+            return nil
+        }
+        continuation?.resume(returning: bytes)
+    }
+
+    func finishReceiving(with error: any Error) {
+        let continuations: [CheckedContinuation<Data, Error>] = stateQueue.sync {
+            receiveError = error
+            let continuations: [CheckedContinuation<Data, Error>] = receiveContinuations
+            receiveContinuations.removeAll()
+            return continuations
+        }
+        for continuation in continuations {
+            continuation.resume(throwing: error)
         }
     }
 }

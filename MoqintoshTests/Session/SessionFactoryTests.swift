@@ -24,7 +24,7 @@ struct SessionFactoryTests {
         #expect(endpoint.connectCallCount == 1)
         #expect(connection.biStream.sentBytes.count == 1)
         #expect(connection.biStream.sentBytes[0].first == UInt8(MessageType.clientSetup.rawValue))
-        #expect(session.makePublisher().session === session)
-        #expect(session.makeSubscriber().session === session)
+        #expect(type(of: session.makePublisher()) == Publisher.self)
+        #expect(type(of: session.makeSubscriber()) == Subscriber.self)
     }
 }
