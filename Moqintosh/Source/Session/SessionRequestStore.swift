@@ -23,6 +23,11 @@ final class SessionRequestStore {
             filter: SubscriptionFilter,
             continuation: CheckedContinuation<Subscription, Error>
         )
+        case fetch(
+            resource: TrackResource,
+            subscriberPriority: UInt8,
+            continuation: CheckedContinuation<FetchSubscription, Error>
+        )
         case trackStatus(CheckedContinuation<TrackStatus, Error>)
     }
 
@@ -74,6 +79,21 @@ final class SessionRequestStore {
     func addTrackStatusRequest(_ id: UInt64, continuation: CheckedContinuation<TrackStatus, Error>) {
         stateQueue.sync {
             requests[id] = .trackStatus(continuation)
+        }
+    }
+
+    func addFetchRequest(
+        _ id: UInt64,
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        continuation: CheckedContinuation<FetchSubscription, Error>
+    ) {
+        stateQueue.sync {
+            requests[id] = .fetch(
+                resource: resource,
+                subscriberPriority: subscriberPriority,
+                continuation: continuation
+            )
         }
     }
 
@@ -208,6 +228,39 @@ final class SessionRequestStore {
             requests.removeValue(forKey: id)
         }
         guard case .trackStatus(let continuation) = request else { return }
+        continuation.resume(throwing: error)
+    }
+
+    func resolveFetchRequest(with message: FetchOKMessage) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: message.requestID)
+        }
+        guard case .fetch(let resource, let subscriberPriority, let continuation) = request else { return }
+        let fetchSubscription: FetchSubscription = .init(
+            requestID: message.requestID,
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            groupOrder: message.groupOrder,
+            endOfTrack: message.endOfTrack,
+            endLocation: message.endLocation,
+            maxCacheDuration: message.maxCacheDuration
+        )
+        continuation.resume(returning: fetchSubscription)
+    }
+
+    func rejectFetchRequest(with message: FetchErrorMessage) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: message.requestID)
+        }
+        guard case .fetch(_, _, let continuation) = request else { return }
+        continuation.resume(throwing: FetchError.rejected(code: message.errorCode, reason: message.reasonPhrase))
+    }
+
+    func failFetchRequest(_ id: UInt64, error: any Error) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: id)
+        }
+        guard case .fetch(_, _, let continuation) = request else { return }
         continuation.resume(throwing: error)
     }
 }

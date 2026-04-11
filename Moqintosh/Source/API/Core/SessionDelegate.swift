@@ -37,10 +37,10 @@ public protocol SessionDelegate: AnyObject {
     func session(_ session: Session, didReceiveUnsubscribe requestID: UInt64)
 
     /// The remote subscriber requested a fetch (Section 9.16).
-    func session(_ session: Session, didReceiveFetch message: String)
+    func session(_ session: Session, didReceiveFetch request: FetchRequest) throws -> FetchResponse
 
     /// The remote subscriber cancelled a fetch (Section 9.19).
-    func session(_ session: Session, didReceiveFetchCancel message: String)
+    func session(_ session: Session, didReceiveFetchCancel requestID: UInt64)
 
     /// The remote subscriber requested track status (Section 9.20).
     func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) throws -> TrackStatus
@@ -102,8 +102,10 @@ public extension SessionDelegate {
     }
     func session(_ session: Session, didReceiveSubscribeUpdate update: SubscribeUpdate) {}
     func session(_ session: Session, didReceiveUnsubscribe requestID: UInt64) {}
-    func session(_ session: Session, didReceiveFetch message: String) {}
-    func session(_ session: Session, didReceiveFetchCancel message: String) {}
+    func session(_ session: Session, didReceiveFetch request: FetchRequest) throws -> FetchResponse {
+        throw FetchRequestError.rejected(code: 0x0, reason: "Rejected")
+    }
+    func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) {}
     func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) throws -> TrackStatus {
         throw TrackStatusRequestError.rejected(code: 0x0, reason: "Rejected")
     }

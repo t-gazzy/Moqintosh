@@ -95,13 +95,84 @@ public final class Subscriber {
     // MARK: - Fetch
 
     /// Requests a fetch for a range of objects (Section 9.16).
-    public func fetch() async throws {
-        // TODO: encode and send FETCH
+    public func fetch(
+        resource: TrackResource,
+        subscriberPriority: UInt8 = 0,
+        groupOrder: GroupOrder = .publisherDefault,
+        start: Location,
+        end: Location
+    ) async throws -> FetchSubscription {
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
+        let message: FetchMessage = .init(
+            requestID: requestID,
+            subscriberPriority: subscriberPriority,
+            groupOrder: groupOrder,
+            mode: .standalone(resource: resource, start: start, end: end)
+        )
+        OSLogger.debug("Sending FETCH (requestID: \(requestID))")
+        return try await controlMessageChannel.performFetchRequest(
+            requestID: requestID,
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            bytes: message.encode()
+        )
+    }
+
+    public func fetch(
+        joining subscription: Subscription,
+        subscriberPriority: UInt8 = 0,
+        groupOrder: GroupOrder = .publisherDefault,
+        startGroupOffset: UInt64
+    ) async throws -> FetchSubscription {
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
+        let message: FetchMessage = .init(
+            requestID: requestID,
+            subscriberPriority: subscriberPriority,
+            groupOrder: groupOrder,
+            mode: .joiningRelative(
+                joiningRequestID: subscription.requestID,
+                startGroupOffset: startGroupOffset
+            )
+        )
+        OSLogger.debug("Sending FETCH (requestID: \(requestID))")
+        return try await controlMessageChannel.performFetchRequest(
+            requestID: requestID,
+            resource: subscription.publishedTrack.resource,
+            subscriberPriority: subscriberPriority,
+            bytes: message.encode()
+        )
+    }
+
+    public func fetch(
+        joining subscription: Subscription,
+        subscriberPriority: UInt8 = 0,
+        groupOrder: GroupOrder = .publisherDefault,
+        startGroup: UInt64
+    ) async throws -> FetchSubscription {
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
+        let message: FetchMessage = .init(
+            requestID: requestID,
+            subscriberPriority: subscriberPriority,
+            groupOrder: groupOrder,
+            mode: .joiningAbsolute(
+                joiningRequestID: subscription.requestID,
+                startGroup: startGroup
+            )
+        )
+        OSLogger.debug("Sending FETCH (requestID: \(requestID))")
+        return try await controlMessageChannel.performFetchRequest(
+            requestID: requestID,
+            resource: subscription.publishedTrack.resource,
+            subscriberPriority: subscriberPriority,
+            bytes: message.encode()
+        )
     }
 
     /// Cancels an in-progress fetch (Section 9.19).
-    public func fetchCancel() async throws {
-        // TODO: encode and send FETCH_CANCEL
+    public func fetchCancel(for fetchSubscription: FetchSubscription) async throws {
+        let message: FetchCancelMessage = .init(requestID: fetchSubscription.requestID)
+        OSLogger.debug("Sending FETCH_CANCEL (requestID: \(fetchSubscription.requestID))")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     // MARK: - Track status
@@ -153,5 +224,9 @@ public final class Subscriber {
 
     public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
         .init(sessionContext: sessionContext, subscription: subscription)
+    }
+
+    public func makeFetchReceiverFactory(for fetchSubscription: FetchSubscription) -> FetchReceiverFactory {
+        .init(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
     }
 }

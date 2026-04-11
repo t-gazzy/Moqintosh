@@ -51,12 +51,20 @@ final class ControlMessageDispatcher {
             handleIncomingSubscribeUpdate(subscribeUpdateMessage)
         case .unsubscribe(let unsubscribeMessage):
             handleIncomingUnsubscribe(unsubscribeMessage)
-        case .trackStatus(let trackStatusMessage):
-            await handleIncomingTrackStatus(trackStatusMessage)
         case .trackStatusOK(let trackStatusOKMessage):
             sessionContext.requestStore.resolveTrackStatusRequest(with: trackStatusOKMessage)
         case .trackStatusError(let trackStatusErrorMessage):
             sessionContext.requestStore.rejectTrackStatusRequest(with: trackStatusErrorMessage)
+        case .fetch(let fetchMessage):
+            await handleIncomingFetch(fetchMessage)
+        case .fetchOK(let fetchOKMessage):
+            sessionContext.requestStore.resolveFetchRequest(with: fetchOKMessage)
+        case .fetchError(let fetchErrorMessage):
+            sessionContext.requestStore.rejectFetchRequest(with: fetchErrorMessage)
+        case .fetchCancel(let fetchCancelMessage):
+            handleIncomingFetchCancel(fetchCancelMessage)
+        case .trackStatus(let trackStatusMessage):
+            await handleIncomingTrackStatus(trackStatusMessage)
         case .subscribeNamespace(let subscribeNamespaceMessage):
             await handleIncomingSubscribeNamespace(subscribeNamespaceMessage)
         case .subscribeNamespaceOK(let subscribeNamespaceOKMessage):
@@ -132,6 +140,12 @@ final class ControlMessageDispatcher {
             forward: message.forward
         )
         let isAccepted: Bool = session.shouldAcceptSubscribe(publishedTrack: publishedTrack)
+        if isAccepted {
+            sessionContext.registerInboundSubscriptionResource(
+                requestID: message.requestID,
+                resource: message.resource
+            )
+        }
         let response: Data = isAccepted
             ? SubscribeOKMessage(
                 requestID: message.requestID,
@@ -181,7 +195,92 @@ final class ControlMessageDispatcher {
 
     private func handleIncomingUnsubscribe(_ message: UnsubscribeMessage) {
         guard let session: Session = sessionContext.session else { return }
+        sessionContext.removeInboundSubscriptionResource(requestID: message.requestID)
         session.didReceiveUnsubscribe(requestID: message.requestID)
+    }
+
+    private func handleIncomingFetch(_ message: FetchMessage) async {
+        guard let session: Session = sessionContext.session else { return }
+        let request: FetchRequest
+        switch message.mode {
+        case .standalone(let resource, let start, let end):
+            request = .standalone(
+                requestID: message.requestID,
+                resource: resource,
+                subscriberPriority: message.subscriberPriority,
+                groupOrder: message.groupOrder,
+                start: start,
+                end: end
+            )
+        case .joiningRelative(let joiningRequestID, let startGroupOffset):
+            guard let resource: TrackResource = sessionContext.inboundSubscriptionResource(for: joiningRequestID) else {
+                let response: Data = FetchErrorMessage(
+                    requestID: message.requestID,
+                    errorCode: 0x7,
+                    reasonPhrase: "Invalid joining request ID"
+                ).encode()
+                try? await sessionContext.controlStream.send(bytes: response)
+                return
+            }
+            request = .joiningRelative(
+                requestID: message.requestID,
+                joiningRequestID: joiningRequestID,
+                resource: resource,
+                subscriberPriority: message.subscriberPriority,
+                groupOrder: message.groupOrder,
+                startGroupOffset: startGroupOffset
+            )
+        case .joiningAbsolute(let joiningRequestID, let startGroup):
+            guard let resource: TrackResource = sessionContext.inboundSubscriptionResource(for: joiningRequestID) else {
+                let response: Data = FetchErrorMessage(
+                    requestID: message.requestID,
+                    errorCode: 0x7,
+                    reasonPhrase: "Invalid joining request ID"
+                ).encode()
+                try? await sessionContext.controlStream.send(bytes: response)
+                return
+            }
+            request = .joiningAbsolute(
+                requestID: message.requestID,
+                joiningRequestID: joiningRequestID,
+                resource: resource,
+                subscriberPriority: message.subscriberPriority,
+                groupOrder: message.groupOrder,
+                startGroup: startGroup
+            )
+        }
+        let response: Data
+        do {
+            let fetchResponse: FetchResponse = try session.fetchResponse(for: request)
+            response = FetchOKMessage(
+                requestID: message.requestID,
+                groupOrder: fetchResponse.groupOrder,
+                endOfTrack: fetchResponse.endOfTrack,
+                endLocation: fetchResponse.endLocation,
+                maxCacheDuration: fetchResponse.maxCacheDuration
+            ).encode()
+        } catch let error as FetchRequestError {
+            switch error {
+            case .rejected(let code, let reason):
+                response = FetchErrorMessage(
+                    requestID: message.requestID,
+                    errorCode: code,
+                    reasonPhrase: reason
+                ).encode()
+            }
+        } catch {
+            response = FetchErrorMessage(
+                requestID: message.requestID,
+                errorCode: 0x0,
+                reasonPhrase: "Rejected"
+            ).encode()
+        }
+        try? await sessionContext.controlStream.send(bytes: response)
+    }
+
+    private func handleIncomingFetchCancel(_ message: FetchCancelMessage) {
+        guard let session: Session = sessionContext.session else { return }
+        session.didReceiveFetchCancel(requestID: message.requestID)
     }
 
     private func handleIncomingTrackStatus(_ message: TrackStatusMessage) async {

@@ -97,9 +97,13 @@ final class MessageFrameReader {
         case .unsubscribe:
             return .unsubscribe(try UnsubscribeMessage.decode(from: payload))
         case .fetch:
-            return .fetch
+            return .fetch(try FetchMessage.decode(from: payload))
+        case .fetchOK:
+            return .fetchOK(try FetchOKMessage.decode(from: payload))
+        case .fetchError:
+            return .fetchError(try FetchErrorMessage.decode(from: payload))
         case .fetchCancel:
-            return .fetchCancel
+            return .fetchCancel(try FetchCancelMessage.decode(from: payload))
         case .trackStatus:
             return .trackStatus(try TrackStatusMessage.decode(from: payload))
         case .trackStatusOK:

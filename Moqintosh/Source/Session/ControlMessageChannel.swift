@@ -24,4 +24,10 @@ protocol ControlMessageChannel: AnyObject {
         bytes: Data
     ) async throws -> Subscription
     func performTrackStatusRequest(requestID: UInt64, bytes: Data) async throws -> TrackStatus
+    func performFetchRequest(
+        requestID: UInt64,
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        bytes: Data
+    ) async throws -> FetchSubscription
 }

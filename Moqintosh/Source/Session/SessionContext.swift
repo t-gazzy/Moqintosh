@@ -15,12 +15,14 @@ final class SessionContext {
     let controlStream: TransportBiStream
     let requestStore: SessionRequestStore
     let streamReceiverStore: StreamReceiverStore
+    let fetchReceiverStore: FetchReceiverStore
     let datagramReceiverStore: DatagramReceiverStore
     /// Client-side Request IDs start at 0 and increment by 2 (even numbers, Section 9.1).
     private var nextRequestID: UInt64 = 0
     private var nextTrackAlias: UInt64 = 0
     private var remoteMaxRequestID: UInt64
     private var blockedRequestID: UInt64?
+    private var inboundSubscriptionResources: [UInt64: TrackResource]
     private let stateQueue: DispatchQueue
 
     init(connection: TransportConnection, controlStream: TransportBiStream, remoteMaxRequestID: UInt64 = 0) {
@@ -28,9 +30,11 @@ final class SessionContext {
         self.controlStream = controlStream
         self.requestStore = SessionRequestStore()
         self.streamReceiverStore = StreamReceiverStore()
+        self.fetchReceiverStore = FetchReceiverStore()
         self.datagramReceiverStore = DatagramReceiverStore()
         self.remoteMaxRequestID = remoteMaxRequestID
         self.blockedRequestID = nil
+        self.inboundSubscriptionResources = [:]
         self.stateQueue = DispatchQueue(label: "Moqintosh.SessionContext")
     }
 
@@ -76,6 +80,24 @@ final class SessionContext {
             if let blockedRequestID, blockedRequestID < requestID {
                 self.blockedRequestID = nil
             }
+        }
+    }
+
+    func registerInboundSubscriptionResource(requestID: UInt64, resource: TrackResource) {
+        stateQueue.sync {
+            inboundSubscriptionResources[requestID] = resource
+        }
+    }
+
+    func inboundSubscriptionResource(for requestID: UInt64) -> TrackResource? {
+        stateQueue.sync {
+            inboundSubscriptionResources[requestID]
+        }
+    }
+
+    func removeInboundSubscriptionResource(requestID: UInt64) {
+        stateQueue.sync {
+            inboundSubscriptionResources.removeValue(forKey: requestID)
         }
     }
 }
@@ -161,6 +183,29 @@ extension SessionContext: ControlMessageChannel {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
                     self.requestStore.failTrackStatusRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+
+    func performFetchRequest(
+        requestID: UInt64,
+        resource: TrackResource,
+        subscriberPriority: UInt8,
+        bytes: Data
+    ) async throws -> FetchSubscription {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<FetchSubscription, Error>) in
+            requestStore.addFetchRequest(
+                requestID,
+                resource: resource,
+                subscriberPriority: subscriberPriority,
+                continuation: continuation
+            )
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failFetchRequest(requestID, error: error)
                 }
             }
         }

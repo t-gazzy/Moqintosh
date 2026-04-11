@@ -105,6 +105,20 @@ public final class Session {
         }
     }
 
+    func fetchResponse(for request: FetchRequest) throws -> FetchResponse {
+        try delegateQueue.sync {
+            try delegate?.session(self, didReceiveFetch: request) ?? {
+                throw FetchRequestError.rejected(code: 0x0, reason: "Rejected")
+            }()
+        }
+    }
+
+    func didReceiveFetchCancel(requestID: UInt64) {
+        delegateQueue.sync {
+            delegate?.session(self, didReceiveFetchCancel: requestID)
+        }
+    }
+
     func trackStatus(for request: TrackStatusRequest) throws -> TrackStatus {
         try delegateQueue.sync {
             try delegate?.session(self, didReceiveTrackStatus: request) ?? {
@@ -168,4 +182,12 @@ public enum TrackStatusRequestError: Error {
 
 public enum SessionFlowControlError: Error {
     case blocked(maxRequestID: UInt64)
+}
+
+public enum FetchError: Error {
+    case rejected(code: UInt64, reason: String)
+}
+
+public enum FetchRequestError: Error {
+    case rejected(code: UInt64, reason: String)
 }

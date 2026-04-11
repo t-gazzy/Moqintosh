@@ -14,6 +14,7 @@ final class TestSessionDelegate: SessionDelegate {
     var subscribeNamespaceResult: Bool
     var publishResult: Bool
     var subscribeResult: Bool
+    var fetchResponse: FetchResponse?
     var trackStatusResult: TrackStatus?
     private(set) var receivedPublishNamespace: TrackNamespace?
     private(set) var receivedPublishNamespaceAuthorizationToken: AuthorizationToken?
@@ -24,6 +25,8 @@ final class TestSessionDelegate: SessionDelegate {
     private(set) var receivedSubscribeUpdate: SubscribeUpdate?
     private(set) var receivedUnsubscribeRequestID: UInt64?
     private(set) var receivedTrackStatusRequest: TrackStatusRequest?
+    private(set) var receivedFetchRequest: FetchRequest?
+    private(set) var receivedFetchCancelRequestID: UInt64?
     private(set) var receivedPublishDone: PublishDone?
     private(set) var receivedPublishNamespaceDone: TrackNamespace?
     private(set) var receivedGoAwayURI: String?
@@ -35,6 +38,7 @@ final class TestSessionDelegate: SessionDelegate {
         self.subscribeNamespaceResult = false
         self.publishResult = false
         self.subscribeResult = false
+        self.fetchResponse = nil
         self.trackStatusResult = nil
         self.receivedPublishNamespace = nil
         self.receivedPublishNamespaceAuthorizationToken = nil
@@ -45,6 +49,8 @@ final class TestSessionDelegate: SessionDelegate {
         self.receivedSubscribeUpdate = nil
         self.receivedUnsubscribeRequestID = nil
         self.receivedTrackStatusRequest = nil
+        self.receivedFetchRequest = nil
+        self.receivedFetchCancelRequestID = nil
         self.receivedPublishDone = nil
         self.receivedPublishNamespaceDone = nil
         self.receivedGoAwayURI = nil
@@ -96,6 +102,18 @@ final class TestSessionDelegate: SessionDelegate {
             return trackStatusResult
         }
         throw TrackStatusRequestError.rejected(code: 0x0, reason: "Rejected")
+    }
+
+    func session(_ session: Session, didReceiveFetch request: FetchRequest) throws -> FetchResponse {
+        receivedFetchRequest = request
+        if let fetchResponse {
+            return fetchResponse
+        }
+        throw FetchRequestError.rejected(code: 0x0, reason: "Rejected")
+    }
+
+    func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) {
+        receivedFetchCancelRequestID = requestID
     }
 
     func session(_ session: Session, didReceivePublishDone publishDone: PublishDone) {

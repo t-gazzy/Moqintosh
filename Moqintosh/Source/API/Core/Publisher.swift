@@ -93,4 +93,9 @@ public final class Publisher {
     public func makeDatagramSender(for publishedTrack: PublishedTrack) -> DatagramSender {
         .init(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
+
+    public func makeFetchSender(for fetchRequest: FetchRequest) async throws -> FetchSender {
+        let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
+        return try await .init(stream: stream, requestID: fetchRequest.requestID)
+    }
 }

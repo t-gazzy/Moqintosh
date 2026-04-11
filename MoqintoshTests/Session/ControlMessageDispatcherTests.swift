@@ -107,6 +107,68 @@ struct ControlMessageDispatcherTests {
         #expect(stream.sentBytes[0].first == UInt8(MessageType.trackStatusOK.rawValue))
     }
 
+    @Test func handleFetchSendsOKWhenDelegateReturnsResponse() async {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
+        let session: Session = .init(
+            sessionContext: context,
+            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+        )
+        let delegate: TestSessionDelegate = .init()
+        delegate.fetchResponse = .init(
+            groupOrder: .ascending,
+            endOfTrack: true,
+            endLocation: .init(group: 7, object: 8),
+            maxCacheDuration: 9
+        )
+        session.delegate = delegate
+
+        await dispatcher.handle(
+            .fetch(
+                .init(
+                    requestID: 10,
+                    subscriberPriority: 1,
+                    groupOrder: .ascending,
+                    mode: .standalone(
+                        resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                        start: .init(group: 1, object: 2),
+                        end: .init(group: 3, object: 4)
+                    )
+                )
+            )
+        )
+
+        guard case .standalone(let requestID, let resource, let subscriberPriority, let groupOrder, let start, let end) = delegate.receivedFetchRequest else {
+            Issue.record("Expected standalone fetch request")
+            return
+        }
+        #expect(requestID == 10)
+        #expect(resource.trackName == Data("video".utf8))
+        #expect(subscriberPriority == 1)
+        #expect(groupOrder == .ascending)
+        #expect(start.group == 1)
+        #expect(end.object == 4)
+        #expect(stream.sentBytes.count == 1)
+        #expect(stream.sentBytes[0].first == UInt8(MessageType.fetchOK.rawValue))
+    }
+
+    @Test func handleFetchCancelDispatchesToDelegate() async {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
+        let session: Session = .init(
+            sessionContext: context,
+            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+        )
+        let delegate: TestSessionDelegate = .init()
+        session.delegate = delegate
+
+        await dispatcher.handle(.fetchCancel(.init(requestID: 12)))
+
+        #expect(delegate.receivedFetchCancelRequestID == 12)
+    }
+
     @Test func handleGoAwayDispatchesToDelegate() async {
         let stream: MockTransportBiStream = .init()
         let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)

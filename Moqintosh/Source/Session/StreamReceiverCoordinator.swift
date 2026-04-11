@@ -18,12 +18,21 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
     func connection(_ connection: TransportConnection, didReceiveUniStream stream: TransportUniReceiveStream) {
         Task {
             do {
-                let (header, initialData): (SubgroupHeader, Data) = try await readHeader(from: stream)
-                guard let handler: StreamReceiverStore.Handler = sessionContext.streamReceiverStore.handler(for: header.trackAlias) else {
-                    OSLogger.warn("No stream receiver registered for track alias \(header.trackAlias)")
-                    return
+                let header: StreamHeader = try await readHeader(from: stream)
+                switch header {
+                case .subgroup(let subgroupHeader, let initialData):
+                    guard let handler: StreamReceiverStore.Handler = sessionContext.streamReceiverStore.handler(for: subgroupHeader.trackAlias) else {
+                        OSLogger.warn("No stream receiver registered for track alias \(subgroupHeader.trackAlias)")
+                        return
+                    }
+                    handler(stream, subgroupHeader, initialData)
+                case .fetch(let fetchHeader, let initialData):
+                    guard let handler: FetchReceiverStore.Handler = sessionContext.fetchReceiverStore.handler(for: fetchHeader.requestID) else {
+                        OSLogger.warn("No fetch receiver registered for request ID \(fetchHeader.requestID)")
+                        return
+                    }
+                    handler(stream, fetchHeader, initialData)
                 }
-                handler(stream, header, initialData)
             } catch {
                 OSLogger.error("Failed to receive subgroup stream header: \(error)")
             }
@@ -43,15 +52,23 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
         }
     }
 
-    private func readHeader(from stream: TransportUniReceiveStream) async throws -> (SubgroupHeader, Data) {
+    private func readHeader(from stream: TransportUniReceiveStream) async throws -> StreamHeader {
         var buffer: Data = .init()
         while true {
             do {
                 let reader: ByteReader = .init(data: buffer)
-                let header: SubgroupHeader = try .decode(from: reader)
-                let consumedBytes: Int = buffer.count - reader.remainingCount
+                let type: UInt64 = try reader.readVarint()
+                let headerReader: ByteReader = .init(data: buffer)
+                if type == FetchHeader.type {
+                    let header: FetchHeader = try .decode(from: headerReader)
+                    let consumedBytes: Int = buffer.count - headerReader.remainingCount
+                    let remainingBytes: Data = Data(buffer.dropFirst(consumedBytes))
+                    return .fetch(header: header, initialData: remainingBytes)
+                }
+                let header: SubgroupHeader = try .decode(from: headerReader)
+                let consumedBytes: Int = buffer.count - headerReader.remainingCount
                 let remainingBytes: Data = Data(buffer.dropFirst(consumedBytes))
-                return (header, remainingBytes)
+                return .subgroup(header: header, initialData: remainingBytes)
             } catch ByteReaderError.insufficientData {
                 let result: TransportUniReceiveResult = try await stream.receive()
                 buffer.append(result.bytes)
@@ -61,4 +78,9 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
             }
         }
     }
+}
+
+private enum StreamHeader {
+    case subgroup(header: SubgroupHeader, initialData: Data)
+    case fetch(header: FetchHeader, initialData: Data)
 }

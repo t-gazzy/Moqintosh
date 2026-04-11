@@ -19,8 +19,10 @@ enum MOQTMessage {
     case subscribeError(SubscribeErrorMessage)
     case subscribeUpdate(SubscribeUpdateMessage)
     case unsubscribe(UnsubscribeMessage)
-    case fetch
-    case fetchCancel
+    case fetch(FetchMessage)
+    case fetchOK(FetchOKMessage)
+    case fetchError(FetchErrorMessage)
+    case fetchCancel(FetchCancelMessage)
     case trackStatus(TrackStatusMessage)
     case trackStatusOK(TrackStatusOKMessage)
     case trackStatusError(TrackStatusErrorMessage)
