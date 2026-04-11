@@ -108,4 +108,8 @@ public final class Subscriber {
     public func trackStatus() async throws {
         // TODO: encode and send TRACK_STATUS
     }
+
+    public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {
+        .init(session: session, subscription: subscription)
+    }
 }

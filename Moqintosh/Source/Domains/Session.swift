@@ -11,12 +11,15 @@ public final class Session {
 
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
+    private let streamReceiverCoordinator: StreamReceiverCoordinator
     public weak var delegate: (any SessionDelegate)?
 
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
+        self.streamReceiverCoordinator = .init(sessionContext: sessionContext)
         self.context.session = self
+        self.context.connection.delegate = streamReceiverCoordinator
         self.controlMessageReceiver.start()
     }
 

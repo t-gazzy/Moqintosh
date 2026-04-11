@@ -9,7 +9,7 @@ import Foundation
 
 public struct SubgroupHeader {
 
-    public enum SubgroupID {
+    public enum SubgroupID: Equatable {
         case zero
         case firstObject
         case explicit(UInt64)
@@ -133,6 +133,10 @@ public struct SubgroupHeader {
 
     static func decode(_ data: Data) throws -> SubgroupHeader {
         let reader: ByteReader = .init(data: data)
+        return try decode(from: reader)
+    }
+
+    static func decode(from reader: ByteReader) throws -> SubgroupHeader {
         let typeRawValue: UInt64 = try reader.readVarint()
         guard let headerType: HeaderType = .init(rawValue: typeRawValue) else {
             throw SubgroupHeaderError.invalidType(typeRawValue)

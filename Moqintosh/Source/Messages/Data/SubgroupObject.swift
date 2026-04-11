@@ -7,18 +7,18 @@
 
 import Foundation
 
-struct SubgroupObject {
+public struct SubgroupObject {
 
-    enum Content {
+    public enum Content {
         case payload(Data)
         case status(UInt64)
     }
 
     let header: SubgroupHeader
-    let objectID: UInt64
+    public let objectID: UInt64
     let previousObjectID: UInt64?
     let extensions: [KeyValuePair]
-    let content: Content
+    public let content: Content
 
     init(
         header: SubgroupHeader,
@@ -60,6 +60,14 @@ struct SubgroupObject {
         previousObjectID: UInt64? = nil
     ) throws -> SubgroupObject {
         let reader: ByteReader = .init(data: data)
+        return try decode(from: reader, header: header, previousObjectID: previousObjectID)
+    }
+
+    static func decode(
+        from reader: ByteReader,
+        header: SubgroupHeader,
+        previousObjectID: UInt64? = nil
+    ) throws -> SubgroupObject {
         let objectIDDelta: UInt64 = try reader.readVarint()
         let objectID: UInt64
         if let previousObjectID {

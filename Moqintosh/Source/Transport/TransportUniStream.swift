@@ -9,5 +9,6 @@ import Foundation
 
 /// Represents an open unidirectional transport stream.
 protocol TransportUniStream: AnyObject {
+    func receive() async throws -> Data
     func send(bytes: Data) async throws
 }

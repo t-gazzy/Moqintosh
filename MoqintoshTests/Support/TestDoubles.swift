@@ -48,7 +48,25 @@ final class MockTransportBiStream: TransportBiStream {
 
 final class MockTransportUniStream: TransportUniStream {
 
-    private(set) var sentBytes: [Data] = []
+    var receiveQueue: [Data]
+    var receiveError: (any Error)?
+    private(set) var sentBytes: [Data]
+
+    init(receiveQueue: [Data] = [], receiveError: (any Error)? = CancellationError()) {
+        self.receiveQueue = receiveQueue
+        self.receiveError = receiveError
+        self.sentBytes = []
+    }
+
+    func receive() async throws -> Data {
+        if !receiveQueue.isEmpty {
+            return receiveQueue.removeFirst()
+        }
+        if let receiveError {
+            throw receiveError
+        }
+        return Data()
+    }
 
     func send(bytes: Data) async throws {
         sentBytes.append(bytes)
