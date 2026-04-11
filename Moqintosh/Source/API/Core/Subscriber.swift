@@ -26,7 +26,7 @@ public final class Subscriber {
     /// - Parameter namespacePrefix: The track namespace prefix to subscribe to.
     /// - Throws: `SubscribeNamespaceError.rejected` if the publisher responds with `SUBSCRIBE_NAMESPACE_ERROR`.
     public func subscribeNamespace(namespacePrefix: TrackNamespace) async throws {
-        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let message: SubscribeNamespaceMessage = .init(requestID: requestID, namespacePrefix: namespacePrefix)
         OSLogger.debug("Sending SUBSCRIBE_NAMESPACE (requestID: \(requestID))")
         try await controlMessageChannel.performSubscribeNamespaceRequest(requestID: requestID, bytes: message.encode())
@@ -42,7 +42,7 @@ public final class Subscriber {
         forward: Bool = true,
         filter: SubscriptionFilter = .largestObject
     ) async throws -> Subscription {
-        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let message: SubscribeMessage = .init(
             requestID: requestID,
             resource: resource,
@@ -114,7 +114,7 @@ public final class Subscriber {
         forward: Bool = true,
         filter: SubscriptionFilter = .largestObject
     ) async throws -> TrackStatus {
-        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let message: TrackStatusMessage = .init(
             requestID: requestID,
             resource: resource,

@@ -19,6 +19,10 @@ final class ControlMessageDispatcher {
         switch message {
         case .goaway(let goAwayMessage):
             handleIncomingGoAway(goAwayMessage)
+        case .maxRequestID(let maxRequestIDMessage):
+            handleIncomingMaxRequestID(maxRequestIDMessage)
+        case .requestsBlocked(let requestsBlockedMessage):
+            handleIncomingRequestsBlocked(requestsBlockedMessage)
         case .publish(let publishMessage):
             await handleIncomingPublish(publishMessage)
         case .publishOK(let publishOKMessage):
@@ -69,6 +73,15 @@ final class ControlMessageDispatcher {
     private func handleIncomingGoAway(_ message: GoAwayMessage) {
         guard let session: Session = sessionContext.session else { return }
         session.didReceiveGoAway(newSessionURI: message.newSessionURI)
+    }
+
+    private func handleIncomingMaxRequestID(_ message: MaxRequestIDMessage) {
+        OSLogger.debug("Received MAX_REQUEST_ID (requestID: \(message.requestID))")
+        sessionContext.updateRemoteMaxRequestID(message.requestID)
+    }
+
+    private func handleIncomingRequestsBlocked(_ message: RequestsBlockedMessage) {
+        OSLogger.debug("Received REQUESTS_BLOCKED (requestID: \(message.requestID))")
     }
 
     private func handleIncomingPublishNamespace(_ message: PublishNamespaceMessage) async {

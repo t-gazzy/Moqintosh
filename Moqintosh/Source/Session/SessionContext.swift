@@ -19,26 +19,44 @@ final class SessionContext {
     /// Client-side Request IDs start at 0 and increment by 2 (even numbers, Section 9.1).
     private var nextRequestID: UInt64 = 0
     private var nextTrackAlias: UInt64 = 0
+    private var remoteMaxRequestID: UInt64
+    private var blockedRequestID: UInt64?
     private let stateQueue: DispatchQueue
 
-    init(connection: TransportConnection, controlStream: TransportBiStream) {
+    init(connection: TransportConnection, controlStream: TransportBiStream, remoteMaxRequestID: UInt64 = 0) {
         self.connection = connection
         self.controlStream = controlStream
         self.requestStore = SessionRequestStore()
         self.streamReceiverStore = StreamReceiverStore()
         self.datagramReceiverStore = DatagramReceiverStore()
+        self.remoteMaxRequestID = remoteMaxRequestID
+        self.blockedRequestID = nil
         self.stateQueue = DispatchQueue(label: "Moqintosh.SessionContext")
     }
 
     // MARK: - Request ID
 
     /// Issues the next Request ID and advances the counter.
-    func issueRequestID() -> UInt64 {
-        stateQueue.sync {
+    func issueRequestID() async throws -> UInt64 {
+        let result: (id: UInt64?, blockedRequestID: UInt64?) = stateQueue.sync {
             let id: UInt64 = nextRequestID
+            guard id <= remoteMaxRequestID else {
+                let messageRequestID: UInt64? = blockedRequestID == remoteMaxRequestID ? nil : remoteMaxRequestID
+                blockedRequestID = remoteMaxRequestID
+                return (nil, messageRequestID)
+            }
             nextRequestID += 2
+            return (id, nil)
+        }
+        if let id: UInt64 = result.id {
             return id
         }
+        if let blockedRequestID: UInt64 = result.blockedRequestID {
+            let message: RequestsBlockedMessage = .init(requestID: blockedRequestID)
+            OSLogger.debug("Sending REQUESTS_BLOCKED (requestID: \(blockedRequestID))")
+            try await controlStream.send(bytes: message.encode())
+        }
+        throw SessionFlowControlError.blocked(maxRequestID: stateQueue.sync { remoteMaxRequestID })
     }
 
     func issueTrackAlias() -> UInt64 {
@@ -46,6 +64,18 @@ final class SessionContext {
             let alias: UInt64 = nextTrackAlias
             nextTrackAlias += 1
             return alias
+        }
+    }
+
+    func updateRemoteMaxRequestID(_ requestID: UInt64) {
+        stateQueue.sync {
+            guard requestID > remoteMaxRequestID else {
+                return
+            }
+            remoteMaxRequestID = requestID
+            if let blockedRequestID, blockedRequestID < requestID {
+                self.blockedRequestID = nil
+            }
         }
     }
 }

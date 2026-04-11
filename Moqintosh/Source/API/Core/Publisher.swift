@@ -23,7 +23,7 @@ public final class Publisher {
 
     /// Announces a namespace to the subscriber (Section 9.23).
     public func publishNamespace(trackNamespace: TrackNamespace) async throws {
-        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let message: PublishNamespaceMessage = .init(requestID: requestID, trackNamespace: trackNamespace)
         OSLogger.debug("Sending PUBLISH_NAMESPACE (requestID: \(requestID))")
         try await controlMessageChannel.performPublishNamespaceRequest(requestID: requestID, bytes: message.encode())
@@ -45,7 +45,7 @@ public final class Publisher {
         contentExist: ContentExist = .noContent,
         forward: Bool = true
     ) async throws -> PublishedTrack {
-        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
         let trackAlias: UInt64 = controlMessageChannel.issueTrackAlias()
         let publishedTrack: PublishedTrack = .init(
             requestID: requestID,

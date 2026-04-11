@@ -165,3 +165,7 @@ public enum TrackStatusError: Error {
 public enum TrackStatusRequestError: Error {
     case rejected(code: UInt64, reason: String)
 }
+
+public enum SessionFlowControlError: Error {
+    case blocked(maxRequestID: UInt64)
+}

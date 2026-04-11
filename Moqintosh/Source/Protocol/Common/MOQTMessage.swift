@@ -12,6 +12,8 @@ enum MOQTMessage {
     case clientSetup(ClientSetupMessage)
     case serverSetup(ServerSetupMessage)
     case goaway(GoAwayMessage)
+    case maxRequestID(MaxRequestIDMessage)
+    case requestsBlocked(RequestsBlockedMessage)
     case subscribe(SubscribeMessage)
     case subscribeOK(SubscribeOKMessage)
     case subscribeError(SubscribeErrorMessage)

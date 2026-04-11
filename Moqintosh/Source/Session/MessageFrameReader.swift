@@ -82,6 +82,10 @@ final class MessageFrameReader {
             return .serverSetup(try ServerSetupMessage.decode(from: payload))
         case .goaway:
             return .goaway(try GoAwayMessage.decode(from: payload))
+        case .maxRequestID:
+            return .maxRequestID(try MaxRequestIDMessage.decode(from: payload))
+        case .requestsBlocked:
+            return .requestsBlocked(try RequestsBlockedMessage.decode(from: payload))
         case .subscribe:
             return .subscribe(try SubscribeMessage.decode(from: payload))
         case .subscribeOK:

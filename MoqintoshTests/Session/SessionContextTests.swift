@@ -11,11 +11,32 @@ import Testing
 
 struct SessionContextTests {
 
-    @Test func issueRequestIDIncrementsByTwo() {
-        let context: SessionContext = .init(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
-        #expect(context.issueRequestID() == 0)
-        #expect(context.issueRequestID() == 2)
-        #expect(context.issueRequestID() == 4)
+    @Test func issueRequestIDIncrementsByTwo() async throws {
+        let context: SessionContext = .init(
+            connection: MockTransportConnection(),
+            controlStream: MockTransportBiStream(),
+            remoteMaxRequestID: 4
+        )
+        #expect(try await context.issueRequestID() == 0)
+        #expect(try await context.issueRequestID() == 2)
+        #expect(try await context.issueRequestID() == 4)
+    }
+
+    @Test func issueRequestIDSendsRequestsBlockedWhenRemoteLimitIsReached() async {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(
+            connection: MockTransportConnection(),
+            controlStream: stream,
+            remoteMaxRequestID: 0
+        )
+
+        _ = try? await context.issueRequestID()
+
+        await #expect(throws: SessionFlowControlError.self) {
+            try await context.issueRequestID()
+        }
+        #expect(stream.sentBytes.count == 1)
+        #expect(stream.sentBytes[0].first == UInt8(MessageType.requestsBlocked.rawValue))
     }
 
     @Test func issueTrackAliasIncrementsByOne() {
