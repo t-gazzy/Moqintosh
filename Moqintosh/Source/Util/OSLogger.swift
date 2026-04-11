@@ -20,7 +20,7 @@ class OSLogger {
         case error = 5
     }
 
-    static var tag: String = ""
+    static var tag: String = "[🍎MOQINTOSH]"
     static var outputLogLevel: LogLevel = .trace
 
     private static var logger: Logger = .init(
