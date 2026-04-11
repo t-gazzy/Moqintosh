@@ -152,6 +152,106 @@ struct SubscriberTests {
         #expect(stream.sentBytes[0].first == UInt8(MessageType.fetchCancel.rawValue))
     }
 
+    @Test func joiningRelativeFetchSendsMessageAndResolves() async throws {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
+        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let subscriber: Subscriber = session.makeSubscriber()
+        let subscription: Subscription = .init(
+            requestID: 8,
+            publishedTrack: .init(
+                requestID: 8,
+                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                trackAlias: 3,
+                groupOrder: .ascending,
+                contentExist: .noContent,
+                forward: true
+            ),
+            expires: 0,
+            subscriberPriority: 1,
+            filter: .largestObject
+        )
+
+        let task: Task<FetchSubscription, Error> = .init {
+            try await subscriber.fetch(joining: subscription, startGroupOffset: 5)
+        }
+
+        while stream.sentBytes.isEmpty {
+            await Task.yield()
+        }
+        context.requestStore.resolveFetchRequest(
+            with: .init(
+                requestID: 0,
+                groupOrder: .ascending,
+                endOfTrack: false,
+                endLocation: .init(group: 9, object: 10),
+                maxCacheDuration: nil
+            )
+        )
+
+        let result: FetchSubscription = try await task.value
+        let message: FetchMessage = try .decode(from: Data(stream.sentBytes[0].dropFirst(3)))
+
+        #expect(result.requestID == 0)
+        guard case .joiningRelative(let joiningRequestID, let startGroupOffset) = message.mode else {
+            Issue.record("Expected joining relative fetch")
+            return
+        }
+        #expect(joiningRequestID == 8)
+        #expect(startGroupOffset == 5)
+    }
+
+    @Test func joiningAbsoluteFetchSendsMessageAndResolves() async throws {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
+        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let subscriber: Subscriber = session.makeSubscriber()
+        let subscription: Subscription = .init(
+            requestID: 12,
+            publishedTrack: .init(
+                requestID: 12,
+                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                trackAlias: 4,
+                groupOrder: .ascending,
+                contentExist: .noContent,
+                forward: true
+            ),
+            expires: 0,
+            subscriberPriority: 1,
+            filter: .largestObject
+        )
+
+        let task: Task<FetchSubscription, Error> = .init {
+            try await subscriber.fetch(joining: subscription, startGroup: 7)
+        }
+
+        while stream.sentBytes.isEmpty {
+            await Task.yield()
+        }
+        context.requestStore.resolveFetchRequest(
+            with: .init(
+                requestID: 0,
+                groupOrder: .ascending,
+                endOfTrack: true,
+                endLocation: .init(group: 11, object: 12),
+                maxCacheDuration: nil
+            )
+        )
+
+        let result: FetchSubscription = try await task.value
+        let message: FetchMessage = try .decode(from: Data(stream.sentBytes[0].dropFirst(3)))
+
+        #expect(result.requestID == 0)
+        guard case .joiningAbsolute(let joiningRequestID, let startGroup) = message.mode else {
+            Issue.record("Expected joining absolute fetch")
+            return
+        }
+        #expect(joiningRequestID == 12)
+        #expect(startGroup == 7)
+    }
+
     @Test func trackStatusSendsMessageAndResolves() async throws {
         let stream: MockTransportBiStream = .init()
         let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)

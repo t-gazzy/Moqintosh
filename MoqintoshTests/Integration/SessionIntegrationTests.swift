@@ -75,6 +75,118 @@ struct SessionIntegrationTests {
         #expect(controlStream.sentBytes[1].first == UInt8(MessageType.subscribe.rawValue))
     }
 
+    @Test func fetchRoundTripResolves() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let subscriber: Subscriber = session.makeSubscriber()
+
+        let task: Task<FetchSubscription, Error> = .init {
+            try await subscriber.fetch(
+                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                start: .init(group: 1, object: 2),
+                end: .init(group: 3, object: 4)
+            )
+        }
+
+        while controlStream.sentBytes.count < 2 {
+            await Task.yield()
+        }
+        controlStream.enqueueReceive(
+            FetchOKMessage(
+                requestID: 0,
+                groupOrder: .ascending,
+                endOfTrack: true,
+                endLocation: .init(group: 5, object: 6),
+                maxCacheDuration: 7
+            ).encode()
+        )
+
+        let fetchSubscription: FetchSubscription = try await task.value
+        controlStream.finishReceiving(with: CancellationError())
+
+        #expect(fetchSubscription.requestID == 0)
+        #expect(fetchSubscription.endOfTrack)
+        #expect(fetchSubscription.endLocation.group == 5)
+        #expect(controlStream.sentBytes[1].first == UInt8(MessageType.fetch.rawValue))
+    }
+
+    @Test func joiningRelativeFetchRoundTripResolves() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let subscription: Subscription = try await performSubscribe(
+            session: session,
+            controlStream: controlStream,
+            trackAlias: 3
+        )
+        let subscriber: Subscriber = session.makeSubscriber()
+
+        let task: Task<FetchSubscription, Error> = .init {
+            try await subscriber.fetch(joining: subscription, startGroupOffset: 5)
+        }
+
+        while controlStream.sentBytes.count < 3 {
+            await Task.yield()
+        }
+        controlStream.enqueueReceive(
+            FetchOKMessage(
+                requestID: 2,
+                groupOrder: .ascending,
+                endOfTrack: false,
+                endLocation: .init(group: 6, object: 7),
+                maxCacheDuration: nil
+            ).encode()
+        )
+
+        let fetchSubscription: FetchSubscription = try await task.value
+        controlStream.finishReceiving(with: CancellationError())
+
+        #expect(fetchSubscription.requestID == 2)
+        let message: FetchMessage = try .decode(from: Data(controlStream.sentBytes[2].dropFirst(3)))
+        guard case .joiningRelative(let joiningRequestID, let startGroupOffset) = message.mode else {
+            Issue.record("Expected joining relative fetch")
+            return
+        }
+        #expect(joiningRequestID == 0)
+        #expect(startGroupOffset == 5)
+    }
+
+    @Test func joiningAbsoluteFetchRoundTripResolves() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let subscription: Subscription = try await performSubscribe(
+            session: session,
+            controlStream: controlStream,
+            trackAlias: 3
+        )
+        let subscriber: Subscriber = session.makeSubscriber()
+
+        let task: Task<FetchSubscription, Error> = .init {
+            try await subscriber.fetch(joining: subscription, startGroup: 7)
+        }
+
+        while controlStream.sentBytes.count < 3 {
+            await Task.yield()
+        }
+        controlStream.enqueueReceive(
+            FetchOKMessage(
+                requestID: 2,
+                groupOrder: .ascending,
+                endOfTrack: false,
+                endLocation: .init(group: 8, object: 9),
+                maxCacheDuration: nil
+            ).encode()
+        )
+
+        let fetchSubscription: FetchSubscription = try await task.value
+        controlStream.finishReceiving(with: CancellationError())
+
+        #expect(fetchSubscription.requestID == 2)
+        let message: FetchMessage = try .decode(from: Data(controlStream.sentBytes[2].dropFirst(3)))
+        guard case .joiningAbsolute(let joiningRequestID, let startGroup) = message.mode else {
+            Issue.record("Expected joining absolute fetch")
+            return
+        }
+        #expect(joiningRequestID == 0)
+        #expect(startGroup == 7)
+    }
+
     @Test func inboundPublishNamespaceDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = .init()
@@ -204,6 +316,168 @@ struct SessionIntegrationTests {
             Issue.record("Expected payload content")
         }
     }
+
+    @Test func fetchedStreamRoutesInboundObject() async throws {
+        let (session, connection, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let fetchSubscription: FetchSubscription = try await performFetch(
+            session: session,
+            controlStream: controlStream
+        )
+        let factory: FetchReceiverFactory = session.makeSubscriber().makeFetchReceiverFactory(for: fetchSubscription)
+        let delegate: TestFetchIntegrationDelegate = .init()
+        factory.delegate = delegate
+        let stream: MockTransportUniReceiveStream = .init(
+            receiveQueue: [
+                .init(bytes: FetchHeader(requestID: fetchSubscription.requestID).encode(), isComplete: false),
+                .init(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)
+            ],
+            receiveError: nil
+        )
+
+        connection.receiveUniStream(stream)
+
+        while delegate.receivedObjects.isEmpty {
+            await Task.yield()
+        }
+        while delegate.closedReceiverCount < 1 {
+            await Task.yield()
+        }
+        controlStream.finishReceiving(with: CancellationError())
+
+        #expect(delegate.receivedObjects.count == 1)
+        #expect(delegate.closedReceiverCount == 1)
+        #expect(delegate.receivedObjects[0].groupID == 4)
+        #expect(delegate.receivedObjects[0].objectID == 6)
+        if case .payload(let payload) = delegate.receivedObjects[0].content {
+            #expect(payload == Data("abc".utf8))
+        } else {
+            Issue.record("Expected payload content")
+        }
+    }
+
+    @Test func inboundJoiningRelativeFetchDispatchesToSessionDelegateAndSendsOK() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let delegate: TestSessionDelegate = .init()
+        delegate.subscribeResult = true
+        delegate.fetchResponse = .init(
+            groupOrder: .ascending,
+            endOfTrack: false,
+            endLocation: .init(group: 8, object: 9),
+            maxCacheDuration: nil
+        )
+        session.delegate = delegate
+
+        controlStream.enqueueReceive(
+            SubscribeMessage(
+                requestID: 4,
+                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                subscriberPriority: 1,
+                groupOrder: .ascending,
+                forward: true,
+                filter: .largestObject,
+                deliveryTimeout: nil
+            ).encode()
+        )
+
+        while controlStream.sentBytes.count < 2 {
+            await Task.yield()
+        }
+
+        controlStream.enqueueReceive(
+            FetchMessage(
+                requestID: 6,
+                subscriberPriority: 2,
+                groupOrder: .ascending,
+                mode: .joiningRelative(joiningRequestID: 4, startGroupOffset: 3)
+            ).encode()
+        )
+
+        while controlStream.sentBytes.count < 3 {
+            await Task.yield()
+        }
+        controlStream.finishReceiving(with: CancellationError())
+
+        guard case .joiningRelative(
+            let requestID,
+            let joiningRequestID,
+            let resource,
+            let subscriberPriority,
+            let groupOrder,
+            let startGroupOffset
+        ) = delegate.receivedFetchRequest else {
+            Issue.record("Expected joining relative fetch request")
+            return
+        }
+        #expect(requestID == 6)
+        #expect(joiningRequestID == 4)
+        #expect(resource.trackName == Data("audio".utf8))
+        #expect(subscriberPriority == 2)
+        #expect(groupOrder == .ascending)
+        #expect(startGroupOffset == 3)
+        #expect(controlStream.sentBytes[2].first == UInt8(MessageType.fetchOK.rawValue))
+    }
+
+    @Test func inboundJoiningAbsoluteFetchDispatchesToSessionDelegateAndSendsOK() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let delegate: TestSessionDelegate = .init()
+        delegate.subscribeResult = true
+        delegate.fetchResponse = .init(
+            groupOrder: .ascending,
+            endOfTrack: false,
+            endLocation: .init(group: 10, object: 11),
+            maxCacheDuration: nil
+        )
+        session.delegate = delegate
+
+        controlStream.enqueueReceive(
+            SubscribeMessage(
+                requestID: 4,
+                resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("audio".utf8)),
+                subscriberPriority: 1,
+                groupOrder: .ascending,
+                forward: true,
+                filter: .largestObject,
+                deliveryTimeout: nil
+            ).encode()
+        )
+
+        while controlStream.sentBytes.count < 2 {
+            await Task.yield()
+        }
+
+        controlStream.enqueueReceive(
+            FetchMessage(
+                requestID: 6,
+                subscriberPriority: 2,
+                groupOrder: .ascending,
+                mode: .joiningAbsolute(joiningRequestID: 4, startGroup: 5)
+            ).encode()
+        )
+
+        while controlStream.sentBytes.count < 3 {
+            await Task.yield()
+        }
+        controlStream.finishReceiving(with: CancellationError())
+
+        guard case .joiningAbsolute(
+            let requestID,
+            let joiningRequestID,
+            let resource,
+            let subscriberPriority,
+            let groupOrder,
+            let startGroup
+        ) = delegate.receivedFetchRequest else {
+            Issue.record("Expected joining absolute fetch request")
+            return
+        }
+        #expect(requestID == 6)
+        #expect(joiningRequestID == 4)
+        #expect(resource.trackName == Data("audio".utf8))
+        #expect(subscriberPriority == 2)
+        #expect(groupOrder == .ascending)
+        #expect(startGroup == 5)
+        #expect(controlStream.sentBytes[2].first == UInt8(MessageType.fetchOK.rawValue))
+    }
 }
 
 private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, StreamReceiverDelegate {
@@ -247,7 +521,7 @@ private func makeServerSetupMessage() -> ServerSetupMessage {
     .init(
         selectedVersion: 0xff00000E,
         parameters: [
-            .maxRequestId(0),
+            .maxRequestId(10),
             .moqtImplementation("Mock")
         ]
     )
@@ -281,4 +555,45 @@ private func performSubscribe(
     )
 
     return try await task.value
+}
+
+private func performFetch(
+    session: Session,
+    controlStream: MockTransportBiStream
+) async throws -> FetchSubscription {
+    let subscriber: Subscriber = session.makeSubscriber()
+    let task: Task<FetchSubscription, Error> = .init {
+        try await subscriber.fetch(
+            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("media".utf8)),
+            start: .init(group: 1, object: 2),
+            end: .init(group: 3, object: 4)
+        )
+    }
+
+    while controlStream.sentBytes.count < 2 {
+        await Task.yield()
+    }
+    controlStream.enqueueReceive(
+        FetchOKMessage(
+            requestID: 0,
+            groupOrder: .ascending,
+            endOfTrack: true,
+            endLocation: .init(group: 5, object: 6),
+            maxCacheDuration: nil
+        ).encode()
+    )
+
+    return try await task.value
+}
+
+private func makeFetchObjectPayload(payload: Data) -> Data {
+    var data: Data = .init()
+    data.writeVarint(4)
+    data.writeVarint(5)
+    data.writeVarint(6)
+    data.append(7)
+    data.writeVarint(0)
+    data.writeVarint(UInt64(payload.count))
+    data.append(payload)
+    return data
 }
