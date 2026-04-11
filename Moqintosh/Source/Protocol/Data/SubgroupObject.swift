@@ -19,6 +19,7 @@ public struct SubgroupObject: Sendable {
     let previousObjectID: UInt64?
     let extensions: [KeyValuePair]
     public let content: Content
+    public var groupID: UInt64 { header.groupID }
 
     init(
         header: SubgroupHeader,

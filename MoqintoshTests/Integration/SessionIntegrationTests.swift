@@ -146,7 +146,13 @@ struct SessionIntegrationTests {
         controlStream.finishReceiving(with: CancellationError())
 
         #expect(delegate.receivedObjects.count == 1)
+        #expect(delegate.receivedObjects[0].groupID == 5)
         #expect(delegate.receivedObjects[0].objectID == 0)
+        if case .payload(let payload) = delegate.receivedObjects[0].content {
+            #expect(payload == Data("abc".utf8))
+        } else {
+            Issue.record("Expected payload content")
+        }
     }
 
     @Test func subscribedDatagramRoutesInboundDatagram() async throws {
@@ -177,6 +183,16 @@ struct SessionIntegrationTests {
 
         #expect(delegate.receivedDatagrams.count == 1)
         #expect(delegate.receivedDatagrams[0].groupID == 8)
+        if case .explicit(let objectID) = delegate.receivedDatagrams[0].objectID {
+            #expect(objectID == 10)
+        } else {
+            Issue.record("Expected explicit object ID")
+        }
+        if case .payload(let payload) = delegate.receivedDatagrams[0].content {
+            #expect(payload == Data("xyz".utf8))
+        } else {
+            Issue.record("Expected payload content")
+        }
     }
 }
 

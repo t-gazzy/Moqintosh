@@ -25,7 +25,7 @@ final class QuicEndpoint: TransportEndpoint {
         OSLogger.info("Connecting to \(endpoint)")
         let allowsUntrustedCertificates: Bool = allowsUntrustedCertificates
         let connection = NetworkConnection(to: endpoint) {
-            var quic = QUIC(alpn: ["moq-00"])
+            var quic = QUIC(alpn: ["moq-00"]).maxDatagramFrameSize(Int(UInt16.max))
             if allowsUntrustedCertificates {
                 quic = quic.tls.peerAuthentication(.none)
             }

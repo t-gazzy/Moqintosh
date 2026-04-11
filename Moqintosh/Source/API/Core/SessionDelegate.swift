@@ -20,6 +20,13 @@ public protocol SessionDelegate: AnyObject {
         authorizationToken: AuthorizationToken?
     ) -> Bool
 
+    /// The remote subscriber requested a namespace subscription (Section 9.28).
+    func session(
+        _ session: Session,
+        didReceiveSubscribeNamespace prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    )
+
     /// The remote subscriber requested a new subscription (Section 9.7).
     func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool
 
@@ -47,6 +54,13 @@ public protocol SessionDelegate: AnyObject {
         authorizationToken: AuthorizationToken?
     ) -> Bool
 
+    /// The remote publisher announced a namespace (Section 9.23).
+    func session(
+        _ session: Session,
+        didReceivePublishNamespace prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    )
+
     /// The remote publisher initiated a publish for a track (Section 9.13).
     func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool
 
@@ -68,6 +82,12 @@ public extension SessionDelegate {
         false
     }
 
+    func session(
+        _ session: Session,
+        didReceiveSubscribeNamespace prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    ) {}
+
     func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool {
         false
     }
@@ -83,6 +103,12 @@ public extension SessionDelegate {
     ) -> Bool {
         false
     }
+
+    func session(
+        _ session: Session,
+        didReceivePublishNamespace prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    ) {}
 
     func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool {
         false

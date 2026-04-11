@@ -39,11 +39,17 @@ public final class Session {
 
     func shouldAcceptPublishNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
         delegateQueue.sync {
-            delegate?.session(
+            let isAccepted: Bool = delegate?.session(
                 self,
                 shouldAcceptPublishNamespace: prefix,
                 authorizationToken: authorizationToken
             ) ?? false
+            delegate?.session(
+                self,
+                didReceivePublishNamespace: prefix,
+                authorizationToken: authorizationToken
+            )
+            return isAccepted
         }
     }
 
@@ -55,11 +61,17 @@ public final class Session {
 
     func shouldAcceptSubscribeNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
         delegateQueue.sync {
-            delegate?.session(
+            let isAccepted: Bool = delegate?.session(
                 self,
                 shouldAcceptSubscribeNamespace: prefix,
                 authorizationToken: authorizationToken
             ) ?? false
+            delegate?.session(
+                self,
+                didReceiveSubscribeNamespace: prefix,
+                authorizationToken: authorizationToken
+            )
+            return isAccepted
         }
     }
 
