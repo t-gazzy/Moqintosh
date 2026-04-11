@@ -70,4 +70,56 @@ struct ControlMessageDispatcherTests {
         #expect(stream.sentBytes.count == 1)
         #expect(stream.sentBytes[0].first == UInt8(MessageType.subscribeError.rawValue))
     }
+
+    @Test func handleTrackStatusSendsOKWhenDelegateReturnsStatus() async {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
+        let session: Session = .init(
+            sessionContext: context,
+            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+        )
+        let delegate: TestSessionDelegate = .init()
+        delegate.trackStatusResult = .init(
+            expires: 5,
+            groupOrder: .ascending,
+            contentExist: .noContent,
+            deliveryTimeout: nil,
+            maxCacheDuration: nil
+        )
+        session.delegate = delegate
+
+        await dispatcher.handle(
+            .trackStatus(
+                .init(
+                    requestID: 8,
+                    resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+                    subscriberPriority: 1,
+                    groupOrder: .ascending,
+                    forward: true,
+                    filter: .largestObject
+                )
+            )
+        )
+
+        #expect(delegate.receivedTrackStatusRequest?.requestID == 8)
+        #expect(stream.sentBytes.count == 1)
+        #expect(stream.sentBytes[0].first == UInt8(MessageType.trackStatusOK.rawValue))
+    }
+
+    @Test func handleGoAwayDispatchesToDelegate() async {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let dispatcher: ControlMessageDispatcher = .init(sessionContext: context)
+        let session: Session = .init(
+            sessionContext: context,
+            controlMessageReceiver: .init(controlStream: stream, dispatcher: dispatcher)
+        )
+        let delegate: TestSessionDelegate = .init()
+        session.delegate = delegate
+
+        await dispatcher.handle(.goaway(.init(newSessionURI: "https://example.com")))
+
+        #expect(delegate.receivedGoAwayURI == "https://example.com")
+    }
 }

@@ -23,6 +23,7 @@ final class SessionRequestStore {
             filter: SubscriptionFilter,
             continuation: CheckedContinuation<Subscription, Error>
         )
+        case trackStatus(CheckedContinuation<TrackStatus, Error>)
     }
 
     private let stateQueue: DispatchQueue
@@ -67,6 +68,12 @@ final class SessionRequestStore {
                 filter: filter,
                 continuation: continuation
             )
+        }
+    }
+
+    func addTrackStatusRequest(_ id: UInt64, continuation: CheckedContinuation<TrackStatus, Error>) {
+        stateQueue.sync {
+            requests[id] = .trackStatus(continuation)
         }
     }
 
@@ -177,6 +184,30 @@ final class SessionRequestStore {
             requests.removeValue(forKey: id)
         }
         guard case .subscribe(_, _, _, _, _, let continuation) = request else { return }
+        continuation.resume(throwing: error)
+    }
+
+    func resolveTrackStatusRequest(with message: TrackStatusOKMessage) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: message.requestID)
+        }
+        guard case .trackStatus(let continuation) = request else { return }
+        continuation.resume(returning: message.trackStatus)
+    }
+
+    func rejectTrackStatusRequest(with message: TrackStatusErrorMessage) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: message.requestID)
+        }
+        guard case .trackStatus(let continuation) = request else { return }
+        continuation.resume(throwing: TrackStatusError.rejected(code: message.errorCode, reason: message.reasonPhrase))
+    }
+
+    func failTrackStatusRequest(_ id: UInt64, error: any Error) {
+        let request: PendingRequest? = stateQueue.sync {
+            requests.removeValue(forKey: id)
+        }
+        guard case .trackStatus(let continuation) = request else { return }
         continuation.resume(throwing: error)
     }
 }

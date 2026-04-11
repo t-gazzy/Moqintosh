@@ -51,6 +51,10 @@ final class SessionContext {
 }
 
 extension SessionContext: ControlMessageChannel {
+    func sendControlMessage(bytes: Data) async throws {
+        try await controlStream.send(bytes: bytes)
+    }
+
     func performPublishNamespaceRequest(requestID: UInt64, bytes: Data) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             requestStore.addRequest(requestID, continuation: continuation)
@@ -114,6 +118,19 @@ extension SessionContext: ControlMessageChannel {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
                     self.requestStore.failSubscribeRequest(requestID, error: error)
+                }
+            }
+        }
+    }
+
+    func performTrackStatusRequest(requestID: UInt64, bytes: Data) async throws -> TrackStatus {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<TrackStatus, Error>) in
+            requestStore.addTrackStatusRequest(requestID, continuation: continuation)
+            Task {
+                do {
+                    try await self.controlStream.send(bytes: bytes)
+                } catch {
+                    self.requestStore.failTrackStatusRequest(requestID, error: error)
                 }
             }
         }

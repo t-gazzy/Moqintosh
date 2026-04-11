@@ -80,6 +80,8 @@ final class MessageFrameReader {
             return .clientSetup(try ClientSetupMessage.decode(from: payload))
         case .serverSetup:
             return .serverSetup(try ServerSetupMessage.decode(from: payload))
+        case .goaway:
+            return .goaway(try GoAwayMessage.decode(from: payload))
         case .subscribe:
             return .subscribe(try SubscribeMessage.decode(from: payload))
         case .subscribeOK:
@@ -87,15 +89,19 @@ final class MessageFrameReader {
         case .subscribeError:
             return .subscribeError(try SubscribeErrorMessage.decode(from: payload))
         case .subscribeUpdate:
-            return .subscribeUpdate
+            return .subscribeUpdate(try SubscribeUpdateMessage.decode(from: payload))
         case .unsubscribe:
-            return .unsubscribe
+            return .unsubscribe(try UnsubscribeMessage.decode(from: payload))
         case .fetch:
             return .fetch
         case .fetchCancel:
             return .fetchCancel
         case .trackStatus:
-            return .trackStatus
+            return .trackStatus(try TrackStatusMessage.decode(from: payload))
+        case .trackStatusOK:
+            return .trackStatusOK(try TrackStatusOKMessage.decode(from: payload))
+        case .trackStatusError:
+            return .trackStatusError(try TrackStatusErrorMessage.decode(from: payload))
         case .publish:
             return .publish(try PublishMessage.decode(from: payload))
         case .publishOK:
@@ -103,7 +109,7 @@ final class MessageFrameReader {
         case .publishError:
             return .publishError(try PublishErrorMessage.decode(from: payload))
         case .publishDone:
-            return .publishDone
+            return .publishDone(try PublishDoneMessage.decode(from: payload))
         case .publishNamespace:
             return .publishNamespace(try PublishNamespaceMessage.decode(from: payload))
         case .publishNamespaceOK:
@@ -111,13 +117,17 @@ final class MessageFrameReader {
         case .publishNamespaceError:
             return .publishNamespaceError(try PublishNamespaceErrorMessage.decode(from: payload))
         case .publishNamespaceDone:
-            return .publishNamespaceDone
+            return .publishNamespaceDone(try PublishNamespaceDoneMessage.decode(from: payload))
+        case .publishNamespaceCancel:
+            return .publishNamespaceCancel(try PublishNamespaceCancelMessage.decode(from: payload))
         case .subscribeNamespace:
             return .subscribeNamespace(try SubscribeNamespaceMessage.decode(from: payload))
         case .subscribeNamespaceOK:
             return .subscribeNamespaceOK(try SubscribeNamespaceOKMessage.decode(from: payload))
         case .subscribeNamespaceError:
             return .subscribeNamespaceError(try SubscribeNamespaceErrorMessage.decode(from: payload))
+        case .unsubscribeNamespace:
+            return .unsubscribeNamespace(try UnsubscribeNamespaceMessage.decode(from: payload))
         default:
             return .unknown(type: type, payload: payload)
         }

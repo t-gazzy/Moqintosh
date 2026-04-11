@@ -63,4 +63,38 @@ struct PublisherTests {
         #expect(result.trackAlias == 0)
         #expect(stream.sentBytes[0].first == UInt8(MessageType.publish.rawValue))
     }
+
+    @Test func publishDoneSendsMessage() async throws {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
+        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let publisher: Publisher = session.makePublisher()
+        let publishedTrack: PublishedTrack = .init(
+            requestID: 4,
+            resource: .init(trackNamespace: .init(strings: ["live"]), trackName: Data("video".utf8)),
+            trackAlias: 2,
+            groupOrder: .ascending,
+            contentExist: .noContent,
+            forward: true
+        )
+
+        try await publisher.publishDone(for: publishedTrack, statusCode: 0x0, streamCount: 3)
+
+        #expect(stream.sentBytes.count == 1)
+        #expect(stream.sentBytes[0].first == UInt8(MessageType.publishDone.rawValue))
+    }
+
+    @Test func publishNamespaceDoneSendsMessage() async throws {
+        let stream: MockTransportBiStream = .init()
+        let context: SessionContext = .init(connection: MockTransportConnection(biStream: stream), controlStream: stream)
+        let receiver: ControlMessageReceiver = .init(controlStream: stream, dispatcher: .init(sessionContext: context))
+        let session: Session = .init(sessionContext: context, controlMessageReceiver: receiver)
+        let publisher: Publisher = session.makePublisher()
+
+        try await publisher.publishNamespaceDone(trackNamespace: .init(strings: ["live"]))
+
+        #expect(stream.sentBytes.count == 1)
+        #expect(stream.sentBytes[0].first == UInt8(MessageType.publishNamespaceDone.rawValue))
+    }
 }

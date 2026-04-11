@@ -65,13 +65,31 @@ public final class Subscriber {
     }
 
     /// Updates an existing subscription (Section 9.10).
-    public func subscribeUpdate() async throws {
-        // TODO: encode and send SUBSCRIBE_UPDATE
+    public func subscribeUpdate(
+        for subscription: Subscription,
+        start: Location,
+        endGroup: UInt64,
+        subscriberPriority: UInt8? = nil,
+        forward: Bool? = nil,
+        authorizationToken: AuthorizationToken? = nil
+    ) async throws {
+        let message: SubscribeUpdateMessage = .init(
+            requestID: subscription.requestID,
+            start: start,
+            endGroup: endGroup,
+            subscriberPriority: subscriberPriority ?? subscription.subscriberPriority,
+            forward: forward ?? subscription.publishedTrack.forward,
+            authorizationToken: authorizationToken
+        )
+        OSLogger.debug("Sending SUBSCRIBE_UPDATE (requestID: \(subscription.requestID))")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     /// Cancels a subscription (Section 9.11).
-    public func unsubscribe() async throws {
-        // TODO: encode and send UNSUBSCRIBE
+    public func unsubscribe(for subscription: Subscription) async throws {
+        let message: UnsubscribeMessage = .init(requestID: subscription.requestID)
+        OSLogger.debug("Sending UNSUBSCRIBE (requestID: \(subscription.requestID))")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     // MARK: - Fetch
@@ -89,8 +107,44 @@ public final class Subscriber {
     // MARK: - Track status
 
     /// Requests the current status of a track (Section 9.20).
-    public func trackStatus() async throws {
-        // TODO: encode and send TRACK_STATUS
+    public func trackStatus(
+        resource: TrackResource,
+        subscriberPriority: UInt8 = 0,
+        groupOrder: GroupOrder = .publisherDefault,
+        forward: Bool = true,
+        filter: SubscriptionFilter = .largestObject
+    ) async throws -> TrackStatus {
+        let requestID: UInt64 = controlMessageChannel.issueRequestID()
+        let message: TrackStatusMessage = .init(
+            requestID: requestID,
+            resource: resource,
+            subscriberPriority: subscriberPriority,
+            groupOrder: groupOrder,
+            forward: forward,
+            filter: filter
+        )
+        OSLogger.debug("Sending TRACK_STATUS (requestID: \(requestID))")
+        return try await controlMessageChannel.performTrackStatusRequest(requestID: requestID, bytes: message.encode())
+    }
+
+    public func publishNamespaceCancel(
+        trackNamespace: TrackNamespace,
+        errorCode: UInt64,
+        reasonPhrase: String
+    ) async throws {
+        let message: PublishNamespaceCancelMessage = .init(
+            trackNamespace: trackNamespace,
+            errorCode: errorCode,
+            reasonPhrase: reasonPhrase
+        )
+        OSLogger.debug("Sending PUBLISH_NAMESPACE_CANCEL")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
+    }
+
+    public func unsubscribeNamespace(namespacePrefix: TrackNamespace) async throws {
+        let message: UnsubscribeNamespaceMessage = .init(namespacePrefix: namespacePrefix)
+        OSLogger.debug("Sending UNSUBSCRIBE_NAMESPACE")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {

@@ -30,8 +30,10 @@ public final class Publisher {
     }
 
     /// Ends a previously announced namespace (Section 9.26).
-    public func publishNamespaceDone() async throws {
-        // TODO: encode and send PUBLISH_NAMESPACE_DONE
+    public func publishNamespaceDone(trackNamespace: TrackNamespace) async throws {
+        let message: PublishNamespaceDoneMessage = .init(trackNamespace: trackNamespace)
+        OSLogger.debug("Sending PUBLISH_NAMESPACE_DONE")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     // MARK: - Publish
@@ -68,8 +70,20 @@ public final class Publisher {
     }
 
     /// Signals the end of a publish (Section 9.12).
-    public func publishDone() async throws {
-        // TODO: encode and send PUBLISH_DONE
+    public func publishDone(
+        for publishedTrack: PublishedTrack,
+        statusCode: UInt64,
+        streamCount: UInt64,
+        reasonPhrase: String = ""
+    ) async throws {
+        let message: PublishDoneMessage = .init(
+            requestID: publishedTrack.requestID,
+            statusCode: statusCode,
+            streamCount: streamCount,
+            reasonPhrase: reasonPhrase
+        )
+        OSLogger.debug("Sending PUBLISH_DONE (requestID: \(publishedTrack.requestID))")
+        try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
     public func makeStreamSenderFactory(for publishedTrack: PublishedTrack) -> StreamSenderFactory {
