@@ -19,7 +19,7 @@ final class SampleAppController {
 
     private let configuration: SampleConfiguration
 
-    init(configuration: SampleConfiguration = .init()) {
+    init(configuration: SampleConfiguration = SampleConfiguration()) {
         self.destinationText = "localhost:4434"
         self.statusText = ""
         self.isConnecting = false
@@ -37,7 +37,7 @@ final class SampleAppController {
         statusText = "Connecting..."
         do {
             let session: Session = try await endpoint.connect(allowsUntrustedCertificates: true)
-            sessionController = .init(session: session, configuration: configuration)
+            sessionController = SampleSessionController(session: session, configuration: configuration)
             statusText = "Connected"
         } catch {
             statusText = "Connection failed: \(error.localizedDescription)"

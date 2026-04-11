@@ -27,7 +27,7 @@ struct FetchReceiverTests {
                 endLocation: Location(group: 3, object: 4),
                 maxCacheDuration: nil
             ),
-            initialData: .init()
+            initialData: Data()
         )
         let delegate: TestFetchReceiverDelegate = TestFetchReceiverDelegate()
         receiver.delegate = delegate

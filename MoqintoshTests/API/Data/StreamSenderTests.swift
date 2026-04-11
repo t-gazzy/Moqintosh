@@ -15,7 +15,7 @@ struct StreamSenderTests {
         let stream: MockTransportUniSendStream = MockTransportUniSendStream()
         let sender: StreamSender = StreamSender(
             stream: stream,
-            header: .init(
+            header: SubgroupHeader(
                 trackAlias: 1,
                 groupID: 2,
                 subgroupID: .explicit(3),
@@ -29,7 +29,7 @@ struct StreamSenderTests {
         #expect(stream.sentBytes.count == 2)
         #expect(stream.endOfStreamFlags == [false, true])
 
-        let firstObject: SubgroupObject = try .decode(stream.sentBytes[0], header: .init(
+        let firstObject: SubgroupObject = try .decode(stream.sentBytes[0], header: SubgroupHeader(
             trackAlias: 1,
             groupID: 2,
             subgroupID: .explicit(3),
@@ -39,7 +39,7 @@ struct StreamSenderTests {
 
         let secondObject: SubgroupObject = try .decode(
             stream.sentBytes[1],
-            header: .init(
+            header: SubgroupHeader(
                 trackAlias: 1,
                 groupID: 2,
                 subgroupID: .explicit(3),

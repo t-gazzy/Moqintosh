@@ -21,9 +21,9 @@ struct StreamSenderFactoryTests {
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let factory: StreamSenderFactory = session.makePublisher().makeStreamSenderFactory(
-            for: .init(
+            for: PublishedTrack(
                 requestID: 1,
-                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: .init()),
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data()),
                 trackAlias: 9,
                 groupOrder: .ascending,
                 contentExist: .noContent,

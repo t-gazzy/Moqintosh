@@ -49,7 +49,7 @@ struct PublisherTests {
             await Task.yield()
         }
         context.requestStore.resolvePublishRequest(
-            with: .init(
+            with: PublishOKMessage(
                 requestID: 0,
                 forward: true,
                 subscriberPriority: 0,

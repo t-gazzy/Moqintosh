@@ -25,7 +25,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .publishNamespace(
-                .init(
+                PublishNamespaceMessage(
                     requestID: 2,
                     trackNamespace: TrackNamespace(strings: ["live"]),
                     authorizationTokens: [AuthorizationToken(value: Data([0x01]))]
@@ -53,7 +53,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .subscribe(
-                .init(
+                SubscribeMessage(
                     requestID: 4,
                     resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     subscriberPriority: 1,
@@ -91,7 +91,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .trackStatus(
-                .init(
+                TrackStatusMessage(
                     requestID: 8,
                     resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                     subscriberPriority: 1,
@@ -126,7 +126,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .fetch(
-                .init(
+                FetchMessage(
                     requestID: 10,
                     subscriberPriority: 1,
                     groupOrder: .ascending,
@@ -164,7 +164,7 @@ struct ControlMessageDispatcherTests {
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
-        await dispatcher.handle(.fetchCancel(.init(requestID: 12)))
+        await dispatcher.handle(.fetchCancel(FetchCancelMessage(requestID: 12)))
 
         #expect(delegate.receivedFetchCancelRequestID == 12)
     }
@@ -192,7 +192,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .fetch(
-                .init(
+                FetchMessage(
                     requestID: 10,
                     subscriberPriority: 1,
                     groupOrder: .ascending,
@@ -234,7 +234,7 @@ struct ControlMessageDispatcherTests {
 
         await dispatcher.handle(
             .fetch(
-                .init(
+                FetchMessage(
                     requestID: 20,
                     subscriberPriority: 1,
                     groupOrder: .ascending,
@@ -267,7 +267,7 @@ struct ControlMessageDispatcherTests {
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
-        await dispatcher.handle(.goaway(.init(newSessionURI: "https://example.com")))
+        await dispatcher.handle(.goaway(GoAwayMessage(newSessionURI: "https://example.com")))
 
         #expect(delegate.receivedGoAwayURI == "https://example.com")
     }

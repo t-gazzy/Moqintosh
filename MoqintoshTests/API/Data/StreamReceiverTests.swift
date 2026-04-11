@@ -35,7 +35,7 @@ struct StreamReceiverTests {
                 filter: .largestObject
             ),
             header: header,
-            initialData: .init()
+            initialData: Data()
         )
         let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
         receiver.delegate = delegate
@@ -56,8 +56,8 @@ struct StreamReceiverTests {
         let encoded: Data = object.encode()
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
-                .init(bytes: Data(encoded.prefix(2)), isComplete: false),
-                .init(bytes: Data(encoded.dropFirst(2)), isComplete: true)
+                TransportUniReceiveResult(bytes: Data(encoded.prefix(2)), isComplete: false),
+                TransportUniReceiveResult(bytes: Data(encoded.dropFirst(2)), isComplete: true)
             ],
             receiveError: nil
         )
@@ -78,7 +78,7 @@ struct StreamReceiverTests {
                 filter: .largestObject
             ),
             header: header,
-            initialData: .init()
+            initialData: Data()
         )
         let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
         receiver.delegate = delegate

@@ -13,7 +13,7 @@ struct FetchSenderTests {
 
     @Test func sendEncodesObjectAndEndsFetch() async throws {
         let stream: MockTransportUniSendStream = MockTransportUniSendStream()
-        let sender: FetchSender = try await .init(stream: stream, requestID: 9)
+        let sender: FetchSender = try await FetchSender(stream: stream, requestID: 9)
 
         try await sender.send(
             groupID: 2,

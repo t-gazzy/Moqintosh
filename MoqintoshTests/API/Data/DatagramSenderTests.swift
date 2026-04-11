@@ -18,7 +18,7 @@ struct DatagramSenderTests {
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let sender: DatagramSender = session.makePublisher().makeDatagramSender(
-            for: .init(
+            for: PublishedTrack(
                 requestID: 1,
                 resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
                 trackAlias: 7,

@@ -49,7 +49,7 @@ final class SampleSessionController {
     private var nextDatagramObjectID: UInt64
 
     convenience init(session: Session) {
-        self.init(session: session, configuration: .init())
+        self.init(session: session, configuration: SampleConfiguration())
     }
 
     init(session: Session, configuration: SampleConfiguration) {
@@ -67,14 +67,21 @@ final class SampleSessionController {
         self.session = session
         self.publisher = session.makePublisher()
         self.subscriber = session.makeSubscriber()
-        self.delegateProxy = .init(
+        self.delegateProxy = SampleSessionDelegateProxy(
             configuration: configuration,
             onEvent: { _ in },
             onRemotePublishedNamespace: { _ in },
             onIncomingSubscribe: { _ in }
         )
-        self.streamEventPrinter = .init(configuration: configuration, onEvent: { _ in }, onReceivedData: { _ in })
-        self.datagramEventPrinter = .init(configuration: configuration, onReceivedData: { _ in })
+        self.streamEventPrinter = SampleStreamEventPrinter(
+            configuration: configuration,
+            onEvent: { _ in },
+            onReceivedData: { _ in }
+        )
+        self.datagramEventPrinter = SampleDatagramEventPrinter(
+            configuration: configuration,
+            onReceivedData: { _ in }
+        )
         self.advertisedNamespaces = [:]
         self.remotePublishedNamespaces = [:]
         self.publishedTrack = nil
@@ -118,12 +125,15 @@ final class SampleSessionController {
             onRemotePublishedNamespace: remotePublishedNamespaceHandler,
             onIncomingSubscribe: incomingSubscribeHandler
         )
-        self.streamEventPrinter = .init(
+        self.streamEventPrinter = SampleStreamEventPrinter(
             configuration: configuration,
             onEvent: eventHandler,
             onReceivedData: receivedHandler
         )
-        self.datagramEventPrinter = .init(configuration: configuration, onReceivedData: receivedHandler)
+        self.datagramEventPrinter = SampleDatagramEventPrinter(
+            configuration: configuration,
+            onReceivedData: receivedHandler
+        )
         self.session.delegate = delegateProxy
     }
 

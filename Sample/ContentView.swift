@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var controller: SampleAppController = .init()
+    @State private var controller: SampleAppController = SampleAppController()
 
     var body: some View {
         Group {

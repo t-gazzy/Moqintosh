@@ -61,7 +61,7 @@ struct SessionContextTests {
             try await withCheckedThrowingContinuation { continuation in
                 context.requestStore.addPublishRequest(2, publishedTrack: publishedTrack, continuation: continuation)
                 context.requestStore.resolvePublishRequest(
-                    with: .init(
+                    with: PublishOKMessage(
                         requestID: 2,
                         forward: true,
                         subscriberPriority: 0,
@@ -90,7 +90,9 @@ struct SessionContextTests {
                     filter: .largestObject,
                     continuation: continuation
                 )
-                context.requestStore.rejectSubscribeRequest(with: .init(requestID: 4, errorCode: 5, reasonPhrase: "rejected"))
+                context.requestStore.rejectSubscribeRequest(
+                    with: SubscribeErrorMessage(requestID: 4, errorCode: 5, reasonPhrase: "rejected")
+                )
             }
         }
 

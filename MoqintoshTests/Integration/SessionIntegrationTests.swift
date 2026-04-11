@@ -250,8 +250,8 @@ struct SessionIntegrationTests {
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
-                .init(bytes: header.encode(), isComplete: false),
-                .init(bytes: object.encode(), isComplete: true)
+                TransportUniReceiveResult(bytes: header.encode(), isComplete: false),
+                TransportUniReceiveResult(bytes: object.encode(), isComplete: true)
             ],
             receiveError: nil
         )
@@ -328,8 +328,14 @@ struct SessionIntegrationTests {
         factory.delegate = delegate
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
-                .init(bytes: FetchHeader(requestID: fetchSubscription.requestID).encode(), isComplete: false),
-                .init(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)
+                TransportUniReceiveResult(
+                    bytes: FetchHeader(requestID: fetchSubscription.requestID).encode(),
+                    isComplete: false
+                ),
+                TransportUniReceiveResult(
+                    bytes: makeFetchObjectPayload(payload: Data("abc".utf8)),
+                    isComplete: true
+                )
             ],
             receiveError: nil
         )
@@ -518,7 +524,7 @@ private func makeConnectedSession() async throws -> (Session, MockTransportConne
 }
 
 private func makeServerSetupMessage() -> ServerSetupMessage {
-    .init(
+    ServerSetupMessage(
         selectedVersion: 0xff00000E,
         parameters: [
             .maxRequestId(10),

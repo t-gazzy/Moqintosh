@@ -20,7 +20,7 @@ final class MockTransportBiStream: TransportBiStream {
         self.receiveQueue = receiveQueue
         self.sentBytes = []
         self.receiveError = receiveError
-        self.stateQueue = .init(label: "MoqintoshTests.MockTransportBiStream")
+        self.stateQueue = DispatchQueue(label: "MoqintoshTests.MockTransportBiStream")
         self.receiveContinuations = []
     }
 
@@ -118,7 +118,7 @@ final class MockTransportUniReceiveStream: TransportUniReceiveStream {
         if let receiveError {
             throw receiveError
         }
-        return .init(bytes: .init(), isComplete: false)
+        return TransportUniReceiveResult(bytes: Data(), isComplete: false)
     }
 }
 

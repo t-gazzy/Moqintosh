@@ -23,7 +23,7 @@ final class SampleSessionDelegateProxy: SessionDelegate {
         onRemotePublishedNamespace: @escaping @Sendable (TrackNamespace) -> Void,
         onIncomingSubscribe: @escaping @Sendable (PublishedTrack) -> Void
     ) {
-        self.stateQueue = .init(label: "Sample.SessionDelegateProxy")
+        self.stateQueue = DispatchQueue(label: "Sample.SessionDelegateProxy")
         self.configuration = configuration
         self.onEvent = onEvent
         self.onRemotePublishedNamespace = onRemotePublishedNamespace

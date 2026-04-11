@@ -48,7 +48,7 @@ struct SubscriberTests {
             await Task.yield()
         }
         context.requestStore.resolveSubscribeRequest(
-            with: .init(
+            with: SubscribeOKMessage(
                 requestID: 0,
                 trackAlias: 1,
                 expires: 2,
@@ -111,7 +111,7 @@ struct SubscriberTests {
             await Task.yield()
         }
         context.requestStore.resolveFetchRequest(
-            with: .init(
+            with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
@@ -181,7 +181,7 @@ struct SubscriberTests {
             await Task.yield()
         }
         context.requestStore.resolveFetchRequest(
-            with: .init(
+            with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: false,
@@ -231,7 +231,7 @@ struct SubscriberTests {
             await Task.yield()
         }
         context.requestStore.resolveFetchRequest(
-            with: .init(
+            with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
                 endOfTrack: true,
@@ -269,9 +269,9 @@ struct SubscriberTests {
             await Task.yield()
         }
         context.requestStore.resolveTrackStatusRequest(
-            with: .init(
+            with: TrackStatusOKMessage(
                 requestID: 0,
-                trackStatus: .init(
+                trackStatus: TrackStatus(
                     expires: 2,
                     groupOrder: .ascending,
                     contentExist: .noContent,

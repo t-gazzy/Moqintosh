@@ -23,12 +23,12 @@ struct SampleConfiguration {
         let host: String = components[0]
         let port: UInt16
         if components.count == 2 {
-            guard let parsedPort: UInt16 = .init(components[1]) else { return nil }
+            guard let parsedPort: UInt16 = UInt16(components[1]) else { return nil }
             port = parsedPort
         } else {
             port = defaultPort
         }
-        return .init(host: host, port: port)
+        return Endpoint(host: host, port: port)
     }
 
     func makeNamespace(from text: String) -> TrackNamespace? {
@@ -37,7 +37,7 @@ struct SampleConfiguration {
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         guard !elements.isEmpty else { return nil }
-        return .init(strings: elements)
+        return TrackNamespace(strings: elements)
     }
 
     func makeNamespaceString(from namespace: TrackNamespace) -> String {
@@ -49,13 +49,13 @@ struct SampleConfiguration {
     func makeTrackResource(namespace: TrackNamespace, trackName: String) -> TrackResource? {
         let trimmedTrackName: String = trackName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTrackName.isEmpty else { return nil }
-        return .init(
+        return TrackResource(
             trackNamespace: namespace,
             trackName: Data(trimmedTrackName.utf8)
         )
     }
 
-    func makePayload(date: Date = .init()) -> Data {
+    func makePayload(date: Date = Date()) -> Data {
         let timestamp: String = ISO8601DateFormatter.string(
             from: date,
             timeZone: .current,
@@ -64,7 +64,7 @@ struct SampleConfiguration {
         return Data(timestamp.utf8)
     }
 
-    func makeDisplayTimestamp(date: Date = .init()) -> String {
+    func makeDisplayTimestamp(date: Date = Date()) -> String {
         ISO8601DateFormatter.string(
             from: date,
             timeZone: .current,
