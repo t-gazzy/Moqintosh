@@ -22,6 +22,8 @@
    - To enforce API call ordering (e.g., `initialize()` must be called before `doSomething()`), use `precondition` or `preconditionFailure` with a descriptive message instead of `!`.
 9. **Annotations**:
    - Apply necessary attributes like `@escaping`, `@discardableResult`, `@MainActor`, and `@Observable` appropriately.
+10. **Separation of Responsibilities**:
+   - Keep each type focused on a single responsibility. Split state management, protocol serialization, transport handling, and domain behavior when they start to mix.
 
 ## Access Control
 Apply the narrowest modifier that satisfies the requirement.
