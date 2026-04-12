@@ -20,7 +20,6 @@ struct ControlMessageDispatcherTests {
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.publishNamespaceResult = true
         session.delegate = delegate
 
         await dispatcher.handle(
@@ -48,7 +47,10 @@ struct ControlMessageDispatcherTests {
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.subscribeResult = false
+        delegate.subscribeError = SubscribeRequestError(
+            code: .trackDoesNotExist,
+            reason: "Track does not exist"
+        )
         session.delegate = delegate
 
         await dispatcher.handle(

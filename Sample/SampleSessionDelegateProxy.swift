@@ -40,21 +40,14 @@ final class SampleSessionDelegateProxy: SessionDelegate {
 
     func session(
         _ session: Session,
-        shouldAcceptSubscribeNamespace prefix: TrackNamespace,
-        authorizationToken: AuthorizationToken?
-    ) -> Bool {
-        true
-    }
-
-    func session(
-        _ session: Session,
         didReceiveSubscribeNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) {
+    ) -> SubscribeNamespaceDecision {
         onEvent("Peer requested namespace subscription: \(configuration.makeNamespaceString(from: prefix))")
+        return .accept
     }
 
-    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool {
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> SubscribeDecision {
         let isAccepted: Bool = stateQueue.sync {
             advertisedNamespaces.contains { namespace in
                 namespace.elements == publishedTrack.resource.trackNamespace.elements
@@ -64,30 +57,24 @@ final class SampleSessionDelegateProxy: SessionDelegate {
         if isAccepted {
             onEvent("Peer subscribe accepted")
             onIncomingSubscribe(publishedTrack)
+            return .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
         }
-        return isAccepted
-    }
-
-    func session(
-        _ session: Session,
-        shouldAcceptPublishNamespace prefix: TrackNamespace,
-        authorizationToken: AuthorizationToken?
-    ) -> Bool {
-        true
+        return .reject(SubscribeRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func session(
         _ session: Session,
         didReceivePublishNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) {
+    ) -> PublishNamespaceDecision {
         onRemotePublishedNamespace(prefix)
         onEvent("Peer published namespace: \(configuration.makeNamespaceString(from: prefix))")
+        return .accept
     }
 
-    func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool {
+    func session(_ session: Session, didReceivePublish resource: TrackResource) -> PublishDecision {
         onEvent("Peer published track: \(describe(resource: resource))")
-        return true
+        return .accept(PublishAcceptance())
     }
 
     private func describe(resource: TrackResource) -> String {

@@ -18,7 +18,6 @@ struct ControlMessageReceiverTests {
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.publishNamespaceResult = true
         session.delegate = delegate
 
         while stream.sentBytes.isEmpty {

@@ -10,10 +10,10 @@ import Foundation
 
 final class TestSessionDelegate: SessionDelegate {
 
-    var publishNamespaceResult: Bool
-    var subscribeNamespaceResult: Bool
-    var publishResult: Bool
-    var subscribeResult: Bool
+    var publishNamespaceError: PublishNamespaceRequestError?
+    var subscribeNamespaceError: SubscribeNamespaceRequestError?
+    var publishError: PublishRequestError?
+    var subscribeError: SubscribeRequestError?
     var fetchResponse: FetchResponse?
     var trackStatusResult: TrackStatus?
     private(set) var receivedPublishNamespace: TrackNamespace?
@@ -34,10 +34,10 @@ final class TestSessionDelegate: SessionDelegate {
     private(set) var receivedPublishNamespaceCancel: PublishNamespaceCancel?
 
     init() {
-        self.publishNamespaceResult = false
-        self.subscribeNamespaceResult = false
-        self.publishResult = false
-        self.subscribeResult = false
+        self.publishNamespaceError = nil
+        self.subscribeNamespaceError = nil
+        self.publishError = nil
+        self.subscribeError = nil
         self.fetchResponse = nil
         self.trackStatusResult = nil
         self.receivedPublishNamespace = nil
@@ -60,32 +60,44 @@ final class TestSessionDelegate: SessionDelegate {
 
     func session(
         _ session: Session,
-        shouldAcceptSubscribeNamespace prefix: TrackNamespace,
+        didReceiveSubscribeNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> Bool {
+    ) -> SubscribeNamespaceDecision {
         receivedSubscribeNamespace = prefix
         receivedSubscribeNamespaceAuthorizationToken = authorizationToken
-        return subscribeNamespaceResult
+        if let subscribeNamespaceError: SubscribeNamespaceRequestError = subscribeNamespaceError {
+            return .reject(subscribeNamespaceError)
+        }
+        return .accept
     }
 
-    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> Bool {
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> SubscribeDecision {
         receivedSubscribeTrack = publishedTrack
-        return subscribeResult
+        if let subscribeError: SubscribeRequestError = subscribeError {
+            return .reject(subscribeError)
+        }
+        return .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
     }
 
     func session(
         _ session: Session,
-        shouldAcceptPublishNamespace prefix: TrackNamespace,
+        didReceivePublishNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> Bool {
+    ) -> PublishNamespaceDecision {
         receivedPublishNamespace = prefix
         receivedPublishNamespaceAuthorizationToken = authorizationToken
-        return publishNamespaceResult
+        if let publishNamespaceError: PublishNamespaceRequestError = publishNamespaceError {
+            return .reject(publishNamespaceError)
+        }
+        return .accept
     }
 
-    func session(_ session: Session, didReceivePublish resource: TrackResource) -> Bool {
+    func session(_ session: Session, didReceivePublish resource: TrackResource) -> PublishDecision {
         receivedPublishResource = resource
-        return publishResult
+        if let publishError: PublishRequestError = publishError {
+            return .reject(publishError)
+        }
+        return .accept(PublishAcceptance())
     }
 
     func session(_ session: Session, didReceiveSubscribeUpdate update: SubscribeUpdate) {
@@ -96,20 +108,20 @@ final class TestSessionDelegate: SessionDelegate {
         receivedUnsubscribeRequestID = requestID
     }
 
-    func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) throws -> TrackStatus {
+    func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) -> TrackStatusDecision {
         receivedTrackStatusRequest = request
         if let trackStatusResult {
-            return trackStatusResult
+            return .accept(trackStatusResult)
         }
-        throw TrackStatusRequestError.rejected(code: 0x0, reason: "Rejected")
+        return .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
-    func session(_ session: Session, didReceiveFetch request: FetchRequest) throws -> FetchResponse {
+    func session(_ session: Session, didReceiveFetch request: FetchRequest) -> FetchDecision {
         receivedFetchRequest = request
         if let fetchResponse {
-            return fetchResponse
+            return .accept(fetchResponse)
         }
-        throw FetchRequestError.rejected(code: 0x0, reason: "Rejected")
+        return .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) {

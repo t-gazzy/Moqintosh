@@ -94,37 +94,45 @@ actor ControlMessageDispatcher {
 
     private func handleIncomingPublishNamespace(_ message: PublishNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.shouldAcceptPublishNamespace(
+        let decision: PublishNamespaceDecision = session.didReceivePublishNamespace(
             prefix: message.trackNamespace,
             authorizationToken: message.authorizationTokens.first
         )
-        let response: Data = isAccepted
-            ? PublishNamespaceOKMessage(requestID: message.requestID).encode()
-            : PublishNamespaceErrorMessage(
+        let response: Data
+        switch decision {
+        case .accept:
+            response = PublishNamespaceOKMessage(requestID: message.requestID).encode()
+        case .reject(let error):
+            response = PublishNamespaceErrorMessage(
                 requestID: message.requestID,
-                errorCode: 0x1,
-                reasonPhrase: "Rejected"
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
             ).encode()
+        }
         try? await sessionContext.controlStream.send(bytes: response)
     }
 
     private func handleIncomingPublish(_ message: PublishMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.shouldAcceptPublish(resource: message.publishedTrack.resource)
-        let response: Data = isAccepted
-            ? PublishOKMessage(
+        let decision: PublishDecision = session.didReceivePublish(resource: message.publishedTrack.resource)
+        let response: Data
+        switch decision {
+        case .accept(let acceptance):
+            response = PublishOKMessage(
                 requestID: message.requestID,
-                forward: message.publishedTrack.forward,
-                subscriberPriority: 0,
-                groupOrder: message.publishedTrack.groupOrder,
-                filter: .largestObject,
-                deliveryTimeout: message.deliveryTimeout
+                forward: acceptance.forward,
+                subscriberPriority: acceptance.subscriberPriority,
+                groupOrder: acceptance.groupOrder,
+                filter: acceptance.filter,
+                deliveryTimeout: acceptance.deliveryTimeout
             ).encode()
-            : PublishErrorMessage(
+        case .reject(let error):
+            response = PublishErrorMessage(
                 requestID: message.requestID,
-                errorCode: 0x04,
-                reasonPhrase: "Rejected"
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
             ).encode()
+        }
         try? await sessionContext.controlStream.send(bytes: response)
     }
 
@@ -139,44 +147,50 @@ actor ControlMessageDispatcher {
             contentExist: .noContent,
             forward: message.forward
         )
-        let isAccepted: Bool = session.shouldAcceptSubscribe(publishedTrack: publishedTrack)
-        if isAccepted {
+        let decision: SubscribeDecision = session.didReceiveSubscribe(publishedTrack: publishedTrack)
+        let response: Data
+        switch decision {
+        case .accept(let acceptance):
             sessionContext.registerInboundSubscriptionResource(
                 requestID: message.requestID,
                 resource: message.resource
             )
+            response = SubscribeOKMessage(
+                requestID: message.requestID,
+                trackAlias: acceptance.publishedTrack.trackAlias,
+                expires: acceptance.expires,
+                groupOrder: acceptance.publishedTrack.groupOrder,
+                contentExist: acceptance.publishedTrack.contentExist,
+                deliveryTimeout: acceptance.deliveryTimeout,
+                maxCacheDuration: acceptance.maxCacheDuration
+            ).encode()
+        case .reject(let error):
+            response = SubscribeErrorMessage(
+                requestID: message.requestID,
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
+            ).encode()
         }
-        let response: Data = isAccepted
-            ? SubscribeOKMessage(
-                requestID: message.requestID,
-                trackAlias: publishedTrack.trackAlias,
-                expires: 0,
-                groupOrder: groupOrder,
-                contentExist: .noContent,
-                deliveryTimeout: message.deliveryTimeout,
-                maxCacheDuration: nil
-            ).encode()
-            : SubscribeErrorMessage(
-                requestID: message.requestID,
-                errorCode: 0x01,
-                reasonPhrase: "Rejected"
-            ).encode()
         try? await sessionContext.controlStream.send(bytes: response)
     }
 
     private func handleIncomingSubscribeNamespace(_ message: SubscribeNamespaceMessage) async {
         guard let session: Session = sessionContext.session else { return }
-        let isAccepted: Bool = session.shouldAcceptSubscribeNamespace(
+        let decision: SubscribeNamespaceDecision = session.didReceiveSubscribeNamespace(
             prefix: message.namespacePrefix,
             authorizationToken: message.authorizationTokens.first
         )
-        let response: Data = isAccepted
-            ? SubscribeNamespaceOKMessage(requestID: message.requestID).encode()
-            : SubscribeNamespaceErrorMessage(
+        let response: Data
+        switch decision {
+        case .accept:
+            response = SubscribeNamespaceOKMessage(requestID: message.requestID).encode()
+        case .reject(let error):
+            response = SubscribeNamespaceErrorMessage(
                 requestID: message.requestID,
-                errorCode: 0x1,
-                reasonPhrase: "Rejected"
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
             ).encode()
+        }
         try? await sessionContext.controlStream.send(bytes: response)
     }
 
@@ -249,9 +263,10 @@ actor ControlMessageDispatcher {
                 startGroup: startGroup
             )
         }
+        let decision: FetchDecision = session.fetchDecision(for: request)
         let response: Data
-        do {
-            let fetchResponse: FetchResponse = try session.fetchResponse(for: request)
+        switch decision {
+        case .accept(let fetchResponse):
             response = FetchOKMessage(
                 requestID: message.requestID,
                 groupOrder: fetchResponse.groupOrder,
@@ -259,20 +274,11 @@ actor ControlMessageDispatcher {
                 endLocation: fetchResponse.endLocation,
                 maxCacheDuration: fetchResponse.maxCacheDuration
             ).encode()
-        } catch let error as FetchRequestError {
-            switch error {
-            case .rejected(let code, let reason):
-                response = FetchErrorMessage(
-                    requestID: message.requestID,
-                    errorCode: code,
-                    reasonPhrase: reason
-                ).encode()
-            }
-        } catch {
+        case .reject(let error):
             response = FetchErrorMessage(
                 requestID: message.requestID,
-                errorCode: 0x0,
-                reasonPhrase: "Rejected"
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
             ).encode()
         }
         try? await sessionContext.controlStream.send(bytes: response)
@@ -293,24 +299,16 @@ actor ControlMessageDispatcher {
             forward: message.forward,
             filter: message.filter
         )
+        let decision: TrackStatusDecision = session.trackStatusDecision(for: request)
         let response: Data
-        do {
-            let trackStatus: TrackStatus = try session.trackStatus(for: request)
+        switch decision {
+        case .accept(let trackStatus):
             response = TrackStatusOKMessage(requestID: message.requestID, trackStatus: trackStatus).encode()
-        } catch let error as TrackStatusRequestError {
-            switch error {
-            case .rejected(let code, let reason):
-                response = TrackStatusErrorMessage(
-                    requestID: message.requestID,
-                    errorCode: code,
-                    reasonPhrase: reason
-                ).encode()
-            }
-        } catch {
+        case .reject(let error):
             response = TrackStatusErrorMessage(
                 requestID: message.requestID,
-                errorCode: 0x0,
-                reasonPhrase: "Rejected"
+                errorCode: error.code.rawValue,
+                reasonPhrase: error.reason
             ).encode()
         }
         try? await sessionContext.controlStream.send(bytes: response)

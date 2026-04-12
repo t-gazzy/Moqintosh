@@ -43,47 +43,37 @@ public final class Session {
         try await context.sendControlMessage(bytes: message.encode())
     }
 
-    func shouldAcceptPublishNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
+    func didReceivePublishNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> PublishNamespaceDecision {
         delegateQueue.sync {
-            let isAccepted: Bool = delegate?.session(
-                self,
-                shouldAcceptPublishNamespace: prefix,
-                authorizationToken: authorizationToken
-            ) ?? false
             delegate?.session(
                 self,
                 didReceivePublishNamespace: prefix,
                 authorizationToken: authorizationToken
-            )
-            return isAccepted
+            ) ?? .accept
         }
     }
 
-    func shouldAcceptPublish(resource: TrackResource) -> Bool {
+    func didReceivePublish(resource: TrackResource) -> PublishDecision {
         delegateQueue.sync {
-            delegate?.session(self, didReceivePublish: resource) ?? false
+            delegate?.session(self, didReceivePublish: resource)
+                ?? .accept(PublishAcceptance())
         }
     }
 
-    func shouldAcceptSubscribeNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> Bool {
+    func didReceiveSubscribeNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> SubscribeNamespaceDecision {
         delegateQueue.sync {
-            let isAccepted: Bool = delegate?.session(
-                self,
-                shouldAcceptSubscribeNamespace: prefix,
-                authorizationToken: authorizationToken
-            ) ?? false
             delegate?.session(
                 self,
                 didReceiveSubscribeNamespace: prefix,
                 authorizationToken: authorizationToken
-            )
-            return isAccepted
+            ) ?? .accept
         }
     }
 
-    func shouldAcceptSubscribe(publishedTrack: PublishedTrack) -> Bool {
+    func didReceiveSubscribe(publishedTrack: PublishedTrack) -> SubscribeDecision {
         delegateQueue.sync {
-            delegate?.session(self, didReceiveSubscribe: publishedTrack) ?? false
+            delegate?.session(self, didReceiveSubscribe: publishedTrack)
+                ?? .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
         }
     }
 
@@ -105,11 +95,10 @@ public final class Session {
         }
     }
 
-    func fetchResponse(for request: FetchRequest) throws -> FetchResponse {
-        try delegateQueue.sync {
-            try delegate?.session(self, didReceiveFetch: request) ?? {
-                throw FetchRequestError.rejected(code: 0x0, reason: "Rejected")
-            }()
+    func fetchDecision(for request: FetchRequest) -> FetchDecision {
+        delegateQueue.sync {
+            delegate?.session(self, didReceiveFetch: request)
+                ?? .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
         }
     }
 
@@ -119,11 +108,10 @@ public final class Session {
         }
     }
 
-    func trackStatus(for request: TrackStatusRequest) throws -> TrackStatus {
-        try delegateQueue.sync {
-            try delegate?.session(self, didReceiveTrackStatus: request) ?? {
-                throw TrackStatusRequestError.rejected(code: 0x0, reason: "Rejected")
-            }()
+    func trackStatusDecision(for request: TrackStatusRequest) -> TrackStatusDecision {
+        delegateQueue.sync {
+            delegate?.session(self, didReceiveTrackStatus: request)
+                ?? .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
         }
     }
 
@@ -176,18 +164,10 @@ public enum TrackStatusError: Error {
     case rejected(code: UInt64, reason: String)
 }
 
-public enum TrackStatusRequestError: Error {
-    case rejected(code: UInt64, reason: String)
-}
-
 public enum SessionFlowControlError: Error {
     case blocked(maxRequestID: UInt64)
 }
 
 public enum FetchError: Error {
-    case rejected(code: UInt64, reason: String)
-}
-
-public enum FetchRequestError: Error {
     case rejected(code: UInt64, reason: String)
 }

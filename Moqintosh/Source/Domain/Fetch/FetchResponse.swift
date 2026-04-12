@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct FetchResponse {
+public struct FetchResponse: Sendable {
 
     public let groupOrder: GroupOrder
     public let endOfTrack: Bool

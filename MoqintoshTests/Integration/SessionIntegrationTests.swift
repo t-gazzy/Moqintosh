@@ -190,7 +190,6 @@ struct SessionIntegrationTests {
     @Test func inboundPublishNamespaceDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.publishNamespaceResult = true
         session.delegate = delegate
 
         controlStream.enqueueReceive(
@@ -212,7 +211,10 @@ struct SessionIntegrationTests {
     @Test func inboundSubscribeDispatchesToSessionDelegateAndSendsError() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.subscribeResult = false
+        delegate.subscribeError = SubscribeRequestError(
+            code: .trackDoesNotExist,
+            reason: "Track does not exist"
+        )
         session.delegate = delegate
 
         controlStream.enqueueReceive(
@@ -364,7 +366,6 @@ struct SessionIntegrationTests {
     @Test func inboundJoiningRelativeFetchDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.subscribeResult = true
         delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: false,
@@ -426,7 +427,6 @@ struct SessionIntegrationTests {
     @Test func inboundJoiningAbsoluteFetchDispatchesToSessionDelegateAndSendsOK() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = TestSessionDelegate()
-        delegate.subscribeResult = true
         delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
             endOfTrack: false,
