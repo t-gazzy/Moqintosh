@@ -15,6 +15,7 @@ public final class Session {
     private let controlMessageReceiver: ControlMessageReceiver
     private let streamReceiverCoordinator: StreamReceiverCoordinator
     private let delegateQueue: DispatchQueue
+    /// The delegate that receives inbound control message events.
     public weak var delegate: (any SessionDelegate)?
 
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
@@ -29,14 +30,17 @@ public final class Session {
 
     // MARK: - Factory
 
+    /// Creates a publisher bound to this session.
     public func makePublisher() -> Publisher {
         Publisher(sessionContext: context)
     }
 
+    /// Creates a subscriber bound to this session.
     public func makeSubscriber() -> Subscriber {
         Subscriber(sessionContext: context)
     }
 
+    /// Sends GOAWAY to the remote peer and optionally advertises a replacement session URI.
     public func goAway(newSessionURI: String? = nil) async throws {
         let message: GoAwayMessage = GoAwayMessage(newSessionURI: newSessionURI)
         OSLogger.info("Sending GOAWAY")
@@ -142,32 +146,42 @@ public final class Session {
 
 /// Errors thrown when a namespace subscription is rejected by the remote publisher.
 public enum SubscribeNamespaceError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }
 
 /// Errors thrown when a subscription request is rejected by the remote publisher.
 public enum SubscribeError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }
 
 /// Errors thrown when a namespace publish request is rejected by the remote subscriber.
 public enum PublishNamespaceError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }
 
 /// Errors thrown when a publish request is rejected by the remote subscriber.
 public enum PublishError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }
 
+/// Errors thrown when a track status request is rejected by the remote peer.
 public enum TrackStatusError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }
 
+/// Errors thrown when the remote peer blocks issuing more request IDs.
 public enum SessionFlowControlError: Error {
+    /// The peer advertised the current maximum request ID.
     case blocked(maxRequestID: UInt64)
 }
 
+/// Errors thrown when a fetch request is rejected by the remote peer.
 public enum FetchError: Error {
+    /// The remote peer rejected the request with the supplied error code and reason.
     case rejected(code: UInt64, reason: String)
 }

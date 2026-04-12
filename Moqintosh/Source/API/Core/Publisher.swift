@@ -5,11 +5,10 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
-/// Represents a MOQT publisher created from a Session.
-///
-/// A publisher is the sending side of a track.
-/// Use the methods below to announce tracks and namespaces.
 // Safe because mutable session state is synchronized by SessionContext and Publisher does not add mutable shared state.
+/// Represents a MOQT publisher created from a session.
+///
+/// Use this type to announce namespaces, publish tracks, and create data senders.
 public final class Publisher: @unchecked Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
@@ -87,14 +86,17 @@ public final class Publisher: @unchecked Sendable {
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
+    /// Creates a stream sender factory for the published track.
     public func makeStreamSenderFactory(for publishedTrack: PublishedTrack) -> StreamSenderFactory {
         StreamSenderFactory(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 
+    /// Creates a datagram sender for the published track.
     public func makeDatagramSender(for publishedTrack: PublishedTrack) -> DatagramSender {
         DatagramSender(sessionContext: sessionContext, publishedTrack: publishedTrack)
     }
 
+    /// Opens a fetch stream sender for an accepted inbound fetch request.
     public func makeFetchSender(for fetchRequest: FetchRequest) async throws -> FetchSender {
         let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
         return try await FetchSender(stream: stream, requestID: fetchRequest.requestID)

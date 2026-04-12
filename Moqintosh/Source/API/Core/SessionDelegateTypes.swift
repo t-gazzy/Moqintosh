@@ -8,12 +8,18 @@
 /// Acceptance parameters for an inbound PUBLISH request.
 public struct PublishAcceptance: Sendable {
 
+    /// Whether the sender may forward the published content.
     public let forward: Bool
+    /// The subscriber priority advertised in `PUBLISH_OK`.
     public let subscriberPriority: UInt8
+    /// The group ordering advertised in `PUBLISH_OK`.
     public let groupOrder: GroupOrder
+    /// The subscription filter advertised in `PUBLISH_OK`.
     public let filter: SubscriptionFilter
+    /// The optional delivery timeout advertised in `PUBLISH_OK`.
     public let deliveryTimeout: UInt64?
 
+    /// Creates an acceptance value for an inbound `PUBLISH`.
     public init(
         forward: Bool = true,
         subscriberPriority: UInt8 = 128,
@@ -29,11 +35,13 @@ public struct PublishAcceptance: Sendable {
     }
 }
 
+/// The decision returned for an inbound `PUBLISH_NAMESPACE`.
 public enum PublishNamespaceDecision: Sendable {
     case accept
     case reject(PublishNamespaceRequestError)
 }
 
+/// The decision returned for an inbound `PUBLISH`.
 public enum PublishDecision: Sendable {
     case accept(PublishAcceptance)
     case reject(PublishRequestError)
@@ -42,11 +50,16 @@ public enum PublishDecision: Sendable {
 /// Acceptance parameters for an inbound SUBSCRIBE request.
 public struct SubscribeAcceptance: Sendable {
 
+    /// The published track bound to the accepted subscription.
     public let publishedTrack: PublishedTrack
+    /// The expiry advertised in `SUBSCRIBE_OK`.
     public let expires: UInt64
+    /// The optional delivery timeout advertised in `SUBSCRIBE_OK`.
     public let deliveryTimeout: UInt64?
+    /// The optional cache duration advertised in `SUBSCRIBE_OK`.
     public let maxCacheDuration: UInt64?
 
+    /// Creates an acceptance value for an inbound `SUBSCRIBE`.
     public init(
         publishedTrack: PublishedTrack,
         expires: UInt64 = 0,
@@ -60,21 +73,25 @@ public struct SubscribeAcceptance: Sendable {
     }
 }
 
+/// The decision returned for an inbound `SUBSCRIBE_NAMESPACE`.
 public enum SubscribeNamespaceDecision: Sendable {
     case accept
     case reject(SubscribeNamespaceRequestError)
 }
 
+/// The decision returned for an inbound `SUBSCRIBE`.
 public enum SubscribeDecision: Sendable {
     case accept(SubscribeAcceptance)
     case reject(SubscribeRequestError)
 }
 
+/// The decision returned for an inbound `TRACK_STATUS`.
 public enum TrackStatusDecision: Sendable {
     case accept(TrackStatus)
     case reject(TrackStatusRequestError)
 }
 
+/// The decision returned for an inbound `FETCH`.
 public enum FetchDecision: Sendable {
     case accept(FetchResponse)
     case reject(FetchRequestError)
@@ -83,6 +100,7 @@ public enum FetchDecision: Sendable {
 /// Error returned when rejecting an inbound PUBLISH_NAMESPACE request.
 public struct PublishNamespaceRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `PUBLISH_NAMESPACE_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -93,9 +111,12 @@ public struct PublishNamespaceRequestError: Error, Sendable {
         case expiredAuthToken = 0x12
     }
 
+    /// The error code to encode in `PUBLISH_NAMESPACE_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `PUBLISH_NAMESPACE_ERROR`.
     public let reason: String
 
+    /// Creates a namespace rejection for an inbound `PUBLISH_NAMESPACE`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason
@@ -105,6 +126,7 @@ public struct PublishNamespaceRequestError: Error, Sendable {
 /// Error returned when rejecting an inbound PUBLISH request.
 public struct PublishRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `PUBLISH_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -113,9 +135,12 @@ public struct PublishRequestError: Error, Sendable {
         case uninterested = 0x4
     }
 
+    /// The error code to encode in `PUBLISH_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `PUBLISH_ERROR`.
     public let reason: String
 
+    /// Creates a rejection for an inbound `PUBLISH`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason
@@ -125,6 +150,7 @@ public struct PublishRequestError: Error, Sendable {
 /// Error returned when rejecting an inbound SUBSCRIBE_NAMESPACE request.
 public struct SubscribeNamespaceRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `SUBSCRIBE_NAMESPACE_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -136,9 +162,12 @@ public struct SubscribeNamespaceRequestError: Error, Sendable {
         case expiredAuthToken = 0x12
     }
 
+    /// The error code to encode in `SUBSCRIBE_NAMESPACE_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `SUBSCRIBE_NAMESPACE_ERROR`.
     public let reason: String
 
+    /// Creates a namespace rejection for an inbound `SUBSCRIBE_NAMESPACE`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason
@@ -148,6 +177,7 @@ public struct SubscribeNamespaceRequestError: Error, Sendable {
 /// Error returned when rejecting an inbound SUBSCRIBE request.
 public struct SubscribeRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `SUBSCRIBE_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -159,9 +189,12 @@ public struct SubscribeRequestError: Error, Sendable {
         case expiredAuthToken = 0x12
     }
 
+    /// The error code to encode in `SUBSCRIBE_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `SUBSCRIBE_ERROR`.
     public let reason: String
 
+    /// Creates a rejection for an inbound `SUBSCRIBE`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason
@@ -171,6 +204,7 @@ public struct SubscribeRequestError: Error, Sendable {
 /// Error returned when rejecting an inbound TRACK_STATUS request.
 public struct TrackStatusRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `TRACK_STATUS_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -182,9 +216,12 @@ public struct TrackStatusRequestError: Error, Sendable {
         case expiredAuthToken = 0x12
     }
 
+    /// The error code to encode in `TRACK_STATUS_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `TRACK_STATUS_ERROR`.
     public let reason: String
 
+    /// Creates a rejection for an inbound `TRACK_STATUS`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason
@@ -194,6 +231,7 @@ public struct TrackStatusRequestError: Error, Sendable {
 /// Error returned when rejecting an inbound FETCH request.
 public struct FetchRequestError: Error, Sendable {
 
+    /// RFC-defined error code for `FETCH_ERROR`.
     public enum Code: UInt64, Sendable {
         case internalError = 0x0
         case unauthorized = 0x1
@@ -209,9 +247,12 @@ public struct FetchRequestError: Error, Sendable {
         case expiredAuthToken = 0x12
     }
 
+    /// The error code to encode in `FETCH_ERROR`.
     public let code: Code
+    /// The reason phrase to encode in `FETCH_ERROR`.
     public let reason: String
 
+    /// Creates a rejection for an inbound `FETCH`.
     public init(code: Code, reason: String) {
         self.code = code
         self.reason = reason

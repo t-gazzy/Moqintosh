@@ -7,15 +7,21 @@
 
 import Foundation
 
+/// Receives objects emitted by a fetch stream.
 public protocol FetchReceiverDelegate: AnyObject {
+    /// Called when a fetch object is received.
     func fetchReceiver(_ receiver: FetchReceiver, didReceive object: SubgroupObject)
+    /// Called when the fetch stream closes.
     func fetchReceiverDidClose(_ receiver: FetchReceiver)
 }
 
 // Safe because receiveTask is the only concurrent execution context and delegate callbacks are serialized on delegateQueue.
+/// Receives subgroup objects from an accepted fetch stream.
 public final class FetchReceiver: @unchecked Sendable {
 
+    /// The delegate that receives fetch callbacks.
     public weak var delegate: (any FetchReceiverDelegate)?
+    /// The accepted fetch subscription associated with this receiver.
     public let fetchSubscription: FetchSubscription
 
     private let stream: TransportUniReceiveStream

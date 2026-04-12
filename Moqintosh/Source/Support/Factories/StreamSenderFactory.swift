@@ -5,11 +5,12 @@
 //  Created by Codex on 2026/04/10.
 //
 
-/// Creates subgroup stream senders for a published track.
 // Safe because the factory forwards stream creation into SessionContext and does not maintain mutable shared state.
+/// Creates subgroup stream senders for a published track.
 public final class StreamSenderFactory: @unchecked Sendable {
 
     private let sessionContext: SessionContext
+    /// The published track associated with senders created by this factory.
     public let publishedTrack: PublishedTrack
 
     init(sessionContext: SessionContext, publishedTrack: PublishedTrack) {
@@ -17,6 +18,7 @@ public final class StreamSenderFactory: @unchecked Sendable {
         self.publishedTrack = publishedTrack
     }
 
+    /// Opens a new subgroup send stream and returns a sender for the supplied header values.
     public func makeSender(
         groupID: UInt64,
         subgroupID: SubgroupHeader.SubgroupID = .zero,

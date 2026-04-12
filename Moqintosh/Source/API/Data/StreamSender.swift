@@ -8,10 +8,11 @@
 import Foundation
 import Synchronization
 
-/// Sends objects on a single subgroup stream.
 // Safe because mutable send state is serialized through previousObjectID.
+/// Sends objects on a single subgroup stream.
 public final class StreamSender: @unchecked Sendable {
 
+    /// The payload or terminal status carried by a subgroup object.
     public enum Content {
         case payload(Data)
         case status(UInt64)
@@ -27,10 +28,12 @@ public final class StreamSender: @unchecked Sendable {
         self.previousObjectID = Mutex<UInt64?>(nil)
     }
 
+    /// Sends a subgroup object and keeps the stream open.
     public func send(objectID: UInt64, content: Content) async throws {
         try await send(objectID: objectID, endOfGroup: false, extensions: [], content: content)
     }
 
+    /// Sends a subgroup object and optionally marks the end of the group.
     public func send(objectID: UInt64, endOfGroup: Bool, content: Content) async throws {
         try await send(objectID: objectID, endOfGroup: endOfGroup, extensions: [], content: content)
     }

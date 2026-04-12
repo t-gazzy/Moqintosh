@@ -5,11 +5,10 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
-/// Represents a MOQT subscriber created from a Session.
-///
-/// A subscriber is the receiving side of a track.
-/// Use the methods below to request tracks and namespaces.
 // Safe because mutable session state is synchronized by SessionContext and Subscriber does not add mutable shared state.
+/// Represents a MOQT subscriber created from a session.
+///
+/// Use this type to request namespaces, subscriptions, fetches, and track status updates.
 public final class Subscriber: @unchecked Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
@@ -119,6 +118,7 @@ public final class Subscriber: @unchecked Sendable {
         )
     }
 
+    /// Requests a fetch that starts from a group offset relative to an active subscription.
     public func fetch(
         joining subscription: Subscription,
         subscriberPriority: UInt8 = 128,
@@ -144,6 +144,7 @@ public final class Subscriber: @unchecked Sendable {
         )
     }
 
+    /// Requests a fetch that starts from an absolute group number relative to an active subscription.
     public func fetch(
         joining subscription: Subscription,
         subscriberPriority: UInt8 = 128,
@@ -199,6 +200,7 @@ public final class Subscriber: @unchecked Sendable {
         return try await controlMessageChannel.performTrackStatusRequest(requestID: requestID, bytes: message.encode())
     }
 
+    /// Cancels an announced published namespace on the remote peer.
     public func publishNamespaceCancel(
         trackNamespace: TrackNamespace,
         errorCode: UInt64,
@@ -213,20 +215,24 @@ public final class Subscriber: @unchecked Sendable {
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
+    /// Cancels interest in a namespace prefix.
     public func unsubscribeNamespace(namespacePrefix: TrackNamespace) async throws {
         let message: UnsubscribeNamespaceMessage = UnsubscribeNamespaceMessage(namespacePrefix: namespacePrefix)
         OSLogger.debug("Sending UNSUBSCRIBE_NAMESPACE")
         try await controlMessageChannel.sendControlMessage(bytes: message.encode())
     }
 
+    /// Creates a stream receiver factory for an active subscription.
     public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {
         StreamReceiverFactory(sessionContext: sessionContext, subscription: subscription)
     }
 
+    /// Creates a datagram receiver for an active subscription.
     public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
         DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
     }
 
+    /// Creates a fetch receiver factory for an active fetch subscription.
     public func makeFetchReceiverFactory(for fetchSubscription: FetchSubscription) -> FetchReceiverFactory {
         FetchReceiverFactory(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
     }

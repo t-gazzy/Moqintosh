@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// The object selection rule requested for a subscription or track status query.
 public enum SubscriptionFilter: Sendable {
     case nextGroupStart
     case largestObject

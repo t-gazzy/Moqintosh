@@ -7,13 +7,18 @@
 
 import Foundation
 
+/// Receives callbacks when new stream receivers are created.
 public protocol StreamReceiverFactoryDelegate: AnyObject {
+    /// Called when a new stream receiver is created for the subscription.
     func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver)
 }
 
+/// Creates stream receivers for inbound subgroup streams on a subscription.
 public final class StreamReceiverFactory {
 
+    /// The delegate that receives receiver creation callbacks.
     public weak var delegate: (any StreamReceiverFactoryDelegate)?
+    /// The subscription associated with receivers created by this factory.
     public let subscription: Subscription
 
     private let sessionContext: SessionContext
@@ -31,8 +36,7 @@ public final class StreamReceiverFactory {
                 header: header,
                 initialData: initialData
             )
-            self.delegateQueue.async { [weak self] in
-                guard let self else { return }
+            self.delegateQueue.sync {
                 self.delegate?.streamReceiverFactory(self, didCreate: receiver)
             }
             receiver.start()

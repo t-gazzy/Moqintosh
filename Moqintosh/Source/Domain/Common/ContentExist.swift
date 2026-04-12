@@ -12,6 +12,7 @@ public enum ContentExist: Sendable {
     case noContent
     case exists(Location)
 
+    /// Encodes the content-exists value using the MOQT wire format.
     public func encode() -> Data {
         var data: Data = Data()
         switch self {

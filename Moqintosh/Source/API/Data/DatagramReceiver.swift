@@ -7,13 +7,18 @@
 
 import Foundation
 
+/// Receives datagram delivery callbacks for a subscription.
 public protocol DatagramReceiverDelegate: AnyObject {
+    /// Called when an object datagram is received for the bound subscription.
     func datagramReceiver(_ receiver: DatagramReceiver, didReceive datagram: ObjectDatagram)
 }
 
+/// Receives object datagrams for a subscribed track.
 public final class DatagramReceiver {
 
+    /// The delegate that receives datagram callbacks.
     public weak var delegate: (any DatagramReceiverDelegate)?
+    /// The subscription associated with this receiver.
     public let subscription: Subscription
     private let delegateQueue: DispatchQueue
 

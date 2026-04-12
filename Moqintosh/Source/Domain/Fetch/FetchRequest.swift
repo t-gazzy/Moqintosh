@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Represents an inbound `FETCH` request.
 public enum FetchRequest {
     case standalone(
         requestID: UInt64,
@@ -33,6 +34,7 @@ public enum FetchRequest {
         startGroup: UInt64
     )
 
+    /// The request identifier associated with the fetch request.
     public var requestID: UInt64 {
         switch self {
         case .standalone(let requestID, _, _, _, _, _):

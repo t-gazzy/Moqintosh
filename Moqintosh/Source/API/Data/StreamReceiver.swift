@@ -7,15 +7,21 @@
 
 import Foundation
 
+/// Receives subgroup objects delivered on a subscription stream.
 public protocol StreamReceiverDelegate: AnyObject {
+    /// Called when a subgroup object is received.
     func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject)
+    /// Called when the receive stream closes.
     func streamReceiverDidClose(_ receiver: StreamReceiver)
 }
 
 // Safe because receiveTask is the only concurrent execution context and delegate callbacks are serialized on delegateQueue.
+/// Receives subgroup objects for a subscribed track.
 public final class StreamReceiver: @unchecked Sendable {
 
+    /// The delegate that receives stream callbacks.
     public weak var delegate: (any StreamReceiverDelegate)?
+    /// The subgroup header associated with this receive stream.
     public let header: SubgroupHeader
 
     private let stream: TransportUniReceiveStream

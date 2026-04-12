@@ -7,8 +7,10 @@
 
 import Foundation
 
+/// Sends subgroup objects on a fetch stream.
 public final class FetchSender {
 
+    /// The payload or terminal status carried by a fetch object.
     public enum Content {
         case payload(Data)
         case status(UInt64)
@@ -21,6 +23,7 @@ public final class FetchSender {
         try await stream.send(bytes: FetchHeader(requestID: requestID).encode(), endOfStream: false)
     }
 
+    /// Sends a fetch object and keeps the stream open.
     public func send(
         groupID: UInt64,
         subgroupID: UInt64,
@@ -39,6 +42,7 @@ public final class FetchSender {
         )
     }
 
+    /// Sends a fetch object and optionally closes the fetch stream.
     public func send(
         groupID: UInt64,
         subgroupID: UInt64,

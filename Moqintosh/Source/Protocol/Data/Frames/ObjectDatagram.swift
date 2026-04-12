@@ -19,6 +19,11 @@ public struct ObjectDatagram: Sendable {
         case status(UInt64)
     }
 
+    enum ContentKind {
+        case payload
+        case status
+    }
+
     enum DatagramType: UInt64 {
         case object = 0x00
         case objectWithExtensions = 0x01
@@ -30,11 +35,6 @@ public struct ObjectDatagram: Sendable {
         case endOfGroupObjectWithoutIDWithExtensions = 0x07
         case status = 0x20
         case statusWithExtensions = 0x21
-
-        enum ContentKind {
-            case payload
-            case status
-        }
 
         var endOfGroup: Bool {
             switch self {
