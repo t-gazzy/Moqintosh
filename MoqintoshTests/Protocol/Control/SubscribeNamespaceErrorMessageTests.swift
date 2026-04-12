@@ -6,6 +6,8 @@
 //
 
 import Testing
+import Foundation
+
 @testable import Moqintosh
 
 struct SubscribeNamespaceErrorMessageTests {

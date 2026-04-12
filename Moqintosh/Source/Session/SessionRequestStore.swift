@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Synchronization
 
 final class SessionRequestStore {
 
@@ -31,16 +32,14 @@ final class SessionRequestStore {
         case trackStatus(CheckedContinuation<TrackStatus, Error>)
     }
 
-    private let stateQueue: DispatchQueue
-    private var requests: [UInt64: PendingRequest]
+    private let requests: Mutex<[UInt64: PendingRequest]>
 
     init() {
-        self.stateQueue = DispatchQueue(label: "Moqintosh.SessionRequestStore")
-        self.requests = [:]
+        self.requests = Mutex<[UInt64: PendingRequest]>([:])
     }
 
     func addRequest(_ id: UInt64, continuation: CheckedContinuation<Void, Error>) {
-        stateQueue.sync {
+        requests.withLock { requests in
             requests[id] = .namespace(continuation)
         }
     }
@@ -50,7 +49,7 @@ final class SessionRequestStore {
         publishedTrack: PublishedTrack,
         continuation: CheckedContinuation<PublishedTrack, Error>
     ) {
-        stateQueue.sync {
+        requests.withLock { requests in
             requests[id] = .publish(publishedTrack: publishedTrack, continuation: continuation)
         }
     }
@@ -64,7 +63,7 @@ final class SessionRequestStore {
         filter: SubscriptionFilter,
         continuation: CheckedContinuation<Subscription, Error>
     ) {
-        stateQueue.sync {
+        requests.withLock { requests in
             requests[id] = .subscribe(
                 resource: resource,
                 subscriberPriority: subscriberPriority,
@@ -77,7 +76,7 @@ final class SessionRequestStore {
     }
 
     func addTrackStatusRequest(_ id: UInt64, continuation: CheckedContinuation<TrackStatus, Error>) {
-        stateQueue.sync {
+        requests.withLock { requests in
             requests[id] = .trackStatus(continuation)
         }
     }
@@ -88,7 +87,7 @@ final class SessionRequestStore {
         subscriberPriority: UInt8,
         continuation: CheckedContinuation<FetchSubscription, Error>
     ) {
-        stateQueue.sync {
+        requests.withLock { requests in
             requests[id] = .fetch(
                 resource: resource,
                 subscriberPriority: subscriberPriority,
@@ -98,7 +97,7 @@ final class SessionRequestStore {
     }
 
     func resolveRequest(with message: PublishNamespaceOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .namespace(let continuation) = request else { return }
@@ -106,7 +105,7 @@ final class SessionRequestStore {
     }
 
     func rejectRequest(with message: PublishNamespaceErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .namespace(let continuation) = request else { return }
@@ -114,7 +113,7 @@ final class SessionRequestStore {
     }
 
     func failRequest(_ id: UInt64, error: any Error) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: id)
         }
         guard case .namespace(let continuation) = request else { return }
@@ -122,7 +121,7 @@ final class SessionRequestStore {
     }
 
     func resolvePublishRequest(with message: PublishOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .publish(let publishedTrack, let continuation) = request else { return }
@@ -130,7 +129,7 @@ final class SessionRequestStore {
     }
 
     func rejectPublishRequest(with message: PublishErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .publish(_, let continuation) = request else { return }
@@ -138,7 +137,7 @@ final class SessionRequestStore {
     }
 
     func failPublishRequest(_ id: UInt64, error: any Error) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: id)
         }
         guard case .publish(_, let continuation) = request else { return }
@@ -146,7 +145,7 @@ final class SessionRequestStore {
     }
 
     func resolveRequest(with message: SubscribeNamespaceOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .namespace(let continuation) = request else { return }
@@ -154,7 +153,7 @@ final class SessionRequestStore {
     }
 
     func rejectRequest(with message: SubscribeNamespaceErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .namespace(let continuation) = request else { return }
@@ -162,7 +161,7 @@ final class SessionRequestStore {
     }
 
     func resolveSubscribeRequest(with message: SubscribeOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .subscribe(
@@ -192,7 +191,7 @@ final class SessionRequestStore {
     }
 
     func rejectSubscribeRequest(with message: SubscribeErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .subscribe(_, _, _, _, _, let continuation) = request else { return }
@@ -200,7 +199,7 @@ final class SessionRequestStore {
     }
 
     func failSubscribeRequest(_ id: UInt64, error: any Error) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: id)
         }
         guard case .subscribe(_, _, _, _, _, let continuation) = request else { return }
@@ -208,7 +207,7 @@ final class SessionRequestStore {
     }
 
     func resolveTrackStatusRequest(with message: TrackStatusOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .trackStatus(let continuation) = request else { return }
@@ -216,7 +215,7 @@ final class SessionRequestStore {
     }
 
     func rejectTrackStatusRequest(with message: TrackStatusErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .trackStatus(let continuation) = request else { return }
@@ -224,7 +223,7 @@ final class SessionRequestStore {
     }
 
     func failTrackStatusRequest(_ id: UInt64, error: any Error) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: id)
         }
         guard case .trackStatus(let continuation) = request else { return }
@@ -232,7 +231,7 @@ final class SessionRequestStore {
     }
 
     func resolveFetchRequest(with message: FetchOKMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .fetch(let resource, let subscriberPriority, let continuation) = request else { return }
@@ -249,7 +248,7 @@ final class SessionRequestStore {
     }
 
     func rejectFetchRequest(with message: FetchErrorMessage) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: message.requestID)
         }
         guard case .fetch(_, _, let continuation) = request else { return }
@@ -257,7 +256,7 @@ final class SessionRequestStore {
     }
 
     func failFetchRequest(_ id: UInt64, error: any Error) {
-        let request: PendingRequest? = stateQueue.sync {
+        let request: PendingRequest? = requests.withLock { requests in
             requests.removeValue(forKey: id)
         }
         guard case .fetch(_, _, let continuation) = request else { return }

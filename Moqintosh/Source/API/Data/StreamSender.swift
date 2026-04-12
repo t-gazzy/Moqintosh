@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import Synchronization
 
 /// Sends objects on a single subgroup stream.
-// Safe because mutable send state is serialized through stateQueue.
+// Safe because mutable send state is serialized through previousObjectID.
 public final class StreamSender: @unchecked Sendable {
 
     public enum Content {
@@ -18,14 +19,12 @@ public final class StreamSender: @unchecked Sendable {
 
     private let stream: TransportUniSendStream
     private let header: SubgroupHeader
-    private let stateQueue: DispatchQueue
-    private var previousObjectID: UInt64?
+    private let previousObjectID: Mutex<UInt64?>
 
     init(stream: TransportUniSendStream, header: SubgroupHeader) {
         self.stream = stream
         self.header = header
-        self.stateQueue = DispatchQueue(label: "Moqintosh.StreamSender")
-        self.previousObjectID = nil
+        self.previousObjectID = Mutex<UInt64?>(nil)
     }
 
     public func send(objectID: UInt64, content: Content) async throws {
@@ -42,7 +41,7 @@ public final class StreamSender: @unchecked Sendable {
         extensions: [KeyValuePair],
         content: Content
     ) async throws {
-        let subgroupObject: SubgroupObject = stateQueue.sync {
+        let subgroupObject: SubgroupObject = previousObjectID.withLock { previousObjectID in
             let subgroupObject: SubgroupObject = header.makeObject(
                 previousObjectID: previousObjectID,
                 objectID: objectID,

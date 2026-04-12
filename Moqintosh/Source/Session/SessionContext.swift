@@ -6,9 +6,18 @@
 //
 
 import Foundation
+import Synchronization
 
-// Safe because mutable session state is serialized through stateQueue and request stores own their own synchronization.
+// Safe because mutable session state is serialized through state and request stores own their own synchronization.
 final class SessionContext: @unchecked Sendable {
+
+    private struct State {
+        var nextRequestID: UInt64
+        var nextTrackAlias: UInt64
+        var remoteMaxRequestID: UInt64
+        var blockedRequestID: UInt64?
+        var inboundSubscriptionResources: [UInt64: TrackResource]
+    }
 
     weak var session: Session?
 
@@ -18,13 +27,7 @@ final class SessionContext: @unchecked Sendable {
     let streamReceiverStore: StreamReceiverStore
     let fetchReceiverStore: FetchReceiverStore
     let datagramReceiverStore: DatagramReceiverStore
-    /// Client-side Request IDs start at 0 and increment by 2 (even numbers, Section 9.1).
-    private var nextRequestID: UInt64 = 0
-    private var nextTrackAlias: UInt64 = 0
-    private var remoteMaxRequestID: UInt64
-    private var blockedRequestID: UInt64?
-    private var inboundSubscriptionResources: [UInt64: TrackResource]
-    private let stateQueue: DispatchQueue
+    private let state: Mutex<State>
 
     init(connection: TransportConnection, controlStream: TransportBiStream, remoteMaxRequestID: UInt64 = 0) {
         self.connection = connection
@@ -33,25 +36,30 @@ final class SessionContext: @unchecked Sendable {
         self.streamReceiverStore = StreamReceiverStore()
         self.fetchReceiverStore = FetchReceiverStore()
         self.datagramReceiverStore = DatagramReceiverStore()
-        self.remoteMaxRequestID = remoteMaxRequestID
-        self.blockedRequestID = nil
-        self.inboundSubscriptionResources = [:]
-        self.stateQueue = DispatchQueue(label: "Moqintosh.SessionContext")
+        self.state = Mutex<State>(
+            State(
+                nextRequestID: 0,
+                nextTrackAlias: 0,
+                remoteMaxRequestID: remoteMaxRequestID,
+                blockedRequestID: nil,
+                inboundSubscriptionResources: [:]
+            )
+        )
     }
 
     // MARK: - Request ID
 
     /// Issues the next Request ID and advances the counter.
     func issueRequestID() async throws -> UInt64 {
-        let result: (id: UInt64?, blockedRequestID: UInt64?) = stateQueue.sync {
-            let id: UInt64 = nextRequestID
-            guard id <= remoteMaxRequestID else {
-                let messageRequestID: UInt64? = blockedRequestID == remoteMaxRequestID ? nil : remoteMaxRequestID
-                blockedRequestID = remoteMaxRequestID
-                return (nil, messageRequestID)
+        let result: (id: UInt64?, blockedRequestID: UInt64?, maxRequestID: UInt64) = state.withLock { state in
+            let id: UInt64 = state.nextRequestID
+            guard id <= state.remoteMaxRequestID else {
+                let messageRequestID: UInt64? = state.blockedRequestID == state.remoteMaxRequestID ? nil : state.remoteMaxRequestID
+                state.blockedRequestID = state.remoteMaxRequestID
+                return (nil, messageRequestID, state.remoteMaxRequestID)
             }
-            nextRequestID += 2
-            return (id, nil)
+            state.nextRequestID += 2
+            return (id, nil, state.remoteMaxRequestID)
         }
         if let id: UInt64 = result.id {
             return id
@@ -61,44 +69,44 @@ final class SessionContext: @unchecked Sendable {
             OSLogger.debug("Sending REQUESTS_BLOCKED (requestID: \(blockedRequestID))")
             try await controlStream.send(bytes: message.encode())
         }
-        throw SessionFlowControlError.blocked(maxRequestID: stateQueue.sync { remoteMaxRequestID })
+        throw SessionFlowControlError.blocked(maxRequestID: result.maxRequestID)
     }
 
     func issueTrackAlias() -> UInt64 {
-        stateQueue.sync {
-            let alias: UInt64 = nextTrackAlias
-            nextTrackAlias += 1
+        state.withLock { state in
+            let alias: UInt64 = state.nextTrackAlias
+            state.nextTrackAlias += 1
             return alias
         }
     }
 
     func updateRemoteMaxRequestID(_ requestID: UInt64) {
-        stateQueue.sync {
-            guard requestID > remoteMaxRequestID else {
+        state.withLock { state in
+            guard requestID > state.remoteMaxRequestID else {
                 return
             }
-            remoteMaxRequestID = requestID
-            if let blockedRequestID, blockedRequestID < requestID {
-                self.blockedRequestID = nil
+            state.remoteMaxRequestID = requestID
+            if let blockedRequestID: UInt64 = state.blockedRequestID, blockedRequestID < requestID {
+                state.blockedRequestID = nil
             }
         }
     }
 
     func registerInboundSubscriptionResource(requestID: UInt64, resource: TrackResource) {
-        stateQueue.sync {
-            inboundSubscriptionResources[requestID] = resource
+        state.withLock { state in
+            state.inboundSubscriptionResources[requestID] = resource
         }
     }
 
     func inboundSubscriptionResource(for requestID: UInt64) -> TrackResource? {
-        stateQueue.sync {
-            inboundSubscriptionResources[requestID]
+        state.withLock { state in
+            state.inboundSubscriptionResources[requestID]
         }
     }
 
     func removeInboundSubscriptionResource(requestID: UInt64) {
-        _ = stateQueue.sync {
-            inboundSubscriptionResources.removeValue(forKey: requestID)
+        state.withLock { state in
+            _ = state.inboundSubscriptionResources.removeValue(forKey: requestID)
         }
     }
 }
