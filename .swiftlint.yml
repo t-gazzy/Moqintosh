@@ -74,7 +74,7 @@ disabled_rules:
     - redundant_void_return # 関数宣言でVoidを返すのは冗長である
     - statement_position # elseとcatchは前の宣言に1つのスペースを入れ、同じ行に配置されるべき
     - superfluous_disable_command # 無効化されたルールが無効化された領域で違反を起こさなかった場合、SwiftLintのdisableコマンドは不要
-    - redundant_optional_initialization # Optional型の変数をnilで初期化するのは冗長
+    - implicit_optional_initialization # Optional型の変数をnilで初期化するのは冗長
     - syntactic_sugar # シンタックスシュガー（糖衣構文）を使うべき。Arrayの代わりに[Int]を使うなど
     - todo # TODO, FIXME 使えなくする
     - trailing_comma # 配列とDictionaryの末尾のカンマはつけるべきでない
@@ -99,10 +99,6 @@ excluded:
 
 
 # detail setting
-line_length:
-    warning: 500
-    error: 5000
-
 function_body_length:
     warning: 200
     error: 1000
