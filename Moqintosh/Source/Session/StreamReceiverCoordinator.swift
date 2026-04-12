@@ -7,7 +7,8 @@
 
 import Foundation
 
-final class StreamReceiverCoordinator: TransportConnectionDelegate {
+// Safe because the coordinator is immutable and only forwards inbound streams into per-stream tasks.
+final class StreamReceiverCoordinator: TransportConnectionDelegate, @unchecked Sendable {
 
     private let sessionContext: SessionContext
 
@@ -80,7 +81,7 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate {
     }
 }
 
-private enum StreamHeader {
+private enum StreamHeader: Sendable {
     case subgroup(header: SubgroupHeader, initialData: Data)
     case fetch(header: FetchHeader, initialData: Data)
 }

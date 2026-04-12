@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents whether a track has published content and its largest location.
-public enum ContentExist {
+public enum ContentExist: Sendable {
     case noContent
     case exists(Location)
 

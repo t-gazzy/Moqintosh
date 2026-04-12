@@ -18,7 +18,7 @@ struct StreamSenderFactoryTests {
             additionalUniSendStreams: [dataStream]
         )
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let factory: StreamSenderFactory = session.makePublisher().makeStreamSenderFactory(
             for: PublishedTrack(

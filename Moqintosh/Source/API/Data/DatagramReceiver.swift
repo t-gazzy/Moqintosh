@@ -22,7 +22,7 @@ public final class DatagramReceiver {
         self.delegateQueue = DispatchQueue(label: "Moqintosh.DatagramReceiverDelegate")
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
-            self.delegateQueue.async { [weak self] in
+            self.delegateQueue.sync { [weak self] in
                 guard let self else { return }
                 self.delegate?.datagramReceiver(self, didReceive: datagram)
             }

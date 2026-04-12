@@ -7,7 +7,8 @@
 
 import Foundation
 
-final class SessionContext {
+// Safe because mutable session state is serialized through stateQueue and request stores own their own synchronization.
+final class SessionContext: @unchecked Sendable {
 
     weak var session: Session?
 

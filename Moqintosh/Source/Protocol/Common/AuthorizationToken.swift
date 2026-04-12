@@ -8,7 +8,7 @@
 import Foundation
 
 /// Raw authorization token bytes carried by MOQT AUTHORIZATION TOKEN parameters.
-public struct AuthorizationToken {
+public struct AuthorizationToken: Sendable {
 
     public let value: Data
 

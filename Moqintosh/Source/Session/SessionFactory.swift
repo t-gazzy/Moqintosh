@@ -30,8 +30,7 @@ final class SessionFactory {
             controlStream: controlStream,
             remoteMaxRequestID: maxRequestID
         )
-        let dispatcher = ControlMessageDispatcher(sessionContext: context)
-        let receiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: dispatcher)
+        let receiver = ControlMessageReceiver(controlStream: controlStream)
         return Session(sessionContext: context, controlMessageReceiver: receiver)
     }
 }

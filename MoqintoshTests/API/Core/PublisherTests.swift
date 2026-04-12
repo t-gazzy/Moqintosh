@@ -14,7 +14,7 @@ struct PublisherTests {
     @Test func publishNamespaceSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let publisher: Publisher = session.makePublisher()
 
@@ -35,7 +35,7 @@ struct PublisherTests {
     @Test func publishSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let publisher: Publisher = session.makePublisher()
 
@@ -67,7 +67,7 @@ struct PublisherTests {
     @Test func publishDoneSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let publisher: Publisher = session.makePublisher()
         let publishedTrack: PublishedTrack = PublishedTrack(
@@ -88,7 +88,7 @@ struct PublisherTests {
     @Test func publishNamespaceDoneSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let publisher: Publisher = session.makePublisher()
 

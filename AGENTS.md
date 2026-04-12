@@ -23,6 +23,11 @@
    - To enforce API call ordering (e.g., `initialize()` must be called before `doSomething()`), use `precondition` or `preconditionFailure` with a descriptive message instead of `!`.
 9. **Annotations**:
    - Apply necessary attributes like `@escaping`, `@discardableResult`, `@MainActor`, and `@Observable` appropriately.
+   - Do not use `@unchecked Sendable` by default.
+   - Use `@unchecked Sendable` only when no practical safe alternative is available.
+   - Before introducing `@unchecked Sendable`, first consider ownership changes, actor isolation, `@MainActor`, or explicit task lifecycle management.
+   - When `@unchecked Sendable` is unavoidable, add a concise English comment immediately above the type explaining why it is safe.
+   - Never add `@unchecked Sendable` without a justification comment.
 10. **Separation of Responsibilities**:
    - Keep each type focused on a single responsibility. Split state management, protocol serialization, transport handling, and domain behavior when they start to mix.
 

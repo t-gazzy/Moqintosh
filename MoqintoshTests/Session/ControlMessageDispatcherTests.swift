@@ -17,7 +17,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.publishNamespaceResult = true
@@ -45,7 +45,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeResult = false
@@ -77,7 +77,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.trackStatusResult = TrackStatus(
@@ -113,7 +113,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.fetchResponse = FetchResponse(
@@ -159,7 +159,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
@@ -175,7 +175,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.fetchResponse = FetchResponse(
@@ -228,7 +228,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         #expect(type(of: session) == Session.self)
 
@@ -262,7 +262,7 @@ struct ControlMessageDispatcherTests {
         let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
         let session: Session = Session(
             sessionContext: context,
-            controlMessageReceiver: ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+            controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate

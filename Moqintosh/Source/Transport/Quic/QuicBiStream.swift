@@ -9,7 +9,8 @@ import Foundation
 import Network
 
 /// A QUIC bidirectional stream.
-final class QuicBiStream: TransportBiStream {
+// Safe because the wrapper forwards directly to the underlying Network stream without additional mutable state.
+final class QuicBiStream: TransportBiStream, @unchecked Sendable {
 
     private let stream: QUIC.Stream<QUICStream>
 

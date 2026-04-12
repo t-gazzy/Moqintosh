@@ -24,7 +24,7 @@ public final class Session {
         self.delegateQueue = DispatchQueue(label: "Moqintosh.SessionDelegate")
         self.context.session = self
         self.context.connection.delegate = streamReceiverCoordinator
-        self.controlMessageReceiver.start()
+        self.controlMessageReceiver.start(dispatcher: ControlMessageDispatcher(sessionContext: sessionContext))
     }
 
     // MARK: - Factory

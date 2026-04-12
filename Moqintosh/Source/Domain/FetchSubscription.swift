@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct FetchSubscription {
+public struct FetchSubscription: Sendable {
 
     public let requestID: UInt64
     public let resource: TrackResource

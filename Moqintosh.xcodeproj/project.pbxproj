@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6F1238652F8AC04900875243 /* Moqintosh in Frameworks */ = {isa = PBXBuildFile; productRef = 6F1238642F8AC04900875243 /* Moqintosh */; };
+		6F73B0352F8AC2F800BE93FE /* Moqintosh in Frameworks */ = {isa = PBXBuildFile; productRef = 6F73B0342F8AC2F800BE93FE /* Moqintosh */; };
 		6FA3E6372D38EEA900BB51A5 /* Moqintosh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */; };
-		6FB8FA872F8A53C4009F29F9 /* Moqintosh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */; };
-		6FB8FA882F8A53C4009F29F9 /* Moqintosh.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,28 +20,7 @@
 			remoteGlobalIDString = 6FA3E62B2D38EEA800BB51A5;
 			remoteInfo = Moqintosh;
 		};
-		6FB8FA892F8A53C4009F29F9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 6FA3E6232D38EEA800BB51A5 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 6FA3E62B2D38EEA800BB51A5;
-			remoteInfo = Moqintosh;
-		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		6FB8FA8B2F8A53C4009F29F9 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				6FB8FA882F8A53C4009F29F9 /* Moqintosh.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Moqintosh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,7 +79,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6FB8FA872F8A53C4009F29F9 /* Moqintosh.framework in Frameworks */,
+				6F1238652F8AC04900875243 /* Moqintosh in Frameworks */,
+				6F73B0352F8AC2F800BE93FE /* Moqintosh in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,7 +93,6 @@
 				6FA3E62E2D38EEA800BB51A5 /* Moqintosh */,
 				6FA3E63A2D38EEA900BB51A5 /* MoqintoshTests */,
 				6FB8FA722F8A5362009F29F9 /* Sample */,
-				6FB8FA862F8A53C4009F29F9 /* Frameworks */,
 				6FA3E62D2D38EEA800BB51A5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -126,13 +105,6 @@
 				6FB8FA712F8A5362009F29F9 /* Sample.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		6FB8FA862F8A53C4009F29F9 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -204,19 +176,19 @@
 				6FB8FA6D2F8A5362009F29F9 /* Sources */,
 				6FB8FA6E2F8A5362009F29F9 /* Frameworks */,
 				6FB8FA6F2F8A5362009F29F9 /* Resources */,
-				6FB8FA8B2F8A53C4009F29F9 /* Embed Frameworks */,
 				6F1238622F8ABC4200875243 /* SwiftFormat */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				6FB8FA8A2F8A53C4009F29F9 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6FB8FA722F8A5362009F29F9 /* Sample */,
 			);
 			name = Sample;
 			packageProductDependencies = (
+				6F1238642F8AC04900875243 /* Moqintosh */,
+				6F73B0342F8AC2F800BE93FE /* Moqintosh */,
 			);
 			productName = Sample;
 			productReference = 6FB8FA712F8A5362009F29F9 /* Sample.app */;
@@ -252,6 +224,9 @@
 			);
 			mainGroup = 6FA3E6222D38EEA800BB51A5;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6F73B0332F8AC2F800BE93FE /* XCLocalSwiftPackageReference "../Moqintosh" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6FA3E62D2D38EEA800BB51A5 /* Products */;
 			projectDirPath = "";
@@ -393,11 +368,6 @@
 			target = 6FA3E62B2D38EEA800BB51A5 /* Moqintosh */;
 			targetProxy = 6FA3E6382D38EEA900BB51A5 /* PBXContainerItemProxy */;
 		};
-		6FB8FA8A2F8A53C4009F29F9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 6FA3E62B2D38EEA800BB51A5 /* Moqintosh */;
-			targetProxy = 6FB8FA892F8A53C4009F29F9 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -430,7 +400,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -464,7 +434,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -605,7 +575,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "t-gazzy.MoqintoshTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -621,7 +591,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "t-gazzy.MoqintoshTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -654,7 +624,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -687,7 +657,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -732,6 +702,24 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		6F73B0332F8AC2F800BE93FE /* XCLocalSwiftPackageReference "../Moqintosh" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Moqintosh;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6F1238642F8AC04900875243 /* Moqintosh */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Moqintosh;
+		};
+		6F73B0342F8AC2F800BE93FE /* Moqintosh */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Moqintosh;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6FA3E6232D38EEA800BB51A5 /* Project object */;
 }

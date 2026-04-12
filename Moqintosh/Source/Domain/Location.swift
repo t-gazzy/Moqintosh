@@ -8,7 +8,7 @@
 import Foundation
 
 /// Identifies an object within a track.
-public struct Location {
+public struct Location: Sendable {
 
     public let group: UInt64
     public let object: UInt64

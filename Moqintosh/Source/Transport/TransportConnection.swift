@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an established transport connection.
-protocol TransportConnection: AnyObject {
+protocol TransportConnection: AnyObject, Sendable {
     var delegate: (any TransportConnectionDelegate)? { get set }
     func openBiStream() async throws -> TransportBiStream
     func openUniStream() async throws -> TransportUniSendStream

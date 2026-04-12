@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct FetchHeader {
+struct FetchHeader: Sendable {
 
     static let type: UInt64 = 0x05
 

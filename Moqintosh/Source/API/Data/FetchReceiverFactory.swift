@@ -11,7 +11,8 @@ public protocol FetchReceiverFactoryDelegate: AnyObject {
     func fetchReceiverFactory(_ factory: FetchReceiverFactory, didCreate receiver: FetchReceiver)
 }
 
-public final class FetchReceiverFactory {
+// Safe because the factory only coordinates receiver creation and delegate callbacks are serialized on delegateQueue.
+public final class FetchReceiverFactory: @unchecked Sendable {
 
     public weak var delegate: (any FetchReceiverFactoryDelegate)?
     public let fetchSubscription: FetchSubscription

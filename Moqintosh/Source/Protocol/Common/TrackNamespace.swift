@@ -17,7 +17,7 @@ import Foundation
 /// }
 /// ```
 /// N must be between 1 and 32 inclusive.
-public struct TrackNamespace {
+public struct TrackNamespace: Sendable {
 
     public let elements: [Data]
 

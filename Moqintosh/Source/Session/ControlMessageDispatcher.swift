@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class ControlMessageDispatcher {
+actor ControlMessageDispatcher {
 
     private let sessionContext: SessionContext
 

@@ -8,6 +8,6 @@
 import Foundation
 
 /// Represents an open outbound unidirectional transport stream.
-protocol TransportUniSendStream: AnyObject {
+protocol TransportUniSendStream: AnyObject, Sendable {
     func send(bytes: Data, endOfStream: Bool) async throws
 }

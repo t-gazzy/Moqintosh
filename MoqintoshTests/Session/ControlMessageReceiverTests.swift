@@ -15,8 +15,7 @@ struct ControlMessageReceiverTests {
         let incoming: PublishNamespaceMessage = PublishNamespaceMessage(requestID: 2, trackNamespace: TrackNamespace(strings: ["live"]))
         let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [incoming.encode()])
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let dispatcher: ControlMessageDispatcher = ControlMessageDispatcher(sessionContext: context)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: dispatcher)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.publishNamespaceResult = true

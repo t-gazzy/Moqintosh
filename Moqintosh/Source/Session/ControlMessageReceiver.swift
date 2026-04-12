@@ -8,29 +8,35 @@
 final class ControlMessageReceiver {
 
     private let controlStream: TransportBiStream
-    private let dispatcher: ControlMessageDispatcher
-    private let frameReader: MessageFrameReader
+    private var receiveTask: Task<Void, Never>?
 
-    init(
-        controlStream: TransportBiStream,
-        dispatcher: ControlMessageDispatcher,
-        frameReader: MessageFrameReader = MessageFrameReader()
-    ) {
+    init(controlStream: TransportBiStream) {
         self.controlStream = controlStream
-        self.dispatcher = dispatcher
-        self.frameReader = frameReader
+        self.receiveTask = nil
     }
 
-    func start() {
-        Task {
+    deinit {
+        receiveTask?.cancel()
+    }
+
+    func start(dispatcher: ControlMessageDispatcher) {
+        precondition(receiveTask == nil, "ControlMessageReceiver.start(dispatcher:) must only be called once")
+        receiveTask = Task { [controlStream] in
+            let frameReader: MessageFrameReader = MessageFrameReader()
             do {
-                while true {
+                while !Task.isCancelled {
                     let message: MOQTMessage = try await frameReader.read(from: controlStream)
                     await dispatcher.handle(message)
                 }
+            } catch is CancellationError {
             } catch {
                 OSLogger.error("Control stream receive error: \(error)")
             }
         }
+    }
+
+    func stop() {
+        receiveTask?.cancel()
+        receiveTask = nil
     }
 }

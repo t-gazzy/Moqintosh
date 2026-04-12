@@ -15,7 +15,7 @@ struct FetchReceiverFactoryTests {
         let controlStream: MockTransportBiStream = MockTransportBiStream()
         let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let fetchSubscription: FetchSubscription = FetchSubscription(

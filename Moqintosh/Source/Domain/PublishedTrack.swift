@@ -6,7 +6,7 @@
 //
 
 /// Metadata for a published track.
-public struct PublishedTrack {
+public struct PublishedTrack: Sendable {
 
     public let requestID: UInt64
     public let resource: TrackResource

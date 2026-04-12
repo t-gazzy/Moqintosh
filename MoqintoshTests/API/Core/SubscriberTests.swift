@@ -14,7 +14,7 @@ struct SubscriberTests {
     @Test func subscribeNamespaceSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 
@@ -34,7 +34,7 @@ struct SubscriberTests {
     @Test func subscribeSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 
@@ -67,7 +67,7 @@ struct SubscriberTests {
     @Test func unsubscribeSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
@@ -94,7 +94,7 @@ struct SubscriberTests {
     @Test func fetchSendsMessageAndResolves() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let resource: TrackResource = TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8))
@@ -133,7 +133,7 @@ struct SubscriberTests {
     @Test func fetchCancelSendsMessage() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let fetchSubscription: FetchSubscription = FetchSubscription(
@@ -155,7 +155,7 @@ struct SubscriberTests {
     @Test func joiningRelativeFetchSendsMessageAndResolves() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
@@ -205,7 +205,7 @@ struct SubscriberTests {
     @Test func joiningAbsoluteFetchSendsMessageAndResolves() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
@@ -255,7 +255,7 @@ struct SubscriberTests {
     @Test func trackStatusSendsMessageAndResolves() async throws {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
-        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream, dispatcher: ControlMessageDispatcher(sessionContext: context))
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
         let subscriber: Subscriber = session.makeSubscriber()
 

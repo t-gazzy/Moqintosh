@@ -12,6 +12,7 @@ public protocol StreamReceiverDelegate: AnyObject {
     func streamReceiverDidClose(_ receiver: StreamReceiver)
 }
 
+// Safe because receiveTask is the only concurrent execution context and delegate callbacks are serialized on delegateQueue.
 public final class StreamReceiver: @unchecked Sendable {
 
     public weak var delegate: (any StreamReceiverDelegate)?
@@ -19,39 +20,49 @@ public final class StreamReceiver: @unchecked Sendable {
 
     private let stream: TransportUniReceiveStream
     private let subscription: Subscription
-    private let frameReader: SubgroupObjectFrameReader
+    private let initialData: Data
     private let delegateQueue: DispatchQueue
+    private var receiveTask: Task<Void, Never>?
 
     init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
         self.stream = stream
         self.subscription = subscription
         self.header = header
-        self.frameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
+        self.initialData = initialData
         self.delegateQueue = DispatchQueue(label: "Moqintosh.StreamReceiverDelegate")
+        self.receiveTask = nil
+    }
+
+    deinit {
+        receiveTask?.cancel()
     }
 
     func start() {
-        Task {
+        precondition(receiveTask == nil, "StreamReceiver.start() must only be called once")
+        receiveTask = Task { [stream, header, initialData, delegateQueue] in
+            let frameReader: SubgroupObjectFrameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
             do {
-                try await receiveLoop()
+                while !Task.isCancelled {
+                    let object: SubgroupObject = try await frameReader.read(from: stream)
+                    delegateQueue.sync { [weak self] in
+                        guard let self else { return }
+                        self.delegate?.streamReceiver(self, didReceive: object)
+                    }
+                }
+            } catch is CancellationError {
             } catch {
                 OSLogger.debug("Stream receive loop ended: \(error)")
             }
-            delegateQueue.async { [weak self] in
+            delegateQueue.sync { [weak self] in
                 guard let self else { return }
                 self.delegate?.streamReceiverDidClose(self)
             }
         }
     }
 
-    private func receiveLoop() async throws {
-        while true {
-            let object: SubgroupObject = try await frameReader.read(from: stream)
-            delegateQueue.async { [weak self] in
-                guard let self else { return }
-                self.delegate?.streamReceiver(self, didReceive: object)
-            }
-        }
+    func stop() {
+        receiveTask?.cancel()
+        receiveTask = nil
     }
 }
 

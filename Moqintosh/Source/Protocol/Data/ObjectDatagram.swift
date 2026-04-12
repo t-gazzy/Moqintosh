@@ -7,14 +7,14 @@
 
 import Foundation
 
-public struct ObjectDatagram {
+public struct ObjectDatagram: Sendable {
 
-    public enum ObjectID {
+    public enum ObjectID: Sendable {
         case none
         case explicit(UInt64)
     }
 
-    public enum Content {
+    public enum Content: Sendable {
         case payload(Data)
         case status(UInt64)
     }

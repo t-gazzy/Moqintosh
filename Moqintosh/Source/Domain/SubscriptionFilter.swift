@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum SubscriptionFilter {
+public enum SubscriptionFilter: Sendable {
     case nextGroupStart
     case largestObject
     case absoluteStart(Location)

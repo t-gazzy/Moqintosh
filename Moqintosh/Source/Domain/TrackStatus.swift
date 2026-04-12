@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct TrackStatus {
+public struct TrackStatus: Sendable {
 
     public let expires: UInt64
     public let groupOrder: GroupOrder

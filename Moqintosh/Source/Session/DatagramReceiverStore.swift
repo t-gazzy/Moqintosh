@@ -19,13 +19,13 @@ final class DatagramReceiverStore {
         self.handlers = [:]
     }
 
-    func register(trackAlias: UInt64, handler: @escaping Handler) {
+    func register(trackAlias: UInt64, handler: @escaping (ObjectDatagram) -> Void) {
         stateQueue.sync {
             handlers[trackAlias] = handler
         }
     }
 
-    func handler(for trackAlias: UInt64) -> Handler? {
+    func handler(for trackAlias: UInt64) -> ((ObjectDatagram) -> Void)? {
         stateQueue.sync {
             handlers[trackAlias]
         }

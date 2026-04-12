@@ -6,7 +6,7 @@
 //
 
 /// Metadata for an active subscription.
-public struct Subscription {
+public struct Subscription: Sendable {
 
     public let requestID: UInt64
     public let publishedTrack: PublishedTrack

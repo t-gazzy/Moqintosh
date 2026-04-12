@@ -5,13 +5,14 @@
 //  Created by takemasa kaji on 2025/01/29.
 //
 
+import Foundation
 import os
 
 private final class BundleToken {}
 
-class OSLogger {
+final class OSLogger {
 
-    enum LogLevel: Int {
+    enum LogLevel: Int, Sendable {
         case none = 0
         case trace = 1
         case debug = 2
@@ -20,10 +21,13 @@ class OSLogger {
         case error = 5
     }
 
-    static var tag: String = "[🍎MOQINTOSH]"
-    static var outputLogLevel: LogLevel = .trace
+    static let tag: String = "[🍎MOQINTOSH]"
+    // Default log level is set to .trace for maximum verbosity. Adjust as needed.
+    // nonisolated(unsafe) is used here to allow changing the log level from any thread without synchronization,
+    // since it's expected to be set once at startup.
+    nonisolated(unsafe) static var outputLogLevel: LogLevel = .trace
 
-    private static var logger: Logger = Logger(
+    private static let logger: Logger = Logger(
         subsystem: Bundle(for: BundleToken.self).bundleIdentifier ?? "Moqintosh",
         category: "Moqintosh"
     )

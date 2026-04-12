@@ -8,7 +8,7 @@
 import Foundation
 
 /// Identifies a track that can be subscribed to or published.
-public struct TrackResource {
+public struct TrackResource: Sendable {
 
     public let trackNamespace: TrackNamespace
     public let trackName: Data

@@ -9,7 +9,8 @@ import Foundation
 import Network
 
 /// An inbound QUIC unidirectional stream.
-final class QuicUniReceiveStream: TransportUniReceiveStream {
+// Safe because the wrapper forwards directly to the underlying Network stream without additional mutable state.
+final class QuicUniReceiveStream: TransportUniReceiveStream, @unchecked Sendable {
 
     private let stream: QUIC.Stream<QUICStream>
 

@@ -8,7 +8,8 @@
 import Network
 
 /// An established QUIC transport connection.
-final class QuicConnection: TransportConnection {
+// Safe because Network QUIC primitives are used as thread-safe handles and all mutable coordination is delegated outward.
+final class QuicConnection: TransportConnection, @unchecked Sendable {
 
     let connection: NetworkConnection<QUIC>
     weak var delegate: (any TransportConnectionDelegate)?
