@@ -54,6 +54,13 @@ Apply the narrowest modifier that satisfies the requirement.
 - After each small step, validate with build, diagnostics, or tests before continuing.
 - When the workspace or IDE becomes slow or unstable, reduce scope and continue in smaller batches.
 
+## Performance
+- This project implements a low-latency communication protocol. Prefer lightweight, low-overhead implementations.
+- Avoid unnecessary allocations, copies, buffering, locking, task creation, and thread or queue hops.
+- Prefer simpler synchronization primitives when they are sufficient for correctness.
+- Do not trade correctness for speed, but when multiple correct designs are possible, choose the one with lower runtime overhead and lower latency.
+- Be especially careful on hot paths such as message parsing, frame reading, stream I/O, and state updates performed for each packet or object.
+
 ## Constraints
 - Do not write code for future extensibility.
 - Never add code "just in case" — only implement what is explicitly required.
