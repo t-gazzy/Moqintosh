@@ -31,6 +31,8 @@ jobs:
             transform-for-static-hosting /tmp/docc/Build/Products/Debug-maccatalyst/Moqintosh.doccarchive \
             --output-path ./docs-out \
             --hosting-base-path "Moqintosh"
+            
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=documentation/moqintosh"></head></html>' > ./docs-out/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
