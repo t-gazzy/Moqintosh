@@ -9,7 +9,8 @@
 ///
 /// A subscriber is the receiving side of a track.
 /// Use the methods below to request tracks and namespaces.
-public final class Subscriber {
+// Safe because mutable session state is synchronized by SessionContext and Subscriber does not add mutable shared state.
+public final class Subscriber: @unchecked Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext

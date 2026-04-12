@@ -343,7 +343,7 @@ final class SampleSessionController {
 
     private func performOperation(
         status: String,
-        operation: @escaping () async throws -> Void
+        operation: @MainActor @escaping () async throws -> Void
     ) async {
         guard !isWorking else { return }
         isWorking = true

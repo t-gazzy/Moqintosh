@@ -9,7 +9,8 @@
 ///
 /// A publisher is the sending side of a track.
 /// Use the methods below to announce tracks and namespaces.
-public final class Publisher {
+// Safe because mutable session state is synchronized by SessionContext and Publisher does not add mutable shared state.
+public final class Publisher: @unchecked Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext

@@ -6,7 +6,8 @@
 //
 
 /// Creates subgroup stream senders for a published track.
-public final class StreamSenderFactory {
+// Safe because the factory forwards stream creation into SessionContext and does not maintain mutable shared state.
+public final class StreamSenderFactory: @unchecked Sendable {
 
     private let sessionContext: SessionContext
     public let publishedTrack: PublishedTrack

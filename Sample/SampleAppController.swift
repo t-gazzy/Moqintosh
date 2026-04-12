@@ -7,6 +7,7 @@
 
 import Observation
 import Moqintosh
+import Foundation
 
 @MainActor
 @Observable

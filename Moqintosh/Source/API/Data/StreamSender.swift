@@ -8,7 +8,8 @@
 import Foundation
 
 /// Sends objects on a single subgroup stream.
-public final class StreamSender {
+// Safe because mutable send state is serialized through stateQueue.
+public final class StreamSender: @unchecked Sendable {
 
     public enum Content {
         case payload(Data)

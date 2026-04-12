@@ -7,7 +7,8 @@
 
 import Foundation
 
-public final class DatagramSender {
+// Safe because the sender forwards directly into SessionContext and does not maintain mutable shared state.
+public final class DatagramSender: @unchecked Sendable {
 
     public let publishedTrack: PublishedTrack
 

@@ -6,7 +6,7 @@
 //
 
 /// Represents a MOQT endpoint. Use this to create a Session.
-public final class Endpoint {
+public final class Endpoint: Sendable {
 
     public let host: String
     public let port: UInt16
