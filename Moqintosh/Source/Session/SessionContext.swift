@@ -97,7 +97,7 @@ final class SessionContext: @unchecked Sendable {
     }
 
     func removeInboundSubscriptionResource(requestID: UInt64) {
-        stateQueue.sync {
+        _ = stateQueue.sync {
             inboundSubscriptionResources.removeValue(forKey: requestID)
         }
     }

@@ -11,8 +11,7 @@ public protocol StreamReceiverFactoryDelegate: AnyObject {
     func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver)
 }
 
-// Safe because the factory only coordinates receiver creation and delegate callbacks are serialized on delegateQueue.
-public final class StreamReceiverFactory: @unchecked Sendable {
+public final class StreamReceiverFactory {
 
     public weak var delegate: (any StreamReceiverFactoryDelegate)?
     public let subscription: Subscription

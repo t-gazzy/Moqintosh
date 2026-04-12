@@ -9,7 +9,7 @@ import Foundation
 
 final class FetchReceiverStore {
 
-    typealias Handler = @Sendable (TransportUniReceiveStream, FetchHeader, Data) -> Void
+    typealias Handler = (TransportUniReceiveStream, FetchHeader, Data) -> Void
 
     private let stateQueue: DispatchQueue
     private var handlers: [UInt64: Handler]

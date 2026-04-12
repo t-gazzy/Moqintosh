@@ -6,6 +6,7 @@
 //
 
 import Network
+import Foundation
 
 /// An established QUIC transport connection.
 // Safe because Network QUIC primitives are used as thread-safe handles and all mutable coordination is delegated outward.

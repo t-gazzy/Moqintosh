@@ -8,7 +8,8 @@
 import Foundation
 @testable import Moqintosh
 
-final class MockTransportBiStream: TransportBiStream {
+// Safe because mutable state is serialized through stateQueue in tests.
+final class MockTransportBiStream: TransportBiStream, @unchecked Sendable {
 
     var receiveQueue: [Data]
     var sentBytes: [Data]
@@ -85,7 +86,8 @@ final class MockTransportBiStream: TransportBiStream {
     }
 }
 
-final class MockTransportUniSendStream: TransportUniSendStream {
+// Safe because the test double is only mutated by the test harness.
+final class MockTransportUniSendStream: TransportUniSendStream, @unchecked Sendable {
 
     private(set) var sentBytes: [Data]
     private(set) var endOfStreamFlags: [Bool]
@@ -101,7 +103,8 @@ final class MockTransportUniSendStream: TransportUniSendStream {
     }
 }
 
-final class MockTransportUniReceiveStream: TransportUniReceiveStream {
+// Safe because the test double is only mutated by the test harness.
+final class MockTransportUniReceiveStream: TransportUniReceiveStream, @unchecked Sendable {
 
     var receiveQueue: [TransportUniReceiveResult]
     var receiveError: (any Error)?
@@ -122,7 +125,8 @@ final class MockTransportUniReceiveStream: TransportUniReceiveStream {
     }
 }
 
-final class MockTransportConnection: TransportConnection {
+// Safe because the test double is only mutated by the test harness.
+final class MockTransportConnection: TransportConnection, @unchecked Sendable {
 
     weak var delegate: (any TransportConnectionDelegate)?
     var biStream: MockTransportBiStream

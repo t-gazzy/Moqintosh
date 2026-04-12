@@ -533,14 +533,19 @@ private func makeServerSetupMessage() -> ServerSetupMessage {
     )
 }
 
+// Safe because the boxed session is only used from a single test-created task.
+private struct IntegrationSessionBox: @unchecked Sendable {
+    let session: Session
+}
+
 private func performSubscribe(
     session: Session,
     controlStream: MockTransportBiStream,
     trackAlias: UInt64
 ) async throws -> Subscription {
-    let subscriber: Subscriber = session.makeSubscriber()
-    let task: Task<Subscription, Error> = .init {
-        try await subscriber.subscribe(
+    let sessionBox: IntegrationSessionBox = IntegrationSessionBox(session: session)
+    let task: Task<Subscription, Error> = Task {
+        try await sessionBox.session.makeSubscriber().subscribe(
             resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("media".utf8))
         )
     }
@@ -567,9 +572,9 @@ private func performFetch(
     session: Session,
     controlStream: MockTransportBiStream
 ) async throws -> FetchSubscription {
-    let subscriber: Subscriber = session.makeSubscriber()
-    let task: Task<FetchSubscription, Error> = .init {
-        try await subscriber.fetch(
+    let sessionBox: IntegrationSessionBox = IntegrationSessionBox(session: session)
+    let task: Task<FetchSubscription, Error> = Task {
+        try await sessionBox.session.makeSubscriber().fetch(
             resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("media".utf8)),
             start: Location(group: 1, object: 2),
             end: Location(group: 3, object: 4)
