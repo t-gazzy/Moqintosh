@@ -1,43 +1,44 @@
 # Moqintosh
 
-A Swift MOQT client library built on Apple's Network.framework.
+A Swift MOQT client library built on Apple's `Network.framework`.
 
 ## Overview
 
-Moqintosh is a Swift library that implements Media over QUIC Transport (MOQT) over QUIC using Apple's Network.framework.
+Moqintosh implements Media over QUIC Transport (MOQT) client behavior on Apple platforms.
 
-It is based on `draft-ietf-moq-transport-14` and currently targets MOQT client behavior only.
+It currently targets `draft-ietf-moq-transport-14` and focuses on low-latency client-side publish, subscribe, fetch, and track status flows over QUIC.
 
-Relay behavior is out of scope, and WebTransport is unsupported.
+Relay behavior and WebTransport are out of scope.
 
-## Features
+## Current Capabilities
 
-- Session connection and setup handshake
-- `PUBLISH_NAMESPACE`
-- `SUBSCRIBE_NAMESPACE`
-- `SUBSCRIBE`
-- Stream object send and receive
-- Object Datagram send and receive
-- Interoperability checks with the sample app
+- Session setup and GOAWAY handling
+- `PUBLISH_NAMESPACE`, `PUBLISH`, `PUBLISH_DONE`, and namespace cancellation flows
+- `SUBSCRIBE_NAMESPACE`, `SUBSCRIBE`, `SUBSCRIBE_UPDATE`, and unsubscribe flows
+- `FETCH`, `FETCH_CANCEL`, and fetch stream delivery
+- `TRACK_STATUS`
+- Subgroup stream send and receive
+- Object datagram send and receive
+- Delegate-driven handling of inbound control requests with typed acceptance and rejection decisions
+- Unit, integration, and sample-app based interoperability coverage
 
-## Unsupported / Out of Scope
+## Project Layout
 
-- Relay behavior
-- WebTransport
-- Full specification coverage
-- Production-hardening level error handling across all cases
-
-## Architecture
-
-- `Source/API`: Public API surface
-- `Source/Protocol`: MOQT message and frame encoding and decoding
-- `Source/Session`: Session state, control dispatch, request handling, and receiver coordination
-- `Source/Transport`: QUIC transport abstraction built on top of `Network.framework`
-- `Sample`: Manual interoperability sample app
+- `Moqintosh/Source/API`: Public API surface
+- `Moqintosh/Source/Domain`: Public domain models
+- `Moqintosh/Source/Protocol`: MOQT control messages, common protocol types, and data frame models
+- `Moqintosh/Source/Session`: Session orchestration, request tracking, and receive coordination
+- `Moqintosh/Source/Transport`: Transport interfaces and QUIC implementation
+- `Moqintosh/Source/Support`: Internal support types such as factories and helpers
+- `Sample`: Manual sample app for interoperability testing
 - `MoqintoshTests`: Unit and integration tests
 
 ## Requirements
 
-- Xcode
-- Swift
+- Xcode 26 or later
+- Swift 6.2 toolchain
 - Apple platforms with `Network.framework`
+
+## Status
+
+This library is under active development. The current implementation tracks the client side of the draft and does not aim for full specification coverage yet.
