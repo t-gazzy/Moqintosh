@@ -28,7 +28,7 @@ jobs:
           
           # 静的ファイルとして書き出し
           $(xcrun --find docc) process-archive \
-            transform-for-static-hosting /tmp/docc/Build/Products/Debug-iphoneos/Moqintosh.doccarchive \
+            transform-for-static-hosting /tmp/docc/Build/Products/Debug-maccatalyst/Moqintosh.doccarchive \
             --output-path ./docs-out \
             --hosting-base-path "Moqintosh"
 
