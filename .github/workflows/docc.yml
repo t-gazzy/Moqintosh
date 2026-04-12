@@ -20,6 +20,10 @@ jobs:
         run: |
           xcodebuild docbuild -scheme Moqintosh \
             -derivedDataPath /tmp/docc \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGNING_REQUIRED=NO \
             DOCC_HOSTING_BASE_PATH="Moqintosh"
           
           # 静的ファイルとして書き出し
