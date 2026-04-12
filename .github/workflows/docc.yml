@@ -1,0 +1,46 @@
+name: Deploy DocC to GitHub Pages
+
+on:
+  push:
+    branches: ["main"] # mainにプッシュされたら実行
+
+# Pagesへのデプロイに必要な権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Build Documentation
+        run: |
+          xcodebuild docbuild -scheme Moqintosh \
+            -derivedDataPath /tmp/docc \
+            DOCC_HOSTING_BASE_PATH="Moqintosh"
+          
+          # 静的ファイルとして書き出し
+          $(xcrun --find docc) process-archive \
+            transform-for-static-hosting /tmp/docc/Build/Products/Debug-iphoneos/Moqintosh.doccarchive \
+            --output-path ./docs-out \
+            --hosting-base-path "Moqintosh"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs-out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
