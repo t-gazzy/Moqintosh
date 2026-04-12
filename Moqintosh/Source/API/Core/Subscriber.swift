@@ -38,7 +38,7 @@ public final class Subscriber: @unchecked Sendable {
     /// Requests a subscription to a track (Section 9.7).
     public func subscribe(
         resource: TrackResource,
-        subscriberPriority: UInt8 = 0,
+        subscriberPriority: UInt8 = 128,
         groupOrder: GroupOrder = .publisherDefault,
         forward: Bool = true,
         filter: SubscriptionFilter = .largestObject
@@ -98,7 +98,7 @@ public final class Subscriber: @unchecked Sendable {
     /// Requests a fetch for a range of objects (Section 9.16).
     public func fetch(
         resource: TrackResource,
-        subscriberPriority: UInt8 = 0,
+        subscriberPriority: UInt8 = 128,
         groupOrder: GroupOrder = .publisherDefault,
         start: Location,
         end: Location
@@ -121,7 +121,7 @@ public final class Subscriber: @unchecked Sendable {
 
     public func fetch(
         joining subscription: Subscription,
-        subscriberPriority: UInt8 = 0,
+        subscriberPriority: UInt8 = 128,
         groupOrder: GroupOrder = .publisherDefault,
         startGroupOffset: UInt64
     ) async throws -> FetchSubscription {
@@ -146,7 +146,7 @@ public final class Subscriber: @unchecked Sendable {
 
     public func fetch(
         joining subscription: Subscription,
-        subscriberPriority: UInt8 = 0,
+        subscriberPriority: UInt8 = 128,
         groupOrder: GroupOrder = .publisherDefault,
         startGroup: UInt64
     ) async throws -> FetchSubscription {
@@ -181,7 +181,7 @@ public final class Subscriber: @unchecked Sendable {
     /// Requests the current status of a track (Section 9.20).
     public func trackStatus(
         resource: TrackResource,
-        subscriberPriority: UInt8 = 0,
+        subscriberPriority: UInt8 = 128,
         groupOrder: GroupOrder = .publisherDefault,
         forward: Bool = true,
         filter: SubscriptionFilter = .largestObject
