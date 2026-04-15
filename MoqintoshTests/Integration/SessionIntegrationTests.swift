@@ -208,6 +208,47 @@ struct SessionIntegrationTests {
         #expect(controlStream.sentBytes[1].first == UInt8(MessageType.publishNamespaceOK.rawValue))
     }
 
+    @Test func inboundPublishNamespaceRemainsAccessibleAfterAsyncHandoff() async throws {
+        let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
+        let delegate: TestSessionDelegate = TestSessionDelegate()
+        session.delegate = delegate
+
+        controlStream.enqueueReceive(
+            PublishNamespaceMessage(
+                requestID: 2,
+                trackNamespace: TrackNamespace(strings: ["Pad"])
+            ).encode()
+        )
+
+        while delegate.receivedPublishNamespace == nil || controlStream.sentBytes.count < 2 {
+            await Task.yield()
+        }
+
+        controlStream.enqueueReceive(
+            SubscribeNamespaceMessage(
+                requestID: 4,
+                namespacePrefix: TrackNamespace(strings: ["Phone"])
+            ).encode()
+        )
+
+        while controlStream.sentBytes.count < 3 {
+            await Task.yield()
+        }
+
+        let receivedNamespace: TrackNamespace = try #require(delegate.receivedPublishNamespace)
+        let task: Task<String, Never> = Task {
+            receivedNamespace.elements
+                .map { String(data: $0, encoding: .utf8) ?? "<binary>" }
+                .joined(separator: "/")
+        }
+
+        let namespaceText: String = await task.value
+        controlStream.finishReceiving(with: CancellationError())
+
+        #expect(namespaceText == "Pad")
+        #expect(controlStream.sentBytes[2].first == UInt8(MessageType.subscribeNamespaceOK.rawValue))
+    }
+
     @Test func inboundSubscribeDispatchesToSessionDelegateAndSendsError() async throws {
         let (session, _, controlStream): (Session, MockTransportConnection, MockTransportBiStream) = try await makeConnectedSession()
         let delegate: TestSessionDelegate = TestSessionDelegate()
