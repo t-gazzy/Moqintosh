@@ -2,7 +2,9 @@ name: Deploy DocC to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # mainにプッシュされたら実行
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 # Pagesへのデプロイに必要な権限
 permissions:
@@ -40,6 +42,7 @@ jobs:
           path: ./docs-out
 
   deploy:
+    if: github.event_name == 'push'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

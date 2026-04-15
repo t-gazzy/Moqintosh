@@ -17,9 +17,9 @@ import Foundation
 /// }
 /// ```
 /// N must be between 1 and 32 inclusive.
-public struct TrackNamespace: Sendable {
+public struct TrackNamespace: Sendable, Equatable {
 
-    public let elements: [Data]
+    let elements: [Data]
 
     public init(elements: [Data]) {
         precondition(!elements.isEmpty && elements.count <= 32, "TrackNamespace must have 1–32 elements")
@@ -29,6 +29,16 @@ public struct TrackNamespace: Sendable {
     /// Convenience initialiser for string-based namespaces (UTF-8 encoded).
     public init(strings: [String]) {
         self.init(elements: strings.map { Data($0.utf8) })
+    }
+
+    public var utf8Elements: [String?] {
+        elements.map { String(data: $0, encoding: .utf8) }
+    }
+
+    public func joinedUTF8Elements(separator: String = "/") -> String {
+        utf8Elements
+            .map { $0 ?? "<binary>" }
+            .joined(separator: separator)
     }
 
     // MARK: - Encode

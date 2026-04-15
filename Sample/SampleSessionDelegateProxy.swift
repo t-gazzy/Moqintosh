@@ -33,7 +33,7 @@ final class SampleSessionDelegateProxy: SessionDelegate {
 
     func registerAdvertisedNamespace(_ namespace: TrackNamespace) {
         stateQueue.sync {
-            advertisedNamespaces.removeAll { $0.elements == namespace.elements }
+            advertisedNamespaces.removeAll { $0 == namespace }
             advertisedNamespaces.append(namespace)
         }
     }
@@ -50,7 +50,7 @@ final class SampleSessionDelegateProxy: SessionDelegate {
     func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> SubscribeDecision {
         let isAccepted: Bool = stateQueue.sync {
             advertisedNamespaces.contains { namespace in
-                namespace.elements == publishedTrack.resource.trackNamespace.elements
+                namespace == publishedTrack.resource.trackNamespace
             }
         }
         onEvent("Peer requested subscribe: \(describe(resource: publishedTrack.resource))")

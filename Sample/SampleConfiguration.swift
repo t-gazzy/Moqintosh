@@ -41,9 +41,7 @@ struct SampleConfiguration {
     }
 
     func makeNamespaceString(from namespace: TrackNamespace) -> String {
-        namespace.elements
-            .map { String(data: $0, encoding: .utf8) ?? "<binary>" }
-            .joined(separator: "/")
+        namespace.joinedUTF8Elements()
     }
 
     func makeTrackResource(namespace: TrackNamespace, trackName: String) -> TrackResource? {
