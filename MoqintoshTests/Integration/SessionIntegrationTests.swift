@@ -237,9 +237,7 @@ struct SessionIntegrationTests {
 
         let receivedNamespace: TrackNamespace = try #require(delegate.receivedPublishNamespace)
         let task: Task<String, Never> = Task {
-            receivedNamespace.elements
-                .map { String(data: $0, encoding: .utf8) ?? "<binary>" }
-                .joined(separator: "/")
+            receivedNamespace.joinedUTF8Elements()
         }
 
         let namespaceText: String = await task.value
