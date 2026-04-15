@@ -21,6 +21,7 @@ jobs:
       - name: Run Tests
         run: |
           xcodebuild test -scheme Moqintosh \
+            -destination 'platform=macOS' \
             -derivedDataPath /tmp/test-results \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_IDENTITY="" \
