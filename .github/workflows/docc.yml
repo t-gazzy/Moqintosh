@@ -2,7 +2,9 @@ name: Deploy DocC to GitHub Pages
 
 on:
   push:
-    branches: ["main"] # mainにプッシュされたら実行
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 # Pagesへのデプロイに必要な権限
 permissions:
