@@ -23,6 +23,7 @@ jobs:
           xcodebuild test -scheme Moqintosh \
             -destination 'platform=macOS' \
             -derivedDataPath /tmp/test-results \
+            MACOSX_DEPLOYMENT_TARGET=26.0 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO
