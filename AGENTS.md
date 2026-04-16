@@ -21,6 +21,7 @@
    - Use `async/await` for asynchronous code.
    - Force unwrapping (`!`) is allowed only when a `nil` value is a programming error (i.e., it should never happen at runtime). In all other cases, use `guard let` or `if let`.
    - To enforce API call ordering (e.g., `initialize()` must be called before `doSomething()`), use `precondition` or `preconditionFailure` with a descriptive message instead of `!`.
+   - Do not use manual `lock()` / `unlock()` pairs. Use scoped synchronization such as `defer`, `withLock`, actor isolation, or other APIs that cannot forget unlock.
 9. **Annotations**:
    - Apply necessary attributes like `@escaping`, `@discardableResult`, `@MainActor`, and `@Observable` appropriately.
    - Do not use `@unchecked Sendable` by default.
