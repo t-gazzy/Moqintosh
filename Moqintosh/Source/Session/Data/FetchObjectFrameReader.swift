@@ -81,8 +81,7 @@ final class FetchObjectFrameReader {
             extensions: extensions,
             content: content
         )
-        let consumedBytes: Int = buffer.count - reader.remainingCount
-        buffer = Data(buffer.dropFirst(consumedBytes))
+        buffer.removeFirst(reader.consumedCount)
         return object
     }
 

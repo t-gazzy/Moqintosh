@@ -59,7 +59,7 @@ final class MessageFrameReader {
     /// Attempt to extract and decode one complete message from `buffer`.
     /// Returns `nil` if more data is needed without consuming any bytes.
     private func extractMessage() throws -> MOQTMessage? {
-        let reader = ByteReader(data: buffer)
+        let reader: ByteReader = ByteReader(data: buffer)
 
         // 1. Decode Type (varint)
         guard let type = try? reader.readVarint() else { return nil }
@@ -71,8 +71,8 @@ final class MessageFrameReader {
         guard reader.remainingCount >= payloadLength else { return nil }
 
         // 4. Extract payload and advance buffer
-        let payload = try reader.readBytes(length: payloadLength)
-        buffer = Data(buffer[(buffer.startIndex + buffer.count - reader.remainingCount)...])
+        let payload: Data = try reader.readBytes(length: payloadLength)
+        buffer.removeFirst(reader.consumedCount)
 
         // 5. Decode according to message type and wrap in MOQTMessage
         switch MessageType(rawValue: type) {

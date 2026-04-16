@@ -24,6 +24,8 @@ final class ByteReader {
     private let data: Data
     private var offset: Int = 0
 
+    var consumedCount: Int { offset }
+
     /// The number of bytes not yet consumed.
     var remainingCount: Int { data.count - offset }
 
@@ -65,7 +67,7 @@ final class ByteReader {
         }
         let slice = data[data.startIndex + offset ..< data.startIndex + offset + length]
         offset += length
-        return Data(slice)
+        return slice
     }
 
     /// Decodes a UTF-8 string whose byte length is prefixed as a varint.

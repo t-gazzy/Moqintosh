@@ -50,8 +50,7 @@ final class SubgroupObjectFrameReader {
         ) else {
             return nil
         }
-        let consumedBytes: Int = buffer.count - reader.remainingCount
-        buffer = Data(buffer.dropFirst(consumedBytes))
+        buffer.removeFirst(reader.consumedCount)
         previousObjectID = object.objectID
         return object
     }
