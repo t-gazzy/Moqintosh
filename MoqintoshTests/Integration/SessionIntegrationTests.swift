@@ -220,7 +220,8 @@ struct SessionIntegrationTests {
             ).encode()
         )
 
-        while delegate.receivedPublishNamespace == nil || controlStream.sentBytes.count < 2 {
+        let isWaitingForPublishNamespace: Bool = true
+        while isWaitingForPublishNamespace && (delegate.receivedPublishNamespace == nil || controlStream.sentBytes.count < 2) {
             await Task.yield()
         }
 

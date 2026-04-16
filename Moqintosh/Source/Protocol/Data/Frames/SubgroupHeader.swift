@@ -9,7 +9,7 @@ import Foundation
 
 public struct SubgroupHeader: Sendable {
 
-    public enum SubgroupID: Equatable, Sendable {
+    public enum SubgroupID: Sendable {
         case zero
         case firstObject
         case explicit(UInt64)
@@ -138,6 +138,10 @@ public struct SubgroupHeader: Sendable {
 
     static func decode(from reader: ByteReader) throws -> SubgroupHeader {
         let typeRawValue: UInt64 = try reader.readVarint()
+        return try decode(consumingKnownType: typeRawValue, from: reader)
+    }
+
+    static func decode(consumingKnownType typeRawValue: UInt64, from reader: ByteReader) throws -> SubgroupHeader {
         guard let headerType: HeaderType = HeaderType(rawValue: typeRawValue) else {
             throw SubgroupHeaderError.invalidType(typeRawValue)
         }
@@ -186,6 +190,20 @@ public struct SubgroupHeader: Sendable {
             return .endOfGroupSubgroupExplicit
         case (true, true, .explicit):
             return .endOfGroupSubgroupExplicitWithExtensions
+        }
+    }
+}
+
+extension SubgroupHeader.SubgroupID: Equatable {
+
+    public static func == (lhs: SubgroupHeader.SubgroupID, rhs: SubgroupHeader.SubgroupID) -> Bool {
+        switch (lhs, rhs) {
+        case (.zero, .zero), (.firstObject, .firstObject):
+            return true
+        case (.explicit(let lhsValue), .explicit(let rhsValue)):
+            return lhsValue == rhsValue
+        default:
+            return false
         }
     }
 }

@@ -59,14 +59,13 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate, @unchecked S
             do {
                 let reader: ByteReader = ByteReader(data: buffer)
                 let type: UInt64 = try reader.readVarint()
-                let headerReader: ByteReader = ByteReader(data: buffer)
                 if type == FetchHeader.type {
-                    let header: FetchHeader = try .decode(from: headerReader)
-                    let remainingBytes: Data = buffer.dropFirst(headerReader.consumedCount)
+                    let header: FetchHeader = try .decode(consumingKnownType: type, from: reader)
+                    let remainingBytes: Data = buffer.dropFirst(reader.consumedCount)
                     return .fetch(header: header, initialData: remainingBytes)
                 }
-                let header: SubgroupHeader = try .decode(from: headerReader)
-                let remainingBytes: Data = buffer.dropFirst(headerReader.consumedCount)
+                let header: SubgroupHeader = try .decode(consumingKnownType: type, from: reader)
+                let remainingBytes: Data = buffer.dropFirst(reader.consumedCount)
                 return .subgroup(header: header, initialData: remainingBytes)
             } catch ByteReaderError.insufficientData {
                 let result: TransportUniReceiveResult = try await stream.receive()
