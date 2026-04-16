@@ -10,6 +10,11 @@ import Moqintosh
 
 struct SampleConfiguration {
 
+    struct LatencyPayload: Codable {
+
+        let sentAtMilliseconds: Int64
+    }
+
     let defaultPort: UInt16
 
     init(defaultPort: UInt16 = 4434) {
@@ -54,12 +59,27 @@ struct SampleConfiguration {
     }
 
     func makePayload(date: Date = Date()) -> Data {
-        let timestamp: String = ISO8601DateFormatter.string(
-            from: date,
-            timeZone: .current,
-            formatOptions: [.withInternetDateTime, .withFractionalSeconds]
+        let payload: LatencyPayload = LatencyPayload(
+            sentAtMilliseconds: Int64(date.timeIntervalSince1970 * 1_000)
         )
-        return Data(timestamp.utf8)
+        let encoder: JSONEncoder = JSONEncoder()
+        guard let data: Data = try? encoder.encode(payload) else {
+            preconditionFailure("Failed to encode LatencyPayload")
+        }
+        return data
+    }
+
+    func decodePayload(_ data: Data) -> LatencyPayload? {
+        let decoder: JSONDecoder = JSONDecoder()
+        return try? decoder.decode(LatencyPayload.self, from: data)
+    }
+
+    func makeLatencyText(sentAtMilliseconds: Int64, receivedAt: Date = Date()) -> String {
+        let receivedAtMilliseconds: Int64 = Int64(receivedAt.timeIntervalSince1970 * 1_000)
+        let latencyMilliseconds: Int64 = max(0, receivedAtMilliseconds - sentAtMilliseconds)
+        let sentAtDate: Date = Date(timeIntervalSince1970: TimeInterval(sentAtMilliseconds) / 1_000)
+        let sentAtText: String = makeDisplayTimestamp(date: sentAtDate)
+        return "sentAt=\(sentAtText), latency=\(latencyMilliseconds)ms"
     }
 
     func makeDisplayTimestamp(date: Date = Date()) -> String {
