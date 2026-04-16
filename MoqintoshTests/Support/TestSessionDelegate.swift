@@ -62,7 +62,7 @@ final class TestSessionDelegate: SessionDelegate {
         _ session: Session,
         didReceiveSubscribeNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> SubscribeNamespaceDecision {
+    ) async -> SubscribeNamespaceDecision {
         receivedSubscribeNamespace = prefix
         receivedSubscribeNamespaceAuthorizationToken = authorizationToken
         if let subscribeNamespaceError: SubscribeNamespaceRequestError = subscribeNamespaceError {
@@ -71,7 +71,7 @@ final class TestSessionDelegate: SessionDelegate {
         return .accept
     }
 
-    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> SubscribeDecision {
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) async -> SubscribeDecision {
         receivedSubscribeTrack = publishedTrack
         if let subscribeError: SubscribeRequestError = subscribeError {
             return .reject(subscribeError)
@@ -83,7 +83,7 @@ final class TestSessionDelegate: SessionDelegate {
         _ session: Session,
         didReceivePublishNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> PublishNamespaceDecision {
+    ) async -> PublishNamespaceDecision {
         receivedPublishNamespace = prefix
         receivedPublishNamespaceAuthorizationToken = authorizationToken
         if let publishNamespaceError: PublishNamespaceRequestError = publishNamespaceError {
@@ -92,7 +92,7 @@ final class TestSessionDelegate: SessionDelegate {
         return .accept
     }
 
-    func session(_ session: Session, didReceivePublish resource: TrackResource) -> PublishDecision {
+    func session(_ session: Session, didReceivePublish resource: TrackResource) async -> PublishDecision {
         receivedPublishResource = resource
         if let publishError: PublishRequestError = publishError {
             return .reject(publishError)
@@ -100,15 +100,15 @@ final class TestSessionDelegate: SessionDelegate {
         return .accept(PublishAcceptance())
     }
 
-    func session(_ session: Session, didReceiveSubscribeUpdate update: SubscribeUpdate) {
+    func session(_ session: Session, didReceiveSubscribeUpdate update: SubscribeUpdate) async {
         receivedSubscribeUpdate = update
     }
 
-    func session(_ session: Session, didReceiveUnsubscribe requestID: UInt64) {
+    func session(_ session: Session, didReceiveUnsubscribe requestID: UInt64) async {
         receivedUnsubscribeRequestID = requestID
     }
 
-    func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) -> TrackStatusDecision {
+    func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) async -> TrackStatusDecision {
         receivedTrackStatusRequest = request
         if let trackStatusResult {
             return .accept(trackStatusResult)
@@ -116,7 +116,7 @@ final class TestSessionDelegate: SessionDelegate {
         return .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
-    func session(_ session: Session, didReceiveFetch request: FetchRequest) -> FetchDecision {
+    func session(_ session: Session, didReceiveFetch request: FetchRequest) async -> FetchDecision {
         receivedFetchRequest = request
         if let fetchResponse {
             return .accept(fetchResponse)
@@ -124,27 +124,27 @@ final class TestSessionDelegate: SessionDelegate {
         return .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
-    func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) {
+    func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) async {
         receivedFetchCancelRequestID = requestID
     }
 
-    func session(_ session: Session, didReceivePublishDone publishDone: PublishDone) {
+    func session(_ session: Session, didReceivePublishDone publishDone: PublishDone) async {
         receivedPublishDone = publishDone
     }
 
-    func session(_ session: Session, didReceivePublishNamespaceDone trackNamespace: TrackNamespace) {
+    func session(_ session: Session, didReceivePublishNamespaceDone trackNamespace: TrackNamespace) async {
         receivedPublishNamespaceDone = trackNamespace
     }
 
-    func session(_ session: Session, didReceiveGoAway newSessionURI: String?) {
+    func session(_ session: Session, didReceiveGoAway newSessionURI: String?) async {
         receivedGoAwayURI = newSessionURI
     }
 
-    func session(_ session: Session, didReceiveUnsubscribeNamespace namespacePrefix: TrackNamespace) {
+    func session(_ session: Session, didReceiveUnsubscribeNamespace namespacePrefix: TrackNamespace) async {
         receivedUnsubscribeNamespace = namespacePrefix
     }
 
-    func session(_ session: Session, didReceivePublishNamespaceCancel cancellation: PublishNamespaceCancel) {
+    func session(_ session: Session, didReceivePublishNamespaceCancel cancellation: PublishNamespaceCancel) async {
         receivedPublishNamespaceCancel = cancellation
     }
 }

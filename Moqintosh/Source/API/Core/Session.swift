@@ -14,7 +14,6 @@ public final class Session {
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
     private let streamReceiverCoordinator: StreamReceiverCoordinator
-    private let delegateQueue: DispatchQueue
     /// The delegate that receives inbound control message events.
     public weak var delegate: (any SessionDelegate)?
 
@@ -22,7 +21,6 @@ public final class Session {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
         self.streamReceiverCoordinator = StreamReceiverCoordinator(sessionContext: sessionContext)
-        self.delegateQueue = DispatchQueue(label: "Moqintosh.SessionDelegate")
         self.context.session = self
         self.context.connection.delegate = streamReceiverCoordinator
         self.controlMessageReceiver.start(dispatcher: ControlMessageDispatcher(sessionContext: sessionContext))
@@ -47,100 +45,78 @@ public final class Session {
         try await context.sendControlMessage(bytes: message.encode())
     }
 
-    func didReceivePublishNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> PublishNamespaceDecision {
-        delegateQueue.sync {
-            delegate?.session(
-                self,
-                didReceivePublishNamespace: prefix,
-                authorizationToken: authorizationToken
-            ) ?? .accept
-        }
+    func didReceivePublishNamespace(
+        prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    ) async -> PublishNamespaceDecision {
+        await delegate?.session(
+            self,
+            didReceivePublishNamespace: prefix,
+            authorizationToken: authorizationToken
+        ) ?? .accept
     }
 
-    func didReceivePublish(resource: TrackResource) -> PublishDecision {
-        delegateQueue.sync {
-            delegate?.session(self, didReceivePublish: resource)
-                ?? .accept(PublishAcceptance())
-        }
+    func didReceivePublish(resource: TrackResource) async -> PublishDecision {
+        await delegate?.session(self, didReceivePublish: resource)
+            ?? .accept(PublishAcceptance())
     }
 
-    func didReceiveSubscribeNamespace(prefix: TrackNamespace, authorizationToken: AuthorizationToken?) -> SubscribeNamespaceDecision {
-        delegateQueue.sync {
-            delegate?.session(
-                self,
-                didReceiveSubscribeNamespace: prefix,
-                authorizationToken: authorizationToken
-            ) ?? .accept
-        }
+    func didReceiveSubscribeNamespace(
+        prefix: TrackNamespace,
+        authorizationToken: AuthorizationToken?
+    ) async -> SubscribeNamespaceDecision {
+        await delegate?.session(
+            self,
+            didReceiveSubscribeNamespace: prefix,
+            authorizationToken: authorizationToken
+        ) ?? .accept
     }
 
-    func didReceiveSubscribe(publishedTrack: PublishedTrack) -> SubscribeDecision {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveSubscribe: publishedTrack)
-                ?? .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
-        }
+    func didReceiveSubscribe(publishedTrack: PublishedTrack) async -> SubscribeDecision {
+        await delegate?.session(self, didReceiveSubscribe: publishedTrack)
+            ?? .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
     }
 
-    func didReceiveGoAway(newSessionURI: String?) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveGoAway: newSessionURI)
-        }
+    func didReceiveGoAway(newSessionURI: String?) async {
+        await delegate?.session(self, didReceiveGoAway: newSessionURI)
     }
 
-    func didReceiveSubscribeUpdate(_ update: SubscribeUpdate) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveSubscribeUpdate: update)
-        }
+    func didReceiveSubscribeUpdate(_ update: SubscribeUpdate) async {
+        await delegate?.session(self, didReceiveSubscribeUpdate: update)
     }
 
-    func didReceiveUnsubscribe(requestID: UInt64) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveUnsubscribe: requestID)
-        }
+    func didReceiveUnsubscribe(requestID: UInt64) async {
+        await delegate?.session(self, didReceiveUnsubscribe: requestID)
     }
 
-    func fetchDecision(for request: FetchRequest) -> FetchDecision {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveFetch: request)
-                ?? .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
-        }
+    func fetchDecision(for request: FetchRequest) async -> FetchDecision {
+        await delegate?.session(self, didReceiveFetch: request)
+            ?? .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
-    func didReceiveFetchCancel(requestID: UInt64) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveFetchCancel: requestID)
-        }
+    func didReceiveFetchCancel(requestID: UInt64) async {
+        await delegate?.session(self, didReceiveFetchCancel: requestID)
     }
 
-    func trackStatusDecision(for request: TrackStatusRequest) -> TrackStatusDecision {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveTrackStatus: request)
-                ?? .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
-        }
+    func trackStatusDecision(for request: TrackStatusRequest) async -> TrackStatusDecision {
+        await delegate?.session(self, didReceiveTrackStatus: request)
+            ?? .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
-    func didReceivePublishDone(_ publishDone: PublishDone) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceivePublishDone: publishDone)
-        }
+    func didReceivePublishDone(_ publishDone: PublishDone) async {
+        await delegate?.session(self, didReceivePublishDone: publishDone)
     }
 
-    func didReceivePublishNamespaceDone(trackNamespace: TrackNamespace) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceivePublishNamespaceDone: trackNamespace)
-        }
+    func didReceivePublishNamespaceDone(trackNamespace: TrackNamespace) async {
+        await delegate?.session(self, didReceivePublishNamespaceDone: trackNamespace)
     }
 
-    func didReceivePublishNamespaceCancel(_ cancellation: PublishNamespaceCancel) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceivePublishNamespaceCancel: cancellation)
-        }
+    func didReceivePublishNamespaceCancel(_ cancellation: PublishNamespaceCancel) async {
+        await delegate?.session(self, didReceivePublishNamespaceCancel: cancellation)
     }
 
-    func didReceiveUnsubscribeNamespace(namespacePrefix: TrackNamespace) {
-        delegateQueue.sync {
-            delegate?.session(self, didReceiveUnsubscribeNamespace: namespacePrefix)
-        }
+    func didReceiveUnsubscribeNamespace(namespacePrefix: TrackNamespace) async {
+        await delegate?.session(self, didReceiveUnsubscribeNamespace: namespacePrefix)
     }
 }
 
