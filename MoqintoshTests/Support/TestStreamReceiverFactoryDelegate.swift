@@ -15,7 +15,7 @@ final class TestStreamReceiverFactoryDelegate: StreamReceiverFactoryDelegate {
         self.receivers = []
     }
 
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) {
+    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async {
         receivers.append(receiver)
     }
 }

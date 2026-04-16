@@ -10,12 +10,12 @@ import Foundation
 /// Receives subgroup objects delivered on a subscription stream.
 public protocol StreamReceiverDelegate: AnyObject {
     /// Called when a subgroup object is received.
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject)
+    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async
     /// Called when the receive stream closes.
-    func streamReceiverDidClose(_ receiver: StreamReceiver)
+    func streamReceiverDidClose(_ receiver: StreamReceiver) async
 }
 
-// Safe because receiveTask is the only concurrent execution context and delegate callbacks are serialized on delegateQueue.
+// Safe because receiveTask is the only concurrent execution context and delegate callbacks run on that task.
 /// Receives subgroup objects for a subscribed track.
 public final class StreamReceiver: @unchecked Sendable {
 
@@ -27,16 +27,16 @@ public final class StreamReceiver: @unchecked Sendable {
     private let stream: TransportUniReceiveStream
     private let subscription: Subscription
     private let initialData: Data
-    private let delegateQueue: DispatchQueue
     private var receiveTask: Task<Void, Never>?
+    var onClose: (@Sendable (StreamReceiver) async -> Void)?
 
     init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
         self.stream = stream
         self.subscription = subscription
         self.header = header
         self.initialData = initialData
-        self.delegateQueue = DispatchQueue(label: "Moqintosh.StreamReceiverDelegate")
         self.receiveTask = nil
+        self.onClose = nil
     }
 
     deinit {
@@ -45,24 +45,19 @@ public final class StreamReceiver: @unchecked Sendable {
 
     func start() {
         precondition(receiveTask == nil, "StreamReceiver.start() must only be called once")
-        receiveTask = Task { [stream, header, initialData, delegateQueue] in
+        receiveTask = Task { [stream, header, initialData] in
             let frameReader: SubgroupObjectFrameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
             do {
                 while !Task.isCancelled {
                     let object: SubgroupObject = try await frameReader.read(from: stream)
-                    delegateQueue.sync { [weak self] in
-                        guard let self else { return }
-                        self.delegate?.streamReceiver(self, didReceive: object)
-                    }
+                    await self.delegate?.streamReceiver(self, didReceive: object)
                 }
             } catch is CancellationError {
             } catch {
                 OSLogger.debug("Stream receive loop ended: \(error)")
             }
-            delegateQueue.sync { [weak self] in
-                guard let self else { return }
-                self.delegate?.streamReceiverDidClose(self)
-            }
+            await self.onClose?(self)
+            await self.delegate?.streamReceiverDidClose(self)
         }
     }
 
@@ -73,5 +68,5 @@ public final class StreamReceiver: @unchecked Sendable {
 }
 
 public extension StreamReceiverDelegate {
-    func streamReceiverDidClose(_ receiver: StreamReceiver) {}
+    func streamReceiverDidClose(_ receiver: StreamReceiver) async {}
 }

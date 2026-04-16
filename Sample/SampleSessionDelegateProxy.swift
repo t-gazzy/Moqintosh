@@ -7,15 +7,15 @@
 
 import Foundation
 import Moqintosh
+import Synchronization
 
 final class SampleSessionDelegateProxy: SessionDelegate {
 
-    private let stateQueue: DispatchQueue
+    private let advertisedNamespaces: Mutex<[TrackNamespace]>
     private let configuration: SampleConfiguration
     private let onEvent: @Sendable (String) -> Void
     private let onRemotePublishedNamespace: @Sendable (TrackNamespace) -> Void
     private let onIncomingSubscribe: @Sendable (PublishedTrack) -> Void
-    private var advertisedNamespaces: [TrackNamespace]
 
     init(
         configuration: SampleConfiguration,
@@ -23,16 +23,15 @@ final class SampleSessionDelegateProxy: SessionDelegate {
         onRemotePublishedNamespace: @escaping @Sendable (TrackNamespace) -> Void,
         onIncomingSubscribe: @escaping @Sendable (PublishedTrack) -> Void
     ) {
-        self.stateQueue = DispatchQueue(label: "Sample.SessionDelegateProxy")
+        self.advertisedNamespaces = Mutex<[TrackNamespace]>([])
         self.configuration = configuration
         self.onEvent = onEvent
         self.onRemotePublishedNamespace = onRemotePublishedNamespace
         self.onIncomingSubscribe = onIncomingSubscribe
-        self.advertisedNamespaces = []
     }
 
     func registerAdvertisedNamespace(_ namespace: TrackNamespace) {
-        stateQueue.sync {
+        advertisedNamespaces.withLock { advertisedNamespaces in
             advertisedNamespaces.removeAll { $0 == namespace }
             advertisedNamespaces.append(namespace)
         }
@@ -42,13 +41,13 @@ final class SampleSessionDelegateProxy: SessionDelegate {
         _ session: Session,
         didReceiveSubscribeNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> SubscribeNamespaceDecision {
+    ) async -> SubscribeNamespaceDecision {
         onEvent("Peer requested namespace subscription: \(configuration.makeNamespaceString(from: prefix))")
         return .accept
     }
 
-    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) -> SubscribeDecision {
-        let isAccepted: Bool = stateQueue.sync {
+    func session(_ session: Session, didReceiveSubscribe publishedTrack: PublishedTrack) async -> SubscribeDecision {
+        let isAccepted: Bool = advertisedNamespaces.withLock { advertisedNamespaces in
             advertisedNamespaces.contains { namespace in
                 namespace == publishedTrack.resource.trackNamespace
             }
@@ -66,13 +65,13 @@ final class SampleSessionDelegateProxy: SessionDelegate {
         _ session: Session,
         didReceivePublishNamespace prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
-    ) -> PublishNamespaceDecision {
+    ) async -> PublishNamespaceDecision {
         onRemotePublishedNamespace(prefix)
         onEvent("Peer published namespace: \(configuration.makeNamespaceString(from: prefix))")
         return .accept
     }
 
-    func session(_ session: Session, didReceivePublish resource: TrackResource) -> PublishDecision {
+    func session(_ session: Session, didReceivePublish resource: TrackResource) async -> PublishDecision {
         onEvent("Peer published track: \(describe(resource: resource))")
         return .accept(PublishAcceptance())
     }
