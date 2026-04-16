@@ -537,16 +537,16 @@ private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, St
         self.closedReceiverCount = 0
     }
 
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) {
+    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async {
         receiver.delegate = self
         receivers.append(receiver)
     }
 
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) {
+    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
         receivedObjects.append(object)
     }
 
-    func streamReceiverDidClose(_ receiver: StreamReceiver) {
+    func streamReceiverDidClose(_ receiver: StreamReceiver) async {
         closedReceiverCount += 1
     }
 }

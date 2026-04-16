@@ -15,7 +15,7 @@ final class TestStreamReceiverDelegate: StreamReceiverDelegate {
         self.receivedObjects = []
     }
 
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) {
+    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
         receivedObjects.append(object)
     }
 }

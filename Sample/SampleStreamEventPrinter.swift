@@ -13,7 +13,6 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
     private let configuration: SampleConfiguration
     private let onEvent: @Sendable (String) -> Void
     private let onReceivedData: @Sendable (String) -> Void
-    private var receivers: [StreamReceiver]
 
     init(
         configuration: SampleConfiguration,
@@ -23,16 +22,14 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
         self.configuration = configuration
         self.onEvent = onEvent
         self.onReceivedData = onReceivedData
-        self.receivers = []
     }
 
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) {
-        receivers.append(receiver)
+    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async {
         receiver.delegate = self
         onEvent("Created stream receiver")
     }
 
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) {
+    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
         let timestampText: String = configuration.makeDisplayTimestamp()
         switch object.content {
         case .payload(let payload):
@@ -51,8 +48,7 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
         }
     }
 
-    func streamReceiverDidClose(_ receiver: StreamReceiver) {
-        receivers.removeAll { $0 === receiver }
+    func streamReceiverDidClose(_ receiver: StreamReceiver) async {
         onEvent("Closed stream receiver")
     }
 }
