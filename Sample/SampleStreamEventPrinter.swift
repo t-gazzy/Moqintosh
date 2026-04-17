@@ -30,10 +30,19 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
     }
 
     func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
-        let timestampText: String = configuration.makeDisplayTimestamp()
+        let receivedAt: Date = Date()
+        let timestampText: String = configuration.makeDisplayTimestamp(date: receivedAt)
         switch object.content {
         case .payload(let payload):
-            let text: String = String(data: payload, encoding: .utf8) ?? "<\(payload.count) bytes>"
+            let text: String
+            if let decodedPayload: SampleConfiguration.LatencyPayload = configuration.decodePayload(payload) {
+                text = configuration.makeLatencyText(
+                    sentAtMilliseconds: decodedPayload.sentAtMilliseconds,
+                    receivedAt: receivedAt
+                )
+            } else {
+                text = payload.utf8String ?? "<\(payload.data.count) bytes>"
+            }
             onReceivedData(
                 "[\(timestampText)] Stream [group: \(object.groupID), object: \(object.objectID)]: \(text)"
             )

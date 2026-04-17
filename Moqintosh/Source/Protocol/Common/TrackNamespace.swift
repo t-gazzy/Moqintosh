@@ -17,7 +17,7 @@ import Foundation
 /// }
 /// ```
 /// N must be between 1 and 32 inclusive.
-public struct TrackNamespace: Sendable, Equatable {
+public struct TrackNamespace: Sendable {
 
     let elements: [Data]
 
@@ -66,6 +66,13 @@ public struct TrackNamespace: Sendable, Equatable {
             elements.append(try reader.readBytes(length: length))
         }
         return TrackNamespace(elements: elements)
+    }
+}
+
+extension TrackNamespace: Equatable {
+
+    public static func == (lhs: TrackNamespace, rhs: TrackNamespace) -> Bool {
+        lhs.elements == rhs.elements
     }
 }
 

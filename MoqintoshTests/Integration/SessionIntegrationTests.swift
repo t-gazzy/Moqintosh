@@ -220,7 +220,8 @@ struct SessionIntegrationTests {
             ).encode()
         )
 
-        while delegate.receivedPublishNamespace == nil || controlStream.sentBytes.count < 2 {
+        let isWaitingForPublishNamespace: Bool = true
+        while isWaitingForPublishNamespace && (delegate.receivedPublishNamespace == nil || controlStream.sentBytes.count < 2) {
             await Task.yield()
         }
 
@@ -288,7 +289,7 @@ struct SessionIntegrationTests {
         let delegate: IntegrationStreamDelegate = IntegrationStreamDelegate()
         factory.delegate = delegate
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
-        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
+        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 TransportUniReceiveResult(bytes: header.encode(), isComplete: false),
@@ -312,7 +313,7 @@ struct SessionIntegrationTests {
         #expect(delegate.receivedObjects[0].groupID == 5)
         #expect(delegate.receivedObjects[0].objectID == 0)
         if case .payload(let payload) = delegate.receivedObjects[0].content {
-            #expect(payload == Data("abc".utf8))
+            #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
         }
@@ -335,7 +336,7 @@ struct SessionIntegrationTests {
                 groupID: 8,
                 objectID: .explicit(10),
                 publisherPriority: 12,
-                content: .payload(Data("xyz".utf8))
+                content: .payload(ReadOnlyBytes(Data("xyz".utf8)))
             ).encode()
         )
 
@@ -352,7 +353,7 @@ struct SessionIntegrationTests {
             Issue.record("Expected explicit object ID")
         }
         if case .payload(let payload) = delegate.receivedDatagrams[0].content {
-            #expect(payload == Data("xyz".utf8))
+            #expect(payload.equals(Data("xyz".utf8)))
         } else {
             Issue.record("Expected payload content")
         }
@@ -396,7 +397,7 @@ struct SessionIntegrationTests {
         #expect(delegate.receivedObjects[0].groupID == 4)
         #expect(delegate.receivedObjects[0].objectID == 6)
         if case .payload(let payload) = delegate.receivedObjects[0].content {
-            #expect(payload == Data("abc".utf8))
+            #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

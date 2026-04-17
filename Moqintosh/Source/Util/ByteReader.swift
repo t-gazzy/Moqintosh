@@ -13,7 +13,7 @@ import Foundation
 /// eliminating the need to pass an `offset` alongside every read call.
 ///
 /// ### Usage
-/// ```swift
+/// ```
 /// let reader = ByteReader(data: payload)
 /// let type   = try reader.readVarint()
 /// let count  = try reader.readVarint()
@@ -22,23 +22,34 @@ import Foundation
 final class ByteReader {
 
     private let data: Data
-    private var offset: Int = 0
+    private let endOffset: Int
+    private var offset: Int
+
+    var consumedCount: Int { offset }
 
     /// The number of bytes not yet consumed.
-    var remainingCount: Int { data.count - offset }
+    var remainingCount: Int { endOffset - offset }
 
     init(data: Data) {
         self.data = data
+        self.endOffset = data.count
+        self.offset = 0
+    }
+
+    init(readOnlyBytes: ReadOnlyBytes) {
+        self.data = readOnlyBytes.storage
+        self.endOffset = readOnlyBytes.offset + readOnlyBytes.count
+        self.offset = readOnlyBytes.offset
     }
 
     // MARK: - Public readers
 
     /// Decodes a QUIC variable-length integer (RFC 9000 Section 16).
     func readVarint() throws -> UInt64 {
-        guard offset < data.count else {
+        guard offset < endOffset else {
             throw ByteReaderError.insufficientData(requested: 1, available: remainingCount)
         }
-        let head = data[data.startIndex + offset]
+        let head: UInt8 = data[data.startIndex + offset]
         switch head >> 6 {
         case 0:
             return UInt64(try readUInt8())
@@ -60,19 +71,23 @@ final class ByteReader {
 
     /// Reads `length` raw bytes.
     func readBytes(length: Int) throws -> Data {
-        guard offset + length <= data.count else {
+        try readReadOnlyBytes(length: length).data
+    }
+
+    func readReadOnlyBytes(length: Int) throws -> ReadOnlyBytes {
+        guard offset + length <= endOffset else {
             throw ByteReaderError.insufficientData(requested: length, available: remainingCount)
         }
-        let slice = data[data.startIndex + offset ..< data.startIndex + offset + length]
+        let currentOffset: Int = offset
         offset += length
-        return Data(slice)
+        return ReadOnlyBytes(storage: data, offset: currentOffset, count: length)
     }
 
     /// Decodes a UTF-8 string whose byte length is prefixed as a varint.
     func readString() throws -> String {
-        let length = Int(try readVarint())
-        let bytes = try readBytes(length: length)
-        guard let string = String(bytes: bytes, encoding: .utf8) else {
+        let length: Int = Int(try readVarint())
+        let bytes: Data = try readBytes(length: length)
+        guard let string: String = String(bytes: bytes, encoding: .utf8) else {
             throw ByteReaderError.invalidUTF8
         }
         return string
@@ -85,20 +100,20 @@ final class ByteReader {
     // MARK: - Private primitive readers
 
     private func readUInt8() throws -> UInt8 {
-        guard offset + 1 <= data.count else {
+        guard offset + 1 <= endOffset else {
             throw ByteReaderError.insufficientData(requested: 1, available: remainingCount)
         }
-        let value = data[data.startIndex + offset]
+        let value: UInt8 = data[data.startIndex + offset]
         offset += 1
         return value
     }
 
     private func readUInt16() throws -> UInt16 {
         let size: Int = 2
-        guard offset + size <= data.count else {
+        guard offset + size <= endOffset else {
             throw ByteReaderError.insufficientData(requested: size, available: remainingCount)
         }
-        let value = data[data.startIndex + offset ..< data.startIndex + offset + size]
+        let value: UInt16 = data[data.startIndex + offset ..< data.startIndex + offset + size]
             .withUnsafeBytes { $0.loadUnaligned(as: UInt16.self) }
         offset += size
         return UInt16(bigEndian: value)
@@ -106,10 +121,10 @@ final class ByteReader {
 
     private func readUInt32() throws -> UInt32 {
         let size: Int = 4
-        guard offset + size <= data.count else {
+        guard offset + size <= endOffset else {
             throw ByteReaderError.insufficientData(requested: size, available: remainingCount)
         }
-        let value = data[data.startIndex + offset ..< data.startIndex + offset + size]
+        let value: UInt32 = data[data.startIndex + offset ..< data.startIndex + offset + size]
             .withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
         offset += size
         return UInt32(bigEndian: value)
@@ -117,10 +132,10 @@ final class ByteReader {
 
     private func readUInt64() throws -> UInt64 {
         let size: Int = 8
-        guard offset + size <= data.count else {
+        guard offset + size <= endOffset else {
             throw ByteReaderError.insufficientData(requested: size, available: remainingCount)
         }
-        let value = data[data.startIndex + offset ..< data.startIndex + offset + size]
+        let value: UInt64 = data[data.startIndex + offset ..< data.startIndex + offset + size]
             .withUnsafeBytes { $0.loadUnaligned(as: UInt64.self) }
         offset += size
         return UInt64(bigEndian: value)

@@ -19,7 +19,8 @@ final class SampleDatagramEventPrinter: DatagramReceiverDelegate {
     }
 
     func datagramReceiver(_ receiver: DatagramReceiver, didReceive datagram: ObjectDatagram) {
-        let timestampText: String = configuration.makeDisplayTimestamp()
+        let receivedAt: Date = Date()
+        let timestampText: String = configuration.makeDisplayTimestamp(date: receivedAt)
         let objectIDText: String
         switch datagram.objectID {
         case .none:
@@ -31,7 +32,15 @@ final class SampleDatagramEventPrinter: DatagramReceiverDelegate {
         }
         switch datagram.content {
         case .payload(let payload):
-            let text: String = String(data: payload, encoding: .utf8) ?? "<\(payload.count) bytes>"
+            let text: String
+            if let decodedPayload: SampleConfiguration.LatencyPayload = configuration.decodePayload(payload) {
+                text = configuration.makeLatencyText(
+                    sentAtMilliseconds: decodedPayload.sentAtMilliseconds,
+                    receivedAt: receivedAt
+                )
+            } else {
+                text = payload.utf8String ?? "<\(payload.data.count) bytes>"
+            }
             onReceivedData(
                 "[\(timestampText)] Datagram [group: \(datagram.groupID), object: \(objectIDText)]: \(text)"
             )

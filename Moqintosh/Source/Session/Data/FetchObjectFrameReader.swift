@@ -61,7 +61,7 @@ final class FetchObjectFrameReader {
             }
             content = .status(status)
         } else {
-            guard let payload: Data = try? reader.readBytes(length: payloadLength) else {
+            guard let payload: ReadOnlyBytes = try? reader.readReadOnlyBytes(length: payloadLength) else {
                 return nil
             }
             content = .payload(payload)
@@ -81,8 +81,7 @@ final class FetchObjectFrameReader {
             extensions: extensions,
             content: content
         )
-        let consumedBytes: Int = buffer.count - reader.remainingCount
-        buffer = Data(buffer.dropFirst(consumedBytes))
+        buffer.removeFirst(reader.consumedCount)
         return object
     }
 

@@ -15,4 +15,8 @@ public struct AuthorizationToken: Sendable {
     public init(value: Data) {
         self.value = value
     }
+
+    init(readOnlyBytes: ReadOnlyBytes) {
+        self.value = readOnlyBytes.materialize()
+    }
 }

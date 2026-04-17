@@ -48,6 +48,10 @@ struct StreamReceiverFactoryTests {
         }
 
         #expect(delegate.receivers.count == 1)
-        #expect(delegate.receivers[0].header.subgroupID == .explicit(5))
+        if case .explicit(let subgroupID) = delegate.receivers[0].header.subgroupID {
+            #expect(subgroupID == 5)
+        } else {
+            Issue.record("Expected an explicit subgroup ID")
+        }
     }
 }

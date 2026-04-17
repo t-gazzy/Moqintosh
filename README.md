@@ -1,5 +1,8 @@
 # Moqintosh
 
+![DocC Status](https://github.com/t-gazzy/Moqintosh/actions/workflows/docc.yml/badge.svg)
+![Test Status](https://github.com/t-gazzy/Moqintosh/actions/workflows/test.yml/badge.svg)
+
 A Swift MOQT client library built on Apple's `Network.framework`.
 
 ## Overview

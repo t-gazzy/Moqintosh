@@ -33,7 +33,7 @@ struct FetchSenderTests {
         #expect(object.groupID == 2)
         #expect(object.objectID == 4)
         if case .payload(let payload) = object.content {
-            #expect(payload == Data("ab".utf8))
+            #expect(payload.equals(Data("ab".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

@@ -270,7 +270,7 @@ final class SampleSessionController {
         let groupID: UInt64 = nextStreamGroupID
         let objectID: UInt64 = nextStreamObjectID
         let endOfGroup: Bool = objectID == 9
-        let payload: Data = configuration.makePayload()
+        let payload: ReadOnlyBytes = configuration.makePayload()
         do {
             let sender: StreamSender
             if currentStreamSenderGroupID == groupID, let currentStreamSender {
@@ -280,7 +280,11 @@ final class SampleSessionController {
                 currentStreamSender = sender
                 currentStreamSenderGroupID = groupID
             }
-            try await sender.send(objectID: objectID, endOfGroup: endOfGroup, content: .payload(payload))
+            try await sender.send(
+                objectID: objectID,
+                endOfGroup: endOfGroup,
+                content: .payload(payload)
+            )
             advanceStreamCounters()
         } catch {
             statusText = "Failed: \(error.localizedDescription)"
@@ -292,7 +296,7 @@ final class SampleSessionController {
     private func sendNextDatagram(datagramSender: DatagramSender) async {
         let groupID: UInt64 = nextDatagramGroupID
         let objectID: UInt64 = nextDatagramObjectID
-        let payload: Data = configuration.makePayload()
+        let payload: ReadOnlyBytes = configuration.makePayload()
         do {
             try await datagramSender.send(
                 groupID: groupID,

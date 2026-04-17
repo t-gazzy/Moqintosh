@@ -39,7 +39,7 @@ struct DatagramReceiverTests {
             groupID: 4,
             objectID: .explicit(5),
             publisherPriority: 6,
-            content: .payload(Data("abc".utf8))
+            content: .payload(ReadOnlyBytes(Data("abc".utf8)))
         )
 
         connection.receiveDatagram(bytes: datagram.encode())
@@ -51,7 +51,7 @@ struct DatagramReceiverTests {
         #expect(delegate.receivedDatagrams.count == 1)
         #expect(delegate.receivedDatagrams[0].groupID == 4)
         if case .payload(let payload) = delegate.receivedDatagrams[0].content {
-            #expect(payload == Data("abc".utf8))
+            #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

@@ -89,4 +89,18 @@ struct ByteReaderTests {
             #expect(read == string)
         }
     }
+
+    @Test func readReadOnlyBytesKeepsSubviewRange() throws {
+        let data: Data = Data([0x10, 0x20, 0x30, 0x40, 0x50])
+        let reader: ByteReader = ByteReader(data: data)
+
+        _ = try reader.readUInt8Value()
+        let bytes: ReadOnlyBytes = try reader.readReadOnlyBytes(length: 3)
+        let extracted: [UInt8] = bytes.withUnsafeBytes { rawBuffer in
+            Array(rawBuffer.bindMemory(to: UInt8.self))
+        }
+
+        #expect(extracted == [0x20, 0x30, 0x40])
+        #expect(bytes.count == 3)
+    }
 }

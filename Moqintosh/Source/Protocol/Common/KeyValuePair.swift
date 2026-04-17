@@ -15,7 +15,7 @@ struct KeyValuePair: Sendable {
 
     enum Value: Sendable {
         case varint(UInt64)
-        case bytes(Data)
+        case bytes(ReadOnlyBytes)
     }
 
     let type: UInt64
@@ -31,7 +31,7 @@ struct KeyValuePair: Sendable {
             data.writeVarint(v)
         case .bytes(let bytes):
             data.writeVarint(UInt64(bytes.count))
-            data.append(bytes)
+            bytes.append(to: &data)
         }
         return data
     }
@@ -47,7 +47,7 @@ struct KeyValuePair: Sendable {
         } else {
             // Odd: length-prefixed byte sequence
             let length = Int(try reader.readVarint())
-            value = .bytes(try reader.readBytes(length: length))
+            value = .bytes(try reader.readReadOnlyBytes(length: length))
         }
         return KeyValuePair(type: type, value: value)
     }

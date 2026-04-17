@@ -22,6 +22,10 @@ struct FetchHeader: Sendable {
 
     static func decode(from reader: ByteReader) throws -> FetchHeader {
         let type: UInt64 = try reader.readVarint()
+        return try decode(consumingKnownType: type, from: reader)
+    }
+
+    static func decode(consumingKnownType type: UInt64, from reader: ByteReader) throws -> FetchHeader {
         guard type == Self.type else {
             throw FetchHeaderError.invalidType(type)
         }

@@ -30,7 +30,7 @@ struct FetchObjectFrameReaderTests {
         #expect(decoded.groupID == 4)
         #expect(decoded.objectID == 6)
         if case .payload(let payload) = decoded.content {
-            #expect(payload == Data("abcdef".utf8))
+            #expect(payload.equals(Data("abcdef".utf8)))
         } else {
             Issue.record("Expected payload content")
         }
@@ -66,7 +66,7 @@ struct FetchObjectFrameReaderTests {
         #expect(firstDecoded.objectID == 6)
         #expect(secondDecoded.objectID == 7)
         if case .payload(let payload) = secondDecoded.content {
-            #expect(payload == Data("xyz".utf8))
+            #expect(payload.equals(Data("xyz".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

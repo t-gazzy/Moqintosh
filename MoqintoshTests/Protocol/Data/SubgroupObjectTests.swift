@@ -22,8 +22,8 @@ struct SubgroupObjectTests {
         let object: SubgroupObject = header.makeObject(
             previousObjectID: 9,
             objectID: 10,
-            extensions: [KeyValuePair(type: 0x03, value: .bytes(Data([0xAA])))],
-            content: .payload(Data("abcd".utf8))
+            extensions: [KeyValuePair(type: 0x03, value: .bytes(ReadOnlyBytes(Data([0xAA]))))],
+            content: .payload(ReadOnlyBytes(Data("abcd".utf8)))
         )
 
         let decoded: SubgroupObject = try .decode(object.encode(), header: header, previousObjectID: 9)
@@ -31,7 +31,7 @@ struct SubgroupObjectTests {
         #expect(decoded.objectID == 10)
         #expect(decoded.extensions.count == 1)
         if case .payload(let payload) = decoded.content {
-            #expect(payload == Data("abcd".utf8))
+            #expect(payload.equals(Data("abcd".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

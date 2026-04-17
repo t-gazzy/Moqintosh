@@ -15,7 +15,7 @@ public struct ObjectDatagram: Sendable {
     }
 
     public enum Content: Sendable {
-        case payload(Data)
+        case payload(ReadOnlyBytes)
         case status(UInt64)
     }
 
@@ -138,7 +138,7 @@ public struct ObjectDatagram: Sendable {
         }
         switch content {
         case .payload(let payload):
-            data.append(payload)
+            payload.append(to: &data)
         case .status(let status):
             data.writeVarint(status)
         }
@@ -163,7 +163,7 @@ public struct ObjectDatagram: Sendable {
             guard encodedExtensionsLength > 0 else {
                 throw ObjectDatagramError.invalidExtensionHeadersLength
             }
-            let encodedExtensions: Data = try reader.readBytes(length: encodedExtensionsLength)
+            let encodedExtensions: ReadOnlyBytes = try reader.readReadOnlyBytes(length: encodedExtensionsLength)
             extensions = try decodeExtensions(from: encodedExtensions)
         } else {
             extensions = []
@@ -171,7 +171,7 @@ public struct ObjectDatagram: Sendable {
         let content: Content
         switch datagramType.contentKind {
         case .payload:
-            content = .payload(try reader.readBytes(length: reader.remainingCount))
+            content = .payload(try reader.readReadOnlyBytes(length: reader.remainingCount))
         case .status:
             content = .status(try reader.readVarint())
         }
@@ -223,8 +223,8 @@ public struct ObjectDatagram: Sendable {
         return data
     }
 
-    private static func decodeExtensions(from data: Data) throws -> [KeyValuePair] {
-        let reader: ByteReader = ByteReader(data: data)
+    private static func decodeExtensions(from data: ReadOnlyBytes) throws -> [KeyValuePair] {
+        let reader: ByteReader = ByteReader(readOnlyBytes: data)
         var extensions: [KeyValuePair] = []
         while reader.remainingCount > 0 {
             extensions.append(try .decode(from: reader))

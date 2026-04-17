@@ -33,7 +33,7 @@ struct DatagramSenderTests {
             objectID: .explicit(9),
             publisherPriority: 10,
             endOfGroup: true,
-            content: .payload(Data("abc".utf8))
+            content: .payload(ReadOnlyBytes(Data("abc".utf8)))
         )
 
         #expect(connection.sentDatagrams.count == 1)

@@ -14,7 +14,7 @@ public final class StreamSender: @unchecked Sendable {
 
     /// The payload or terminal status carried by a subgroup object.
     public enum Content {
-        case payload(Data)
+        case payload(ReadOnlyBytes)
         case status(UInt64)
     }
 

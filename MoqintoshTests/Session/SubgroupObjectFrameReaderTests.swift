@@ -18,7 +18,7 @@ struct SubgroupObjectFrameReaderTests {
             subgroupID: .explicit(3),
             publisherPriority: 4
         )
-        let object: SubgroupObject = header.makeObject(objectID: 5, content: .payload(Data("abcdef".utf8)))
+        let object: SubgroupObject = header.makeObject(objectID: 5, content: .payload(ReadOnlyBytes(Data("abcdef".utf8))))
         let chunks: [TransportUniReceiveResult] = object.encode().map { byte in
             TransportUniReceiveResult(bytes: Data([byte]), isComplete: false)
         }
@@ -29,7 +29,7 @@ struct SubgroupObjectFrameReaderTests {
 
         #expect(decoded.objectID == 5)
         if case .payload(let payload) = decoded.content {
-            #expect(payload == Data("abcdef".utf8))
+            #expect(payload.equals(Data("abcdef".utf8)))
         } else {
             Issue.record("Expected payload content")
         }
@@ -42,11 +42,11 @@ struct SubgroupObjectFrameReaderTests {
             subgroupID: .explicit(3),
             publisherPriority: 4
         )
-        let firstObject: SubgroupObject = header.makeObject(objectID: 5, content: .payload(Data("abc".utf8)))
+        let firstObject: SubgroupObject = header.makeObject(objectID: 5, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let secondObject: SubgroupObject = header.makeObject(
             previousObjectID: 5,
             objectID: 6,
-            content: .payload(Data("xyz".utf8))
+            content: .payload(ReadOnlyBytes(Data("xyz".utf8)))
         )
         let secondEncoded: Data = secondObject.encode()
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
@@ -70,7 +70,7 @@ struct SubgroupObjectFrameReaderTests {
         #expect(firstDecoded.objectID == 5)
         #expect(secondDecoded.objectID == 6)
         if case .payload(let payload) = secondDecoded.content {
-            #expect(payload == Data("xyz".utf8))
+            #expect(payload.equals(Data("xyz".utf8)))
         } else {
             Issue.record("Expected payload content")
         }
