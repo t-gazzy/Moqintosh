@@ -44,7 +44,7 @@ enum SetupParameter {
         switch pair.type {
         case 0x01:
             guard case .bytes(let bytes) = pair.value,
-                  let string = String(bytes: bytes, encoding: .utf8) else {
+                  let string = bytes.utf8String else {
                 throw ByteReaderError.invalidUTF8
             }
             return .path(string)
@@ -57,7 +57,7 @@ enum SetupParameter {
             guard case .bytes(let bytes) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
             }
-            return .authorizationToken(AuthorizationToken(value: bytes))
+            return .authorizationToken(AuthorizationToken(readOnlyBytes: bytes))
         case 0x04:
             guard case .varint(let value) = pair.value else {
                 throw SetupParameterError.typeMismatch(type: pair.type)
@@ -65,13 +65,13 @@ enum SetupParameter {
             return .maxAuthTokenCacheSize(value)
         case 0x05:
             guard case .bytes(let bytes) = pair.value,
-                  let string = String(bytes: bytes, encoding: .utf8) else {
+                  let string = bytes.utf8String else {
                 throw ByteReaderError.invalidUTF8
             }
             return .authority(string)
         case 0x07:
             guard case .bytes(let bytes) = pair.value,
-                  let string = String(bytes: bytes, encoding: .utf8) else {
+                  let string = bytes.utf8String else {
                 throw ByteReaderError.invalidUTF8
             }
             return .moqtImplementation(string)
@@ -85,17 +85,17 @@ enum SetupParameter {
     private var keyValuePair: KeyValuePair {
         switch self {
         case .path(let s):
-            return KeyValuePair(type: 0x01, value: .bytes(Data(s.utf8)))
+            return KeyValuePair(type: 0x01, value: .bytes(ReadOnlyBytes(Data(s.utf8))))
         case .maxRequestId(let v):
             return KeyValuePair(type: 0x02, value: .varint(v))
         case .maxAuthTokenCacheSize(let v):
             return KeyValuePair(type: 0x04, value: .varint(v))
         case .authorizationToken(let token):
-            return KeyValuePair(type: 0x03, value: .bytes(token.value))
+            return KeyValuePair(type: 0x03, value: .bytes(ReadOnlyBytes(token.value)))
         case .authority(let s):
-            return KeyValuePair(type: 0x05, value: .bytes(Data(s.utf8)))
+            return KeyValuePair(type: 0x05, value: .bytes(ReadOnlyBytes(Data(s.utf8))))
         case .moqtImplementation(let s):
-            return KeyValuePair(type: 0x07, value: .bytes(Data(s.utf8)))
+            return KeyValuePair(type: 0x07, value: .bytes(ReadOnlyBytes(Data(s.utf8))))
         }
     }
 }

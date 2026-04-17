@@ -61,7 +61,7 @@ final class FetchObjectFrameReader {
             }
             content = .status(status)
         } else {
-            guard let payload: Data = try? reader.readBytes(length: payloadLength) else {
+            guard let payload: ReadOnlyBytes = try? reader.readReadOnlyBytes(length: payloadLength) else {
                 return nil
             }
             content = .payload(payload)

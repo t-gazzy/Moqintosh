@@ -58,7 +58,7 @@ struct SampleConfiguration {
         )
     }
 
-    func makePayload(date: Date = Date()) -> Data {
+    func makePayload(date: Date = Date()) -> ReadOnlyBytes {
         let payload: LatencyPayload = LatencyPayload(
             sentAtMilliseconds: Int64(date.timeIntervalSince1970 * 1_000)
         )
@@ -66,12 +66,16 @@ struct SampleConfiguration {
         guard let data: Data = try? encoder.encode(payload) else {
             preconditionFailure("Failed to encode LatencyPayload")
         }
-        return data
+        return ReadOnlyBytes(data)
     }
 
     func decodePayload(_ data: Data) -> LatencyPayload? {
         let decoder: JSONDecoder = JSONDecoder()
         return try? decoder.decode(LatencyPayload.self, from: data)
+    }
+
+    func decodePayload(_ bytes: ReadOnlyBytes) -> LatencyPayload? {
+        decodePayload(bytes.materialize())
     }
 
     func makeLatencyText(sentAtMilliseconds: Int64, receivedAt: Date = Date()) -> String {

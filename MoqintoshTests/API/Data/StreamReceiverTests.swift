@@ -13,7 +13,7 @@ struct StreamReceiverTests {
 
     @Test func inboundObjectNotifiesDelegate() async {
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
-        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abc".utf8)))
+        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: object.encode(), isComplete: true)],
             receiveError: nil
@@ -52,7 +52,7 @@ struct StreamReceiverTests {
 
     @Test func chunkedObjectNotifiesDelegate() async {
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
-        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(Data("abcdef".utf8)))
+        let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abcdef".utf8))))
         let encoded: Data = object.encode()
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
@@ -91,7 +91,7 @@ struct StreamReceiverTests {
 
         #expect(delegate.receivedObjects.count == 1)
         if case .payload(let payload) = delegate.receivedObjects[0].content {
-            #expect(payload == Data("abcdef".utf8))
+            #expect(payload.equals(Data("abcdef".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

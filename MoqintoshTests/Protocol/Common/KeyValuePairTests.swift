@@ -17,7 +17,7 @@ struct KeyValuePairTests {
     }
 
     @Test func encodeBytes() {
-        let pair: KeyValuePair = KeyValuePair(type: 0x01, value: .bytes(Data("hi".utf8)))
+        let pair: KeyValuePair = KeyValuePair(type: 0x01, value: .bytes(ReadOnlyBytes(Data("hi".utf8))))
         #expect(pair.encode() == Data([0x01, 0x02, 0x68, 0x69]))
     }
 
@@ -33,13 +33,13 @@ struct KeyValuePairTests {
     }
 
     @Test func roundTripBytes() throws {
-        let pair: KeyValuePair = KeyValuePair(type: 0x05, value: .bytes(Data("example.com".utf8)))
+        let pair: KeyValuePair = KeyValuePair(type: 0x05, value: .bytes(ReadOnlyBytes(Data("example.com".utf8))))
         let decoded: KeyValuePair = try .decode(from: ByteReader(data: pair.encode()))
         #expect(decoded.type == 0x05)
         guard case .bytes(let value) = decoded.value else {
             Issue.record("Expected bytes")
             return
         }
-        #expect(value == Data("example.com".utf8))
+        #expect(value.equals(Data("example.com".utf8)))
     }
 }

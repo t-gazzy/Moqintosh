@@ -41,7 +41,7 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
                     receivedAt: receivedAt
                 )
             } else {
-                text = String(data: payload, encoding: .utf8) ?? "<\(payload.count) bytes>"
+                text = payload.utf8String ?? "<\(payload.data.count) bytes>"
             }
             onReceivedData(
                 "[\(timestampText)] Stream [group: \(object.groupID), object: \(object.objectID)]: \(text)"

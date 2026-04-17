@@ -17,9 +17,9 @@ struct ObjectDatagramTests {
             groupID: 3,
             objectID: .explicit(4),
             publisherPriority: 5,
-            extensions: [KeyValuePair(type: 0x03, value: .bytes(Data([0xAA])))],
+            extensions: [KeyValuePair(type: 0x03, value: .bytes(ReadOnlyBytes(Data([0xAA]))))],
             endOfGroup: true,
-            content: .payload(Data("abc".utf8))
+            content: .payload(ReadOnlyBytes(Data("abc".utf8)))
         )
 
         let decoded: ObjectDatagram = try .decode(message.encode())
@@ -35,7 +35,7 @@ struct ObjectDatagramTests {
             Issue.record("Expected an explicit object ID")
         }
         if case .payload(let payload) = decoded.content {
-            #expect(payload == Data("abc".utf8))
+            #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

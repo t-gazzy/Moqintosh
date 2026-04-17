@@ -46,7 +46,7 @@ struct FetchReceiverTests {
         #expect(delegate.receivedObjects[0].groupID == 4)
         #expect(delegate.receivedObjects[0].objectID == 6)
         if case .payload(let payload) = delegate.receivedObjects[0].content {
-            #expect(payload == Data("abc".utf8))
+            #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
         }

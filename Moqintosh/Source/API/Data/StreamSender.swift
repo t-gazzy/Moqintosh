@@ -62,7 +62,7 @@ private extension StreamSender.Content {
     var subgroupObjectContent: SubgroupObject.Content {
         switch self {
         case .payload(let payload):
-            return .payload(payload)
+            return .payload(ReadOnlyBytes(payload))
         case .status(let status):
             return .status(status)
         }

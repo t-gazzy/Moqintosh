@@ -10,7 +10,7 @@ import Foundation
 public struct SubgroupObject: Sendable {
 
     public enum Content: Sendable {
-        case payload(Data)
+        case payload(ReadOnlyBytes)
         case status(UInt64)
     }
 
@@ -47,7 +47,7 @@ public struct SubgroupObject: Sendable {
         switch content {
         case .payload(let payload):
             data.writeVarint(UInt64(payload.count))
-            data.append(payload)
+            payload.append(to: &data)
         case .status(let status):
             data.writeVarint(0)
             data.writeVarint(status)
@@ -79,7 +79,7 @@ public struct SubgroupObject: Sendable {
         let extensions: [KeyValuePair]
         if header.usesExtensions {
             let encodedExtensionsLength: Int = Int(try reader.readVarint())
-            let encodedExtensions: Data = try reader.readBytes(length: encodedExtensionsLength)
+            let encodedExtensions: ReadOnlyBytes = try reader.readReadOnlyBytes(length: encodedExtensionsLength)
             extensions = try decodeExtensions(from: encodedExtensions)
         } else {
             extensions = []
@@ -89,7 +89,7 @@ public struct SubgroupObject: Sendable {
         if payloadLength == 0 {
             content = .status(try reader.readVarint())
         } else {
-            content = .payload(try reader.readBytes(length: payloadLength))
+            content = .payload(try reader.readReadOnlyBytes(length: payloadLength))
         }
         return SubgroupObject(
             header: header,
@@ -116,8 +116,8 @@ public struct SubgroupObject: Sendable {
         return data
     }
 
-    private static func decodeExtensions(from data: Data) throws -> [KeyValuePair] {
-        let reader: ByteReader = ByteReader(data: data)
+    private static func decodeExtensions(from data: ReadOnlyBytes) throws -> [KeyValuePair] {
+        let reader: ByteReader = ByteReader(readOnlyBytes: data)
         var extensions: [KeyValuePair] = []
         while reader.remainingCount > 0 {
             extensions.append(try .decode(from: reader))
