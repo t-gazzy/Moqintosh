@@ -22,8 +22,9 @@ struct StreamSenderTests {
                 publisherPriority: 4
             )
         )
-
-        try await sender.send(objectID: 7, content: .payload(Data("ab".utf8)))
+        
+        let readOnlyBytes = ReadOnlyBytes(Data("ab".utf8))
+        try await sender.send(objectID: 7, content: .payload(readOnlyBytes))
         try await sender.send(objectID: 8, endOfGroup: true, content: .status(9))
 
         #expect(stream.sentBytes.count == 2)
