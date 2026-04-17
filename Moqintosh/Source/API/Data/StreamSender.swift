@@ -14,7 +14,7 @@ public final class StreamSender: @unchecked Sendable {
 
     /// The payload or terminal status carried by a subgroup object.
     public enum Content {
-        case payload(Data)
+        case payload(ReadOnlyBytes)
         case status(UInt64)
     }
 
@@ -62,7 +62,7 @@ private extension StreamSender.Content {
     var subgroupObjectContent: SubgroupObject.Content {
         switch self {
         case .payload(let payload):
-            return .payload(ReadOnlyBytes(payload))
+            return .payload(payload)
         case .status(let status):
             return .status(status)
         }

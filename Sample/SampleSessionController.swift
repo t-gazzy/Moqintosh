@@ -283,7 +283,7 @@ final class SampleSessionController {
             try await sender.send(
                 objectID: objectID,
                 endOfGroup: endOfGroup,
-                content: .payload(payload.materialize())
+                content: .payload(payload)
             )
             advanceStreamCounters()
         } catch {
