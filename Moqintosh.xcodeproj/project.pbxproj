@@ -10,6 +10,7 @@
 		6F1238652F8AC04900875243 /* Moqintosh in Frameworks */ = {isa = PBXBuildFile; productRef = 6F1238642F8AC04900875243 /* Moqintosh */; };
 		6F73B0352F8AC2F800BE93FE /* Moqintosh in Frameworks */ = {isa = PBXBuildFile; productRef = 6F73B0342F8AC2F800BE93FE /* Moqintosh */; };
 		6FA3E6372D38EEA900BB51A5 /* Moqintosh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */; };
+		6FBC276C2F928B9F00DA6E99 /* RealtimeMediaKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,12 +21,21 @@
 			remoteGlobalIDString = 6FA3E62B2D38EEA800BB51A5;
 			remoteInfo = Moqintosh;
 		};
+		6FBC276D2F928B9F00DA6E99 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6FA3E6232D38EEA800BB51A5 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6FBC27602F928B9F00DA6E99;
+			remoteInfo = RealtimeMediaKit;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Moqintosh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoqintoshTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FB8FA712F8A5362009F29F9 /* Sample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RealtimeMediaKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6FBC276B2F928B9F00DA6E99 /* RealtimeMediaKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealtimeMediaKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -57,6 +67,16 @@
 			path = Sample;
 			sourceTree = "<group>";
 		};
+		6FBC27622F928B9F00DA6E99 /* RealtimeMediaKit */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RealtimeMediaKit;
+			sourceTree = "<group>";
+		};
+		6FBC276F2F928B9F00DA6E99 /* RealtimeMediaKitTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RealtimeMediaKitTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +104,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6FBC275E2F928B9F00DA6E99 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FBC27682F928B9F00DA6E99 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6FBC276C2F928B9F00DA6E99 /* RealtimeMediaKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -93,6 +128,8 @@
 				6FA3E62E2D38EEA800BB51A5 /* Moqintosh */,
 				6FA3E63A2D38EEA900BB51A5 /* MoqintoshTests */,
 				6FB8FA722F8A5362009F29F9 /* Sample */,
+				6FBC27622F928B9F00DA6E99 /* RealtimeMediaKit */,
+				6FBC276F2F928B9F00DA6E99 /* RealtimeMediaKitTests */,
 				6FA3E62D2D38EEA800BB51A5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -103,6 +140,8 @@
 				6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */,
 				6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */,
 				6FB8FA712F8A5362009F29F9 /* Sample.app */,
+				6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */,
+				6FBC276B2F928B9F00DA6E99 /* RealtimeMediaKitTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -111,6 +150,13 @@
 
 /* Begin PBXHeadersBuildPhase section */
 		6FA3E6272D38EEA800BB51A5 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FBC275C2F928B9F00DA6E99 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -194,6 +240,52 @@
 			productReference = 6FB8FA712F8A5362009F29F9 /* Sample.app */;
 			productType = "com.apple.product-type.application";
 		};
+		6FBC27602F928B9F00DA6E99 /* RealtimeMediaKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6FBC27722F928B9F00DA6E99 /* Build configuration list for PBXNativeTarget "RealtimeMediaKit" */;
+			buildPhases = (
+				6FBC275C2F928B9F00DA6E99 /* Headers */,
+				6FBC275D2F928B9F00DA6E99 /* Sources */,
+				6FBC275E2F928B9F00DA6E99 /* Frameworks */,
+				6FBC275F2F928B9F00DA6E99 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6FBC27622F928B9F00DA6E99 /* RealtimeMediaKit */,
+			);
+			name = RealtimeMediaKit;
+			packageProductDependencies = (
+			);
+			productName = RealtimeMediaKit;
+			productReference = 6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		6FBC276A2F928B9F00DA6E99 /* RealtimeMediaKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6FBC27752F928B9F00DA6E99 /* Build configuration list for PBXNativeTarget "RealtimeMediaKitTests" */;
+			buildPhases = (
+				6FBC27672F928B9F00DA6E99 /* Sources */,
+				6FBC27682F928B9F00DA6E99 /* Frameworks */,
+				6FBC27692F928B9F00DA6E99 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6FBC276E2F928B9F00DA6E99 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6FBC276F2F928B9F00DA6E99 /* RealtimeMediaKitTests */,
+			);
+			name = RealtimeMediaKitTests;
+			packageProductDependencies = (
+			);
+			productName = RealtimeMediaKitTests;
+			productReference = 6FBC276B2F928B9F00DA6E99 /* RealtimeMediaKitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -211,6 +303,12 @@
 						CreatedOnToolsVersion = 16.2;
 					};
 					6FB8FA702F8A5362009F29F9 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					6FBC27602F928B9F00DA6E99 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+					6FBC276A2F928B9F00DA6E99 = {
 						CreatedOnToolsVersion = 26.4;
 					};
 				};
@@ -235,6 +333,8 @@
 				6FA3E62B2D38EEA800BB51A5 /* Moqintosh */,
 				6FA3E6352D38EEA900BB51A5 /* MoqintoshTests */,
 				6FB8FA702F8A5362009F29F9 /* Sample */,
+				6FBC27602F928B9F00DA6E99 /* RealtimeMediaKit */,
+				6FBC276A2F928B9F00DA6E99 /* RealtimeMediaKitTests */,
 			);
 		};
 /* End PBXProject section */
@@ -255,6 +355,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6FB8FA6F2F8A5362009F29F9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FBC275F2F928B9F00DA6E99 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FBC27692F928B9F00DA6E99 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -360,6 +474,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6FBC275D2F928B9F00DA6E99 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FBC27672F928B9F00DA6E99 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -367,6 +495,11 @@
 			isa = PBXTargetDependency;
 			target = 6FA3E62B2D38EEA800BB51A5 /* Moqintosh */;
 			targetProxy = 6FA3E6382D38EEA900BB51A5 /* PBXContainerItemProxy */;
+		};
+		6FBC276E2F928B9F00DA6E99 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6FBC27602F928B9F00DA6E99 /* RealtimeMediaKit */;
+			targetProxy = 6FBC276D2F928B9F00DA6E99 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -664,6 +797,120 @@
 			};
 			name = Release;
 		};
+		6FBC27732F928B9F00DA6E99 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HG94CYMA9B;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = com.gazzy.RealtimeMediaKit;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_MODULE = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6FBC27742F928B9F00DA6E99 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HG94CYMA9B;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = com.gazzy.RealtimeMediaKit;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_MODULE = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6FBC27762F928B9F00DA6E99 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HG94CYMA9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gazzy.RealtimeMediaKitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6FBC27772F928B9F00DA6E99 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = HG94CYMA9B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gazzy.RealtimeMediaKitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -699,6 +946,24 @@
 			buildConfigurations = (
 				6FB8FA7A2F8A5363009F29F9 /* Debug */,
 				6FB8FA7B2F8A5363009F29F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6FBC27722F928B9F00DA6E99 /* Build configuration list for PBXNativeTarget "RealtimeMediaKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6FBC27732F928B9F00DA6E99 /* Debug */,
+				6FBC27742F928B9F00DA6E99 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6FBC27752F928B9F00DA6E99 /* Build configuration list for PBXNativeTarget "RealtimeMediaKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6FBC27762F928B9F00DA6E99 /* Debug */,
+				6FBC27772F928B9F00DA6E99 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
