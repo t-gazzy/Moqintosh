@@ -12,6 +12,8 @@ public enum AudioDeviceError: Error {
     case notRunning
     case backendMismatch
     case unsupportedFormat
+    case audioEncodingFailed(status: Int32)
+    case audioDecodingFailed(status: Int32)
     case audioComponentNotFound
     case audioUnitCreationFailed
     case audioUnitInitializationFailed(status: Int32)
