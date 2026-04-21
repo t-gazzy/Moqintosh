@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "6A044977-927A-479D-A9CD-5AB7BB9DC240",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Moqintosh.xcodeproj",
+        "identifier" : "6FBC276A2F928B9F00DA6E99",
+        "name" : "RealtimeMediaKitTests"
+      }
+    }
+  ],
+  "version" : 1
+}

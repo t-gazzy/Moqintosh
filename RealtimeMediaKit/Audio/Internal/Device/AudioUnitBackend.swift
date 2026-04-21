@@ -6,6 +6,7 @@
 //
 
 import AudioToolbox
+import AVFAudio
 import Foundation
 
 class AudioUnitBackend: InternalAudioBackend, AudioUnitComponentDescribing {
@@ -25,6 +26,16 @@ class AudioUnitBackend: InternalAudioBackend, AudioUnitComponentDescribing {
         OSLogger.debug(
             "Initialized audio unit backend. sampleRate=\(configuration.format.sampleRate) channels=\(configuration.format.channelCount) inputEnabled=\(configuration.inputEnabled) outputEnabled=\(configuration.outputEnabled)"
         )
+    }
+
+    deinit {
+        guard let audioUnit else {
+            return
+        }
+
+        OSLogger.debug("Disposing audio unit backend.")
+        AudioUnitUninitialize(audioUnit)
+        AudioComponentInstanceDispose(audioUnit)
     }
 
     var componentDescription: AudioComponentDescription {
@@ -276,13 +287,14 @@ extension AudioUnitBackend {
             frameCount: Int(frameCount)
         )
         var status: OSStatus = noErr
+        let inputDataByteSize: UInt32 = UInt32(frame.samples.count * MemoryLayout<Float>.size)
 
         frame.withUnsafeMutableSamplePointer { samplePointer in
             var bufferList: AudioBufferList = AudioBufferList(
                 mNumberBuffers: 1,
                 mBuffers: AudioBuffer(
                     mNumberChannels: UInt32(configuration.format.channelCount),
-                    mDataByteSize: UInt32(frame.samples.count * MemoryLayout<Float>.size),
+                    mDataByteSize: inputDataByteSize,
                     mData: samplePointer
                 )
             )
@@ -351,17 +363,5 @@ extension AudioUnitBackend {
         }
 
         return noErr
-    }
-}
-
-extension AudioUnitBackend {
-    deinit {
-        guard let audioUnit else {
-            return
-        }
-
-        OSLogger.debug("Disposing audio unit backend.")
-        AudioUnitUninitialize(audioUnit)
-        AudioComponentInstanceDispose(audioUnit)
     }
 }

@@ -39,6 +39,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6F0029BE2F967EDF00393BB1 /* Exceptions for "RealtimeMediaKitTests" folder in "RealtimeMediaKitTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				RealtimeMediaKit.xctestplan,
+			);
+			target = 6FBC276A2F928B9F00DA6E99 /* RealtimeMediaKitTests */;
+		};
 		6FA3E63E2D38EEA900BB51A5 /* Exceptions for "Moqintosh" folder in "Moqintosh" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			publicHeaders = (
@@ -74,6 +81,9 @@
 		};
 		6FBC276F2F928B9F00DA6E99 /* RealtimeMediaKitTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6F0029BE2F967EDF00393BB1 /* Exceptions for "RealtimeMediaKitTests" folder in "RealtimeMediaKitTests" target */,
+			);
 			path = RealtimeMediaKitTests;
 			sourceTree = "<group>";
 		};

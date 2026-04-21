@@ -8,7 +8,7 @@
 import Foundation
 
 enum AudioPacketDecoderFactory {
-    static func makeOpusDecoder(outputFormat: AudioFormat) throws -> any InternalAudioPacketDecoding {
-        try AudioConverterOpusDecoder(outputFormat: outputFormat)
+    static func makeOpusDecoder(configuration: OpusDecoderConfiguration) throws -> any InternalAudioPacketDecoding {
+        try AudioConverterOpusDecoder(configuration: configuration)
     }
 }

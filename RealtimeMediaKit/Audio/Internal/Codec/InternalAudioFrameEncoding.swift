@@ -8,5 +8,7 @@
 import Foundation
 
 protocol InternalAudioFrameEncoding: AnyObject {
+    var magicCookie: Data? { get }
+
     func encode(_ frame: AudioFrame) throws -> AudioEncodedPacket
 }

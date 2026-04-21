@@ -5,69 +5,47 @@
 //  Created by Codex on 2026/04/18.
 //
 
-import AudioToolbox
+import AVFAudio
 import Foundation
 
 final class AudioConverterOpusEncoder: InternalAudioFrameEncoding {
     private let configuration: OpusEncoderConfiguration
-    private let converter: AudioConverterRef
-    private let maximumPacketSize: UInt32
-    private var currentInputFrame: AudioFrame?
-    private var didConsumeCurrentInputFrame: Bool
+    private let converter: AVAudioConverter
+    private let inputFormat: AVAudioFormat
+
+    var magicCookie: Data? {
+        converter.magicCookie
+    }
 
     init(configuration: OpusEncoderConfiguration) throws {
         self.configuration = configuration
-        self.didConsumeCurrentInputFrame = false
 
         OSLogger.debug(
             "Creating Opus audio converter. sampleRate=\(configuration.inputFormat.sampleRate) channels=\(configuration.inputFormat.channelCount) frameCountPerPacket=\(configuration.frameCountPerPacket)"
         )
 
-        var inputDescription: AudioStreamBasicDescription = Self.makeInputDescription(format: configuration.inputFormat)
-        var outputDescription: AudioStreamBasicDescription = Self.makeOutputDescription(configuration: configuration)
-        var converter: AudioConverterRef?
-        let status: OSStatus = AudioConverterNew(&inputDescription, &outputDescription, &converter)
-
-        guard status == noErr, let converter else {
-            OSLogger.error("Failed to create Opus audio converter. status=\(status)")
-            throw AudioDeviceError.audioUnitConfigurationFailed(status: status)
+        guard let inputFormat: AVAudioFormat = Self.makePCMFormat(format: configuration.inputFormat) else {
+            OSLogger.error("Failed to create Opus encoder input format.")
+            throw AudioDeviceError.unsupportedFormat
         }
 
-        self.converter = converter
+        guard let outputFormat: AVAudioFormat = Self.makeOpusFormat(configuration: configuration) else {
+            OSLogger.error("Failed to create Opus encoder output format.")
+            throw AudioDeviceError.unsupportedFormat
+        }
+
+        guard let converter: AVAudioConverter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
+            OSLogger.error("Failed to create Opus audio converter.")
+            throw AudioDeviceError.audioEncodingFailed(status: -1)
+        }
 
         if let bitrate: Int = configuration.bitrate {
-            var bitrateValue: UInt32 = UInt32(bitrate)
-            let bitrateStatus: OSStatus = AudioConverterSetProperty(
-                converter,
-                kAudioConverterEncodeBitRate,
-                UInt32(MemoryLayout<UInt32>.size),
-                &bitrateValue
-            )
-
-            guard bitrateStatus == noErr else {
-                AudioConverterDispose(converter)
-                OSLogger.error("Failed to configure Opus bitrate. status=\(bitrateStatus)")
-                throw AudioDeviceError.audioUnitConfigurationFailed(status: bitrateStatus)
-            }
+            converter.bitRate = bitrate
         }
 
-        var packetSize: UInt32 = 0
-        var packetSizePropertySize: UInt32 = UInt32(MemoryLayout<UInt32>.size)
-        let packetSizeStatus: OSStatus = AudioConverterGetProperty(
-            converter,
-            kAudioConverterPropertyMaximumOutputPacketSize,
-            &packetSizePropertySize,
-            &packetSize
-        )
-
-        guard packetSizeStatus == noErr else {
-            AudioConverterDispose(converter)
-            OSLogger.error("Failed to query Opus maximum packet size. status=\(packetSizeStatus)")
-            throw AudioDeviceError.audioUnitConfigurationFailed(status: packetSizeStatus)
-        }
-
-        self.maximumPacketSize = packetSize
-        OSLogger.info("Created Opus audio converter. maximumPacketSize=\(packetSize)")
+        self.inputFormat = inputFormat
+        self.converter = converter
+        OSLogger.info("Created Opus audio converter.")
     }
 
     func encode(_ frame: AudioFrame) throws -> AudioEncodedPacket {
@@ -81,51 +59,28 @@ final class AudioConverterOpusEncoder: InternalAudioFrameEncoding {
             throw AudioDeviceError.unsupportedFormat
         }
 
-        currentInputFrame = frame
-        didConsumeCurrentInputFrame = false
-
-        var outputPacketCount: UInt32 = 1
-        var outputPacketDescription: AudioStreamPacketDescription = AudioStreamPacketDescription(
-            mStartOffset: 0,
-            mVariableFramesInPacket: 0,
-            mDataByteSize: 0
+        let inputBuffer: AVAudioPCMBuffer = try makeInputBuffer(frame: frame)
+        let compressedBuffer: AVAudioCompressedBuffer = AVAudioCompressedBuffer(
+            format: converter.outputFormat,
+            packetCapacity: 1,
+            maximumPacketSize: 1_275
         )
-        var outputPayload: Data = Data(count: Int(maximumPacketSize))
+        var conversionError: NSError?
 
-        let status: OSStatus = outputPayload.withUnsafeMutableBytes { rawBuffer in
-            guard let baseAddress: UnsafeMutableRawPointer = rawBuffer.baseAddress else {
-                return kAudio_ParamError
-            }
-
-            var outputBufferList: AudioBufferList = AudioBufferList(
-                mNumberBuffers: 1,
-                mBuffers: AudioBuffer(
-                    mNumberChannels: UInt32(configuration.inputFormat.channelCount),
-                    mDataByteSize: maximumPacketSize,
-                    mData: baseAddress
-                )
-            )
-
-            return AudioConverterFillComplexBuffer(
-                converter,
-                Self.inputDataProc,
-                Unmanaged.passUnretained(self).toOpaque(),
-                &outputPacketCount,
-                &outputBufferList,
-                &outputPacketDescription
-            )
+        converter.convert(to: compressedBuffer, error: &conversionError) { _, outputStatus in
+            outputStatus.pointee = .haveData
+            return inputBuffer
         }
 
-        currentInputFrame = nil
-        didConsumeCurrentInputFrame = false
-
-        guard status == noErr else {
-            OSLogger.error("Failed to encode Opus packet. status=\(status)")
-            throw AudioDeviceError.audioUnitConfigurationFailed(status: status)
+        if let conversionError {
+            OSLogger.error("Failed to encode Opus packet: \(conversionError)")
+            throw conversionError
         }
 
-        let encodedByteCount: Int = Int(outputPacketDescription.mDataByteSize)
-        let payload: Data = outputPayload.prefix(encodedByteCount)
+        let payload: Data = Data(
+            bytes: compressedBuffer.data,
+            count: Int(compressedBuffer.byteLength)
+        )
 
         return AudioEncodedPacket(
             payload: payload,
@@ -136,67 +91,47 @@ final class AudioConverterOpusEncoder: InternalAudioFrameEncoding {
 
     deinit {
         OSLogger.debug("Disposing Opus audio converter.")
-        AudioConverterDispose(converter)
     }
 }
 
 extension AudioConverterOpusEncoder {
-    private static let inputDataProc: AudioConverterComplexInputDataProc = { converter, ioNumberDataPackets, ioData, _, inputDataProcUserData in
-        let encoder: AudioConverterOpusEncoder = Unmanaged<AudioConverterOpusEncoder>
-            .fromOpaque(inputDataProcUserData!)
-            .takeUnretainedValue()
+    private func makeInputBuffer(frame: AudioFrame) throws -> AVAudioPCMBuffer {
+        guard let buffer: AVAudioPCMBuffer = AVAudioPCMBuffer(
+            pcmFormat: inputFormat,
+            frameCapacity: AVAudioFrameCount(frame.frameCount)
+        ) else {
+            throw AudioDeviceError.unsupportedFormat
+        }
 
-        return encoder.provideInput(
-            converter: converter,
-            ioNumberDataPackets: ioNumberDataPackets,
-            ioData: ioData
+        buffer.frameLength = AVAudioFrameCount(frame.frameCount)
+
+        guard let channelData: UnsafePointer<UnsafeMutablePointer<Float>> = buffer.floatChannelData else {
+            throw AudioDeviceError.unsupportedFormat
+        }
+
+        for channelIndex in 0 ..< frame.format.channelCount {
+            let destination: UnsafeMutablePointer<Float> = channelData[channelIndex]
+
+            for frameIndex in 0 ..< frame.frameCount {
+                let sampleIndex: Int = frameIndex * frame.format.channelCount + channelIndex
+                destination[frameIndex] = frame.samples[sampleIndex]
+            }
+        }
+
+        return buffer
+    }
+
+    private static func makePCMFormat(format: AudioFormat) -> AVAudioFormat? {
+        AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: format.sampleRate,
+            channels: AVAudioChannelCount(format.channelCount),
+            interleaved: false
         )
     }
 
-    private func provideInput(
-        converter: AudioConverterRef,
-        ioNumberDataPackets: UnsafeMutablePointer<UInt32>,
-        ioData: UnsafeMutablePointer<AudioBufferList>
-    ) -> OSStatus {
-        _ = converter
-
-        guard let currentInputFrame, !didConsumeCurrentInputFrame else {
-            ioNumberDataPackets.pointee = 0
-            ioData.pointee.mNumberBuffers = 0
-            return noErr
-        }
-
-        didConsumeCurrentInputFrame = true
-
-        currentInputFrame.withUnsafeSamplePointer { samplePointer in
-            ioNumberDataPackets.pointee = 1
-            ioData.pointee.mNumberBuffers = 1
-            ioData.pointee.mBuffers.mNumberChannels = UInt32(currentInputFrame.format.channelCount)
-            ioData.pointee.mBuffers.mDataByteSize = UInt32(currentInputFrame.samples.count * MemoryLayout<Float>.size)
-            ioData.pointee.mBuffers.mData = UnsafeMutableRawPointer(mutating: samplePointer)
-        }
-
-        return noErr
-    }
-
-    private static func makeInputDescription(format: AudioFormat) -> AudioStreamBasicDescription {
-        let bytesPerFrame: UInt32 = UInt32(format.channelCount * format.bytesPerSample)
-
-        return AudioStreamBasicDescription(
-            mSampleRate: format.sampleRate,
-            mFormatID: kAudioFormatLinearPCM,
-            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked | kAudioFormatFlagsNativeEndian,
-            mBytesPerPacket: bytesPerFrame,
-            mFramesPerPacket: 1,
-            mBytesPerFrame: bytesPerFrame,
-            mChannelsPerFrame: UInt32(format.channelCount),
-            mBitsPerChannel: UInt32(format.bytesPerSample * 8),
-            mReserved: 0
-        )
-    }
-
-    private static func makeOutputDescription(configuration: OpusEncoderConfiguration) -> AudioStreamBasicDescription {
-        AudioStreamBasicDescription(
+    private static func makeOpusFormat(configuration: OpusEncoderConfiguration) -> AVAudioFormat? {
+        var outputDescription: AudioStreamBasicDescription = AudioStreamBasicDescription(
             mSampleRate: configuration.inputFormat.sampleRate,
             mFormatID: kAudioFormatOpus,
             mFormatFlags: 0,
@@ -207,5 +142,7 @@ extension AudioConverterOpusEncoder {
             mBitsPerChannel: 0,
             mReserved: 0
         )
+
+        return AVAudioFormat(streamDescription: &outputDescription)
     }
 }

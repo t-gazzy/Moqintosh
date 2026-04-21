@@ -10,6 +10,10 @@ import Foundation
 public final class OpusAudioEncoder: AudioFrameEncoder {
     private let implementation: any InternalAudioFrameEncoding
 
+    public var magicCookie: Data? {
+        implementation.magicCookie
+    }
+
     public init(configuration: OpusEncoderConfiguration) throws {
         self.implementation = try AudioFrameEncoderFactory.makeOpusEncoder(configuration: configuration)
     }
