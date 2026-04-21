@@ -33,7 +33,7 @@
 /* Begin PBXFileReference section */
 		6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Moqintosh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoqintoshTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		6FB8FA712F8A5362009F29F9 /* Sample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6FB8FA712F8A5362009F29F9 /* MoqintoshSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MoqintoshSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RealtimeMediaKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6FBC276B2F928B9F00DA6E99 /* RealtimeMediaKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealtimeMediaKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -69,9 +69,9 @@
 			path = MoqintoshTests;
 			sourceTree = "<group>";
 		};
-		6FB8FA722F8A5362009F29F9 /* Sample */ = {
+		6FB8FA722F8A5362009F29F9 /* MoqintoshSample */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Sample;
+			path = MoqintoshSample;
 			sourceTree = "<group>";
 		};
 		6FBC27622F928B9F00DA6E99 /* RealtimeMediaKit */ = {
@@ -137,7 +137,7 @@
 			children = (
 				6FA3E62E2D38EEA800BB51A5 /* Moqintosh */,
 				6FA3E63A2D38EEA900BB51A5 /* MoqintoshTests */,
-				6FB8FA722F8A5362009F29F9 /* Sample */,
+				6FB8FA722F8A5362009F29F9 /* MoqintoshSample */,
 				6FBC27622F928B9F00DA6E99 /* RealtimeMediaKit */,
 				6FBC276F2F928B9F00DA6E99 /* RealtimeMediaKitTests */,
 				6FA3E62D2D38EEA800BB51A5 /* Products */,
@@ -149,7 +149,7 @@
 			children = (
 				6FA3E62C2D38EEA800BB51A5 /* Moqintosh.framework */,
 				6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */,
-				6FB8FA712F8A5362009F29F9 /* Sample.app */,
+				6FB8FA712F8A5362009F29F9 /* MoqintoshSample.app */,
 				6FBC27612F928B9F00DA6E99 /* RealtimeMediaKit.framework */,
 				6FBC276B2F928B9F00DA6E99 /* RealtimeMediaKitTests.xctest */,
 			);
@@ -225,9 +225,9 @@
 			productReference = 6FA3E6362D38EEA900BB51A5 /* MoqintoshTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		6FB8FA702F8A5362009F29F9 /* Sample */ = {
+		6FB8FA702F8A5362009F29F9 /* MoqintoshSample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6FB8FA792F8A5363009F29F9 /* Build configuration list for PBXNativeTarget "Sample" */;
+			buildConfigurationList = 6FB8FA792F8A5363009F29F9 /* Build configuration list for PBXNativeTarget "MoqintoshSample" */;
 			buildPhases = (
 				6FB8FA6D2F8A5362009F29F9 /* Sources */,
 				6FB8FA6E2F8A5362009F29F9 /* Frameworks */,
@@ -239,15 +239,15 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				6FB8FA722F8A5362009F29F9 /* Sample */,
+				6FB8FA722F8A5362009F29F9 /* MoqintoshSample */,
 			);
-			name = Sample;
+			name = MoqintoshSample;
 			packageProductDependencies = (
 				6F1238642F8AC04900875243 /* Moqintosh */,
 				6F73B0342F8AC2F800BE93FE /* Moqintosh */,
 			);
 			productName = Sample;
-			productReference = 6FB8FA712F8A5362009F29F9 /* Sample.app */;
+			productReference = 6FB8FA712F8A5362009F29F9 /* MoqintoshSample.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6FBC27602F928B9F00DA6E99 /* RealtimeMediaKit */ = {
@@ -342,7 +342,7 @@
 			targets = (
 				6FA3E62B2D38EEA800BB51A5 /* Moqintosh */,
 				6FA3E6352D38EEA900BB51A5 /* MoqintoshTests */,
-				6FB8FA702F8A5362009F29F9 /* Sample */,
+				6FB8FA702F8A5362009F29F9 /* MoqintoshSample */,
 				6FBC27602F928B9F00DA6E99 /* RealtimeMediaKit */,
 				6FBC276A2F928B9F00DA6E99 /* RealtimeMediaKitTests */,
 			);
@@ -951,7 +951,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6FB8FA792F8A5363009F29F9 /* Build configuration list for PBXNativeTarget "Sample" */ = {
+		6FB8FA792F8A5363009F29F9 /* Build configuration list for PBXNativeTarget "MoqintoshSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6FB8FA7A2F8A5363009F29F9 /* Debug */,
