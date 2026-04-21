@@ -6,6 +6,8 @@
 //
 
 import AVFAudio
+import CoreMedia
+import CoreVideo
 import Foundation
 import Testing
 @testable import RealtimeMediaKit
@@ -32,6 +34,25 @@ struct RealtimeMediaKitTests {
         let fileSize: UInt64 = try #require(attributes[.size] as? UInt64)
 
         #expect(fileSize > 0)
+    }
+
+    @Test func encodeSyntheticVideoFrameToH264Packet() async throws {
+        let format: VideoFormat = VideoFormat(width: 640, height: 480, framesPerSecond: 30)
+        let encoder: H264VideoEncoder = try H264VideoEncoder(
+            configuration: H264EncoderConfiguration(
+                inputFormat: format,
+                bitrate: 500_000,
+                keyFrameInterval: 30
+            )
+        )
+        let frame: VideoFrame = try makeSyntheticVideoFrame(format: format)
+        let packet: VideoEncodedPacket = try await encoder.encode(frame)
+        try await encoder.finish()
+
+        #expect(!packet.payload.isEmpty)
+        #expect(packet.sourceFormat == format)
+        #expect(packet.isKeyFrame)
+        #expect(packet.parameterSets != nil)
     }
 
     @Test func decodeHarvardSpeechOpusToWavFile() async throws {
@@ -210,6 +231,55 @@ struct RealtimeMediaKitTests {
         return frames
     }
 
+    private func makeSyntheticVideoFrame(format: VideoFormat) throws -> VideoFrame {
+        var pixelBuffer: CVPixelBuffer?
+        let attributes: [CFString: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey: true
+        ]
+        let creationStatus: CVReturn = CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            format.width,
+            format.height,
+            kCVPixelFormatType_32BGRA,
+            attributes as CFDictionary,
+            &pixelBuffer
+        )
+
+        guard creationStatus == kCVReturnSuccess, let pixelBuffer else {
+            throw TestError.failedToCreateVideoBuffer
+        }
+
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        defer {
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+        }
+
+        guard let baseAddress: UnsafeMutableRawPointer = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+            throw TestError.failedToCreateVideoBuffer
+        }
+
+        let bytesPerRow: Int = CVPixelBufferGetBytesPerRow(pixelBuffer)
+        for yIndex in 0 ..< format.height {
+            let row: UnsafeMutablePointer<UInt8> = baseAddress
+                .advanced(by: yIndex * bytesPerRow)
+                .assumingMemoryBound(to: UInt8.self)
+            for xIndex in 0 ..< format.width {
+                let offset: Int = xIndex * 4
+                row[offset] = UInt8(xIndex % 256)
+                row[offset + 1] = UInt8(yIndex % 256)
+                row[offset + 2] = 180
+                row[offset + 3] = 255
+            }
+        }
+
+        return VideoFrame(
+            pixelBuffer: pixelBuffer,
+            presentationTime: CMTime(value: 0, timescale: CMTimeScale(format.framesPerSecond)),
+            duration: CMTime(value: 1, timescale: CMTimeScale(format.framesPerSecond))
+        )
+    }
+
     private func readOpusPacketStream(from url: URL) throws -> OpusPacketStream {
         let data: Data = try Data(contentsOf: url)
         var offset: Int = 0
@@ -345,6 +415,7 @@ private enum TestError: Error {
     case failedToCreateAudioBuffer
     case failedToConvertAudio
     case failedToReadAudioSamples
+    case failedToCreateVideoBuffer
     case invalidOpusPacketFile
     case missingHarvardSpeechResource
 }
