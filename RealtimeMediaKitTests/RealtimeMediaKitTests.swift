@@ -55,6 +55,27 @@ struct RealtimeMediaKitTests {
         #expect(packet.parameterSets != nil)
     }
 
+    @Test func decodeSyntheticH264PacketToVideoFrame() async throws {
+        let format: VideoFormat = VideoFormat(width: 640, height: 480, framesPerSecond: 30)
+        let encoder: H264VideoEncoder = try H264VideoEncoder(
+            configuration: H264EncoderConfiguration(
+                inputFormat: format,
+                bitrate: 500_000,
+                keyFrameInterval: 30
+            )
+        )
+        let decoder: H264VideoDecoder = H264VideoDecoder()
+        let sourceFrame: VideoFrame = try makeSyntheticVideoFrame(format: format)
+        let packet: VideoEncodedPacket = try await encoder.encode(sourceFrame)
+        let decodedFrame: VideoFrame = try await decoder.decode(packet)
+        try await encoder.finish()
+        try await decoder.finish()
+
+        #expect(CVPixelBufferGetWidth(decodedFrame.pixelBuffer) == format.width)
+        #expect(CVPixelBufferGetHeight(decodedFrame.pixelBuffer) == format.height)
+        #expect(decodedFrame.presentationTime == sourceFrame.presentationTime)
+    }
+
     @Test func decodeHarvardSpeechOpusToWavFile() async throws {
         let outputURL: URL = try encodeHarvardSpeechToOpusFileIfNeeded(shouldOverwrite: true)
         let packetStream: OpusPacketStream = try readOpusPacketStream(from: outputURL)

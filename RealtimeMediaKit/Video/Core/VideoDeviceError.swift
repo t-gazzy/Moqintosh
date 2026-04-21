@@ -16,5 +16,9 @@ public enum VideoDeviceError: Error {
     case unsupportedFormat
     case videoEncodingFailed(status: Int32)
     case videoEncodingDroppedFrame
+    case videoDecodingFailed(status: Int32)
+    case videoDecodingDroppedFrame
     case missingEncodedFrameData
+    case missingDecodedFrameData
+    case missingH264ParameterSets
 }
