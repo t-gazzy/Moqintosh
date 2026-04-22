@@ -286,8 +286,6 @@ struct SessionIntegrationTests {
             trackAlias: 3
         )
         let factory: StreamReceiverFactory = session.makeSubscriber().makeStreamReceiverFactory(for: subscription)
-        let delegate: IntegrationStreamDelegate = IntegrationStreamDelegate()
-        factory.delegate = delegate
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
@@ -300,19 +298,18 @@ struct SessionIntegrationTests {
 
         connection.receiveUniStream(stream)
 
-        while delegate.receivedObjects.isEmpty {
-            await Task.yield()
+        guard let streamReceiver: StreamReceiver = await factory.accept() else {
+            Issue.record("Expected stream receiver")
+            return
         }
-        while delegate.closedReceiverCount < 1 {
-            await Task.yield()
-        }
+        let receivedObject: SubgroupObject? = try await streamReceiver.receive()
+        let closedObject: SubgroupObject? = try await streamReceiver.receive()
         controlStream.finishReceiving(with: CancellationError())
 
-        #expect(delegate.receivedObjects.count == 1)
-        #expect(delegate.closedReceiverCount == 1)
-        #expect(delegate.receivedObjects[0].groupID == 5)
-        #expect(delegate.receivedObjects[0].objectID == 0)
-        if case .payload(let payload) = delegate.receivedObjects[0].content {
+        #expect(closedObject == nil)
+        #expect(receivedObject?.groupID == 5)
+        #expect(receivedObject?.objectID == 0)
+        if case .payload(let payload) = receivedObject?.content {
             #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
@@ -327,8 +324,6 @@ struct SessionIntegrationTests {
             trackAlias: 6
         )
         let receiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
-        let delegate: TestDatagramReceiverDelegate = TestDatagramReceiverDelegate()
-        receiver.delegate = delegate
 
         connection.receiveDatagram(
             bytes: ObjectDatagram(
@@ -340,19 +335,16 @@ struct SessionIntegrationTests {
             ).encode()
         )
 
-        while delegate.receivedDatagrams.isEmpty {
-            await Task.yield()
-        }
+        let receivedDatagram: ObjectDatagram? = await receiver.receive()
         controlStream.finishReceiving(with: CancellationError())
 
-        #expect(delegate.receivedDatagrams.count == 1)
-        #expect(delegate.receivedDatagrams[0].groupID == 8)
-        if case .explicit(let objectID) = delegate.receivedDatagrams[0].objectID {
+        #expect(receivedDatagram?.groupID == 8)
+        if case .explicit(let objectID) = receivedDatagram?.objectID {
             #expect(objectID == 10)
         } else {
             Issue.record("Expected explicit object ID")
         }
-        if case .payload(let payload) = delegate.receivedDatagrams[0].content {
+        if case .payload(let payload) = receivedDatagram?.content {
             #expect(payload.equals(Data("xyz".utf8)))
         } else {
             Issue.record("Expected payload content")
@@ -366,8 +358,6 @@ struct SessionIntegrationTests {
             controlStream: controlStream
         )
         let factory: FetchReceiverFactory = session.makeSubscriber().makeFetchReceiverFactory(for: fetchSubscription)
-        let delegate: TestFetchIntegrationDelegate = TestFetchIntegrationDelegate()
-        factory.delegate = delegate
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 TransportUniReceiveResult(
@@ -384,19 +374,18 @@ struct SessionIntegrationTests {
 
         connection.receiveUniStream(stream)
 
-        while delegate.receivedObjects.isEmpty {
-            await Task.yield()
+        guard let fetchReceiver: FetchReceiver = await factory.accept() else {
+            Issue.record("Expected fetch receiver")
+            return
         }
-        while delegate.closedReceiverCount < 1 {
-            await Task.yield()
-        }
+        let receivedObject: SubgroupObject? = try await fetchReceiver.receive()
+        let closedObject: SubgroupObject? = try await fetchReceiver.receive()
         controlStream.finishReceiving(with: CancellationError())
 
-        #expect(delegate.receivedObjects.count == 1)
-        #expect(delegate.closedReceiverCount == 1)
-        #expect(delegate.receivedObjects[0].groupID == 4)
-        #expect(delegate.receivedObjects[0].objectID == 6)
-        if case .payload(let payload) = delegate.receivedObjects[0].content {
+        #expect(closedObject == nil)
+        #expect(receivedObject?.groupID == 4)
+        #expect(receivedObject?.objectID == 6)
+        if case .payload(let payload) = receivedObject?.content {
             #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
@@ -523,32 +512,6 @@ struct SessionIntegrationTests {
         #expect(groupOrder == .ascending)
         #expect(startGroup == 5)
         #expect(controlStream.sentBytes[2].first == UInt8(MessageType.fetchOK.rawValue))
-    }
-}
-
-private final class IntegrationStreamDelegate: StreamReceiverFactoryDelegate, StreamReceiverDelegate {
-
-    private(set) var receivers: [StreamReceiver]
-    private(set) var receivedObjects: [SubgroupObject]
-    private(set) var closedReceiverCount: Int
-
-    init() {
-        self.receivers = []
-        self.receivedObjects = []
-        self.closedReceiverCount = 0
-    }
-
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async {
-        receiver.delegate = self
-        receivers.append(receiver)
-    }
-
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
-        receivedObjects.append(object)
-    }
-
-    func streamReceiverDidClose(_ receiver: StreamReceiver) async {
-        closedReceiverCount += 1
     }
 }
 

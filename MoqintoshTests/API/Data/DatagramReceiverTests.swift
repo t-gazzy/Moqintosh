@@ -11,7 +11,7 @@ import Testing
 
 struct DatagramReceiverTests {
 
-    @Test func inboundDatagramNotifiesDelegate() async throws {
+    @Test func inboundDatagramYieldsDatagram() async throws {
         let controlStream: MockTransportBiStream = MockTransportBiStream()
         let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
@@ -32,8 +32,6 @@ struct DatagramReceiverTests {
             filter: .largestObject
         )
         let datagramReceiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
-        let delegate: TestDatagramReceiverDelegate = TestDatagramReceiverDelegate()
-        datagramReceiver.delegate = delegate
         let datagram: ObjectDatagram = ObjectDatagram(
             trackAlias: 7,
             groupID: 4,
@@ -44,13 +42,10 @@ struct DatagramReceiverTests {
 
         connection.receiveDatagram(bytes: datagram.encode())
 
-        while delegate.receivedDatagrams.isEmpty {
-            await Task.yield()
-        }
+        let receivedDatagram: ObjectDatagram? = await datagramReceiver.receive()
 
-        #expect(delegate.receivedDatagrams.count == 1)
-        #expect(delegate.receivedDatagrams[0].groupID == 4)
-        if case .payload(let payload) = delegate.receivedDatagrams[0].content {
+        #expect(receivedDatagram?.groupID == 4)
+        if case .payload(let payload) = receivedDatagram?.content {
             #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")

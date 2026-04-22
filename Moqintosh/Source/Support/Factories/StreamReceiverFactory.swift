@@ -6,29 +6,27 @@
 //
 
 import Foundation
-import Synchronization
 
-/// Receives callbacks when new stream receivers are created.
-public protocol StreamReceiverFactoryDelegate: AnyObject {
-    /// Called when a new stream receiver is created for the subscription.
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async
-}
-
+// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates stream receivers for inbound subgroup streams on a subscription.
 public final class StreamReceiverFactory: @unchecked Sendable {
 
-    /// The delegate that receives receiver creation callbacks.
-    public weak var delegate: (any StreamReceiverFactoryDelegate)?
     /// The subscription associated with receivers created by this factory.
     public let subscription: Subscription
 
     private let sessionContext: SessionContext
-    private let activeReceivers: Mutex<[ObjectIdentifier: StreamReceiver]>
+    private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
+    private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
 
     init(sessionContext: SessionContext, subscription: Subscription) {
+        let receiverStream: (
+            stream: AsyncStream<StreamReceiver>,
+            continuation: AsyncStream<StreamReceiver>.Continuation
+        ) = StreamReceiverFactory.makeReceiverStream()
         self.sessionContext = sessionContext
         self.subscription = subscription
-        self.activeReceivers = Mutex<[ObjectIdentifier: StreamReceiver]>([:])
+        self.receiverContinuation = receiverStream.continuation
+        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
         sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
@@ -37,24 +35,52 @@ public final class StreamReceiverFactory: @unchecked Sendable {
                 header: header,
                 initialData: initialData
             )
-            let receiverID: ObjectIdentifier = ObjectIdentifier(receiver)
-            receiver.onClose = { [weak self] receiver in
-                self?.removeActiveReceiver(receiver)
-            }
-            self.activeReceivers.withLock { activeReceivers in
-                activeReceivers[receiverID] = receiver
-            }
-            Task { [weak self, receiver] in
-                guard let self else { return }
-                await self.delegate?.streamReceiverFactory(self, didCreate: receiver)
-                receiver.start()
-            }
+            self.yield(receiver)
         }
     }
 
-    private func removeActiveReceiver(_ receiver: StreamReceiver) {
-        _ = activeReceivers.withLock { activeReceivers in
-            activeReceivers.removeValue(forKey: ObjectIdentifier(receiver))
+    deinit {
+        receiverContinuation.finish()
+    }
+
+    /// Waits for the next inbound subgroup stream receiver.
+    public func accept() async -> StreamReceiver? {
+        await receiverIterator.next()
+    }
+
+    private func yield(_ receiver: StreamReceiver) {
+        let result: AsyncStream<StreamReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
+        switch result {
+        case .enqueued:
+            break
+        case .dropped:
+            OSLogger.warn(
+                "Dropped inbound stream receiver because StreamReceiverFactory buffer is full (trackAlias: \(receiver.header.trackAlias))"
+            )
+        case .terminated:
+            OSLogger.debug(
+                "Dropped inbound stream receiver because StreamReceiverFactory is terminated (trackAlias: \(receiver.header.trackAlias))"
+            )
+        @unknown default:
+            OSLogger.warn(
+                "Dropped inbound stream receiver for an unknown reason (trackAlias: \(receiver.header.trackAlias))"
+            )
         }
+    }
+
+    private static func makeReceiverStream() -> (
+        stream: AsyncStream<StreamReceiver>,
+        continuation: AsyncStream<StreamReceiver>.Continuation
+    ) {
+        var streamContinuation: AsyncStream<StreamReceiver>.Continuation?
+        let stream: AsyncStream<StreamReceiver> = AsyncStream<StreamReceiver>(
+            bufferingPolicy: .bufferingOldest(256)
+        ) { continuation in
+            streamContinuation = continuation
+        }
+        guard let streamContinuation else {
+            preconditionFailure("AsyncStream must create a continuation")
+        }
+        return (stream, streamContinuation)
     }
 }

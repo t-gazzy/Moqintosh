@@ -8,7 +8,8 @@
 import Foundation
 import Moqintosh
 
-final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamReceiverDelegate {
+// Safe because the printer is immutable after initialization and all callbacks are @Sendable.
+final class SampleStreamEventPrinter: @unchecked Sendable {
 
     private let configuration: SampleConfiguration
     private let onEvent: @Sendable (String) -> Void
@@ -24,12 +25,30 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
         self.onReceivedData = onReceivedData
     }
 
-    func streamReceiverFactory(_ factory: StreamReceiverFactory, didCreate receiver: StreamReceiver) async {
-        receiver.delegate = self
-        onEvent("Created stream receiver")
+    func receive(from factory: StreamReceiverFactory) async {
+        while !Task.isCancelled, let receiver: StreamReceiver = await factory.accept() {
+            onEvent("Created stream receiver")
+            Task { [weak self, receiver] in
+                await self?.receive(from: receiver)
+            }
+        }
     }
 
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async {
+    private func receive(from receiver: StreamReceiver) async {
+        do {
+            while !Task.isCancelled, let object: SubgroupObject = try await receiver.receive() {
+                print(object: object)
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            onEvent("Stream receiver failed: \(error)")
+        }
+        guard !Task.isCancelled else { return }
+        onEvent("Closed stream receiver")
+    }
+
+    private func print(object: SubgroupObject) {
         let receivedAt: Date = Date()
         let timestampText: String = configuration.makeDisplayTimestamp(date: receivedAt)
         switch object.content {
@@ -55,9 +74,5 @@ final class SampleStreamEventPrinter: StreamReceiverFactoryDelegate, StreamRecei
                 "[\(timestampText)] Stream [group: \(object.groupID), object: \(object.objectID)]: <unknown>"
             )
         }
-    }
-
-    func streamReceiverDidClose(_ receiver: StreamReceiver) async {
-        onEvent("Closed stream receiver")
     }
 }

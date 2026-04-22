@@ -11,7 +11,7 @@ import Testing
 
 struct FetchReceiverTests {
 
-    @Test func inboundObjectNotifiesDelegateAndCloses() async {
+    @Test func inboundObjectYieldsObjectAndCloses() async throws {
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: makeFetchObjectPayload(payload: Data("abc".utf8)), isComplete: true)],
             receiveError: nil
@@ -29,23 +29,13 @@ struct FetchReceiverTests {
             ),
             initialData: Data()
         )
-        let delegate: TestFetchReceiverDelegate = TestFetchReceiverDelegate()
-        receiver.delegate = delegate
+        let receivedObject: SubgroupObject? = try await receiver.receive()
+        let closedObject: SubgroupObject? = try await receiver.receive()
 
-        receiver.start()
-
-        while delegate.receivedObjects.isEmpty {
-            await Task.yield()
-        }
-        while delegate.closedReceiverCount < 1 {
-            await Task.yield()
-        }
-
-        #expect(delegate.receivedObjects.count == 1)
-        #expect(delegate.closedReceiverCount == 1)
-        #expect(delegate.receivedObjects[0].groupID == 4)
-        #expect(delegate.receivedObjects[0].objectID == 6)
-        if case .payload(let payload) = delegate.receivedObjects[0].content {
+        #expect(closedObject == nil)
+        #expect(receivedObject?.groupID == 4)
+        #expect(receivedObject?.objectID == 6)
+        if case .payload(let payload) = receivedObject?.content {
             #expect(payload.equals(Data("abc".utf8)))
         } else {
             Issue.record("Expected payload content")
