@@ -26,7 +26,7 @@ final class SampleStreamEventPrinter: @unchecked Sendable {
     }
 
     func receive(from factory: StreamReceiverFactory) async {
-        while let receiver: StreamReceiver = await factory.accept() {
+        while !Task.isCancelled, let receiver: StreamReceiver = await factory.accept() {
             onEvent("Created stream receiver")
             Task { [weak self, receiver] in
                 await self?.receive(from: receiver)
@@ -36,12 +36,15 @@ final class SampleStreamEventPrinter: @unchecked Sendable {
 
     private func receive(from receiver: StreamReceiver) async {
         do {
-            while let object: SubgroupObject = try await receiver.receive() {
+            while !Task.isCancelled, let object: SubgroupObject = try await receiver.receive() {
                 print(object: object)
             }
+        } catch is CancellationError {
+            return
         } catch {
             onEvent("Stream receiver failed: \(error)")
         }
+        guard !Task.isCancelled else { return }
         onEvent("Closed stream receiver")
     }
 
