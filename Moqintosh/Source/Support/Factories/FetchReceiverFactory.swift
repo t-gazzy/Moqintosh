@@ -12,12 +12,11 @@ import Synchronization
 /// Creates fetch receivers for inbound fetch streams.
 public final class FetchReceiverFactory: @unchecked Sendable {
 
-    /// The fetch receivers created for inbound fetch streams.
-    public let receivers: AsyncStream<FetchReceiver>
     /// The fetch subscription associated with receivers created by this factory.
     public let fetchSubscription: FetchSubscription
 
     private let receiverContinuation: AsyncStream<FetchReceiver>.Continuation
+    private var receiverIterator: AsyncStream<FetchReceiver>.Iterator
     private let activeReceivers: Mutex<[ObjectIdentifier: FetchReceiver]>
 
     init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) {
@@ -25,9 +24,9 @@ public final class FetchReceiverFactory: @unchecked Sendable {
             stream: AsyncStream<FetchReceiver>,
             continuation: AsyncStream<FetchReceiver>.Continuation
         ) = FetchReceiverFactory.makeReceiverStream()
-        self.receivers = receiverStream.stream
         self.fetchSubscription = fetchSubscription
         self.receiverContinuation = receiverStream.continuation
+        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
         self.activeReceivers = Mutex<[ObjectIdentifier: FetchReceiver]>([:])
         sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
             guard let self else { return }
@@ -50,6 +49,11 @@ public final class FetchReceiverFactory: @unchecked Sendable {
 
     deinit {
         receiverContinuation.finish()
+    }
+
+    /// Waits for the next inbound fetch stream receiver.
+    public func accept() async -> FetchReceiver? {
+        await receiverIterator.next()
     }
 
     private func removeActiveReceiver(_ receiver: FetchReceiver) {

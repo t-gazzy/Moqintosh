@@ -37,11 +37,9 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        var iterator: AsyncThrowingStream<SubgroupObject, Error>.Iterator = receiver.objects.makeAsyncIterator()
-
         receiver.start()
 
-        let receivedObject: SubgroupObject? = try await iterator.next()
+        let receivedObject: SubgroupObject? = try await receiver.receive()
 
         #expect(receivedObject?.objectID == 0)
     }
@@ -76,11 +74,9 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        var iterator: AsyncThrowingStream<SubgroupObject, Error>.Iterator = receiver.objects.makeAsyncIterator()
-
         receiver.start()
 
-        let receivedObject: SubgroupObject? = try await iterator.next()
+        let receivedObject: SubgroupObject? = try await receiver.receive()
 
         if case .payload(let payload) = receivedObject?.content {
             #expect(payload.equals(Data("abcdef".utf8)))

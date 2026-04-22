@@ -33,7 +33,6 @@ struct StreamReceiverFactoryTests {
             filter: .largestObject
         )
         let factory: StreamReceiverFactory = subscriber.makeStreamReceiverFactory(for: subscription)
-        var iterator: AsyncStream<StreamReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: header.encode(), isComplete: false)],
@@ -42,7 +41,7 @@ struct StreamReceiverFactoryTests {
 
         connection.receiveUniStream(stream)
 
-        let streamReceiver: StreamReceiver? = await iterator.next()
+        let streamReceiver: StreamReceiver? = await factory.accept()
 
         if case .explicit(let subgroupID) = streamReceiver?.header.subgroupID {
             #expect(subgroupID == 5)

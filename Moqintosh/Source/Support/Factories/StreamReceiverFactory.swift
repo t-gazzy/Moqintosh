@@ -8,16 +8,16 @@
 import Foundation
 import Synchronization
 
+// Safe because shared mutable receiver storage is protected by Mutex and accept() is intended for app-owned consumption.
 /// Creates stream receivers for inbound subgroup streams on a subscription.
 public final class StreamReceiverFactory: @unchecked Sendable {
 
-    /// The stream receivers created for inbound subgroup streams.
-    public let receivers: AsyncStream<StreamReceiver>
     /// The subscription associated with receivers created by this factory.
     public let subscription: Subscription
 
     private let sessionContext: SessionContext
     private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
+    private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
     private let activeReceivers: Mutex<[ObjectIdentifier: StreamReceiver]>
 
     init(sessionContext: SessionContext, subscription: Subscription) {
@@ -25,10 +25,10 @@ public final class StreamReceiverFactory: @unchecked Sendable {
             stream: AsyncStream<StreamReceiver>,
             continuation: AsyncStream<StreamReceiver>.Continuation
         ) = StreamReceiverFactory.makeReceiverStream()
-        self.receivers = receiverStream.stream
         self.sessionContext = sessionContext
         self.subscription = subscription
         self.receiverContinuation = receiverStream.continuation
+        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
         self.activeReceivers = Mutex<[ObjectIdentifier: StreamReceiver]>([:])
         sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
@@ -52,6 +52,11 @@ public final class StreamReceiverFactory: @unchecked Sendable {
 
     deinit {
         receiverContinuation.finish()
+    }
+
+    /// Waits for the next inbound subgroup stream receiver.
+    public func accept() async -> StreamReceiver? {
+        await receiverIterator.next()
     }
 
     private func removeActiveReceiver(_ receiver: StreamReceiver) {

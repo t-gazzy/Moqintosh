@@ -7,18 +7,17 @@
 
 import Foundation
 
-// Safe because receiveTask is the only concurrent execution context and object delivery happens through AsyncThrowingStream.
+// Safe because receiveTask is the only producer and receive() is intended for app-owned consumption.
 /// Receives subgroup objects from an accepted fetch stream.
 public final class FetchReceiver: @unchecked Sendable {
 
-    /// The objects received from this fetch stream.
-    public let objects: AsyncThrowingStream<SubgroupObject, Error>
     /// The accepted fetch subscription associated with this receiver.
     public let fetchSubscription: FetchSubscription
 
     private let stream: TransportUniReceiveStream
     private let initialData: Data
     private let objectContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+    private var objectIterator: AsyncThrowingStream<SubgroupObject, Error>.Iterator
     private var receiveTask: Task<Void, Never>?
     var onClose: (@Sendable (FetchReceiver) async -> Void)?
 
@@ -27,11 +26,11 @@ public final class FetchReceiver: @unchecked Sendable {
             stream: AsyncThrowingStream<SubgroupObject, Error>,
             continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
         ) = FetchReceiver.makeObjectStream()
-        self.objects = objectStream.stream
         self.stream = stream
         self.fetchSubscription = fetchSubscription
         self.initialData = initialData
         self.objectContinuation = objectStream.continuation
+        self.objectIterator = objectStream.stream.makeAsyncIterator()
         self.receiveTask = nil
         self.onClose = nil
     }
@@ -39,6 +38,11 @@ public final class FetchReceiver: @unchecked Sendable {
     deinit {
         receiveTask?.cancel()
         objectContinuation.finish()
+    }
+
+    /// Waits for the next fetch object, or returns nil when the stream closes.
+    public func receive() async throws -> SubgroupObject? {
+        try await objectIterator.next()
     }
 
     func start() {

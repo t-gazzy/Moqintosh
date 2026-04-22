@@ -20,7 +20,7 @@ final class SampleDatagramEventPrinter: @unchecked Sendable {
     }
 
     func receive(from receiver: DatagramReceiver) async {
-        for await datagram in receiver.datagrams {
+        while let datagram: ObjectDatagram = await receiver.receive() {
             print(datagram: datagram)
         }
     }

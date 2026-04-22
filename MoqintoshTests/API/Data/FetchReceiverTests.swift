@@ -29,12 +29,10 @@ struct FetchReceiverTests {
             ),
             initialData: Data()
         )
-        var iterator: AsyncThrowingStream<SubgroupObject, Error>.Iterator = receiver.objects.makeAsyncIterator()
-
         receiver.start()
 
-        let receivedObject: SubgroupObject? = try await iterator.next()
-        let closedObject: SubgroupObject? = try await iterator.next()
+        let receivedObject: SubgroupObject? = try await receiver.receive()
+        let closedObject: SubgroupObject? = try await receiver.receive()
 
         #expect(closedObject == nil)
         #expect(receivedObject?.groupID == 4)

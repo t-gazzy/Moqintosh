@@ -28,7 +28,6 @@ struct FetchReceiverFactoryTests {
             maxCacheDuration: nil
         )
         let factory: FetchReceiverFactory = subscriber.makeFetchReceiverFactory(for: fetchSubscription)
-        var iterator: AsyncStream<FetchReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: FetchHeader(requestID: 1).encode(), isComplete: false)],
             receiveError: nil
@@ -36,7 +35,7 @@ struct FetchReceiverFactoryTests {
 
         connection.receiveUniStream(stream)
 
-        let fetchReceiver: FetchReceiver? = await iterator.next()
+        let fetchReceiver: FetchReceiver? = await factory.accept()
 
         #expect(fetchReceiver?.fetchSubscription.requestID == 1)
     }

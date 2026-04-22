@@ -7,12 +7,10 @@
 
 import Foundation
 
-// Safe because receiveTask is the only concurrent execution context and delegate callbacks run on that task.
+// Safe because receiveTask is the only producer and receive() is intended for app-owned consumption.
 /// Receives subgroup objects for a subscribed track.
 public final class StreamReceiver: @unchecked Sendable {
 
-    /// The objects received from this stream.
-    public let objects: AsyncThrowingStream<SubgroupObject, Error>
     /// The subgroup header associated with this receive stream.
     public let header: SubgroupHeader
 
@@ -20,6 +18,7 @@ public final class StreamReceiver: @unchecked Sendable {
     private let subscription: Subscription
     private let initialData: Data
     private let objectContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+    private var objectIterator: AsyncThrowingStream<SubgroupObject, Error>.Iterator
     private var receiveTask: Task<Void, Never>?
     var onClose: (@Sendable (StreamReceiver) async -> Void)?
 
@@ -28,12 +27,12 @@ public final class StreamReceiver: @unchecked Sendable {
             stream: AsyncThrowingStream<SubgroupObject, Error>,
             continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
         ) = StreamReceiver.makeObjectStream()
-        self.objects = objectStream.stream
         self.stream = stream
         self.subscription = subscription
         self.header = header
         self.initialData = initialData
         self.objectContinuation = objectStream.continuation
+        self.objectIterator = objectStream.stream.makeAsyncIterator()
         self.receiveTask = nil
         self.onClose = nil
     }
@@ -41,6 +40,11 @@ public final class StreamReceiver: @unchecked Sendable {
     deinit {
         receiveTask?.cancel()
         objectContinuation.finish()
+    }
+
+    /// Waits for the next subgroup object, or returns nil when the stream closes.
+    public func receive() async throws -> SubgroupObject? {
+        try await objectIterator.next()
     }
 
     func start() {

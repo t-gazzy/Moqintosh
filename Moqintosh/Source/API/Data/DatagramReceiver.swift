@@ -7,23 +7,23 @@
 
 import Foundation
 
+// Safe because datagram delivery is serialized through AsyncStream and receive() is intended for app-owned consumption.
 /// Receives object datagrams for a subscribed track.
-public final class DatagramReceiver {
+public final class DatagramReceiver: @unchecked Sendable {
 
-    /// The datagrams received for this subscription.
-    public let datagrams: AsyncStream<ObjectDatagram>
     /// The subscription associated with this receiver.
     public let subscription: Subscription
     private let datagramContinuation: AsyncStream<ObjectDatagram>.Continuation
+    private var datagramIterator: AsyncStream<ObjectDatagram>.Iterator
 
     init(sessionContext: SessionContext, subscription: Subscription) {
         let datagramStream: (
             stream: AsyncStream<ObjectDatagram>,
             continuation: AsyncStream<ObjectDatagram>.Continuation
         ) = DatagramReceiver.makeDatagramStream()
-        self.datagrams = datagramStream.stream
         self.subscription = subscription
         self.datagramContinuation = datagramStream.continuation
+        self.datagramIterator = datagramStream.stream.makeAsyncIterator()
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             self.datagramContinuation.yield(datagram)
@@ -32,6 +32,11 @@ public final class DatagramReceiver {
 
     deinit {
         datagramContinuation.finish()
+    }
+
+    /// Waits for the next datagram, or returns nil when the receiver closes.
+    public func receive() async -> ObjectDatagram? {
+        await datagramIterator.next()
     }
 
     private static func makeDatagramStream() -> (

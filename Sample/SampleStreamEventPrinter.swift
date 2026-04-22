@@ -26,7 +26,7 @@ final class SampleStreamEventPrinter: @unchecked Sendable {
     }
 
     func receive(from factory: StreamReceiverFactory) async {
-        for await receiver in factory.receivers {
+        while let receiver: StreamReceiver = await factory.accept() {
             onEvent("Created stream receiver")
             Task { [weak self, receiver] in
                 await self?.receive(from: receiver)
@@ -36,7 +36,7 @@ final class SampleStreamEventPrinter: @unchecked Sendable {
 
     private func receive(from receiver: StreamReceiver) async {
         do {
-            for try await object in receiver.objects {
+            while let object: SubgroupObject = try await receiver.receive() {
                 print(object: object)
             }
         } catch {

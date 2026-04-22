@@ -32,7 +32,6 @@ struct DatagramReceiverTests {
             filter: .largestObject
         )
         let datagramReceiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
-        var iterator: AsyncStream<ObjectDatagram>.Iterator = datagramReceiver.datagrams.makeAsyncIterator()
         let datagram: ObjectDatagram = ObjectDatagram(
             trackAlias: 7,
             groupID: 4,
@@ -43,7 +42,7 @@ struct DatagramReceiverTests {
 
         connection.receiveDatagram(bytes: datagram.encode())
 
-        let receivedDatagram: ObjectDatagram? = await iterator.next()
+        let receivedDatagram: ObjectDatagram? = await datagramReceiver.receive()
 
         #expect(receivedDatagram?.groupID == 4)
         if case .payload(let payload) = receivedDatagram?.content {
