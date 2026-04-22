@@ -37,8 +37,6 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        receiver.start()
-
         let receivedObject: SubgroupObject? = try await receiver.receive()
 
         #expect(receivedObject?.objectID == 0)
@@ -74,8 +72,6 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        receiver.start()
-
         let receivedObject: SubgroupObject? = try await receiver.receive()
 
         if case .payload(let payload) = receivedObject?.content {

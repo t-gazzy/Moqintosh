@@ -6,9 +6,8 @@
 //
 
 import Foundation
-import Synchronization
 
-// Safe because shared mutable receiver storage is protected by Mutex and accept() is intended for app-owned consumption.
+// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates stream receivers for inbound subgroup streams on a subscription.
 public final class StreamReceiverFactory: @unchecked Sendable {
 
@@ -18,7 +17,6 @@ public final class StreamReceiverFactory: @unchecked Sendable {
     private let sessionContext: SessionContext
     private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
     private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
-    private let activeReceivers: Mutex<[ObjectIdentifier: StreamReceiver]>
 
     init(sessionContext: SessionContext, subscription: Subscription) {
         let receiverStream: (
@@ -29,7 +27,6 @@ public final class StreamReceiverFactory: @unchecked Sendable {
         self.subscription = subscription
         self.receiverContinuation = receiverStream.continuation
         self.receiverIterator = receiverStream.stream.makeAsyncIterator()
-        self.activeReceivers = Mutex<[ObjectIdentifier: StreamReceiver]>([:])
         sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
@@ -38,15 +35,7 @@ public final class StreamReceiverFactory: @unchecked Sendable {
                 header: header,
                 initialData: initialData
             )
-            let receiverID: ObjectIdentifier = ObjectIdentifier(receiver)
-            receiver.onClose = { [weak self] receiver in
-                self?.removeActiveReceiver(receiver)
-            }
-            self.activeReceivers.withLock { activeReceivers in
-                activeReceivers[receiverID] = receiver
-            }
             self.receiverContinuation.yield(receiver)
-            receiver.start()
         }
     }
 
@@ -57,12 +46,6 @@ public final class StreamReceiverFactory: @unchecked Sendable {
     /// Waits for the next inbound subgroup stream receiver.
     public func accept() async -> StreamReceiver? {
         await receiverIterator.next()
-    }
-
-    private func removeActiveReceiver(_ receiver: StreamReceiver) {
-        _ = activeReceivers.withLock { activeReceivers in
-            activeReceivers.removeValue(forKey: ObjectIdentifier(receiver))
-        }
     }
 
     private static func makeReceiverStream() -> (

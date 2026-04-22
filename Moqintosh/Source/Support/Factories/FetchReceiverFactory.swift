@@ -6,9 +6,8 @@
 //
 
 import Foundation
-import Synchronization
 
-// Safe because shared mutable receiver storage is protected by Mutex and continuations are thread-safe.
+// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates fetch receivers for inbound fetch streams.
 public final class FetchReceiverFactory: @unchecked Sendable {
 
@@ -17,7 +16,6 @@ public final class FetchReceiverFactory: @unchecked Sendable {
 
     private let receiverContinuation: AsyncStream<FetchReceiver>.Continuation
     private var receiverIterator: AsyncStream<FetchReceiver>.Iterator
-    private let activeReceivers: Mutex<[ObjectIdentifier: FetchReceiver]>
 
     init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) {
         let receiverStream: (
@@ -27,7 +25,6 @@ public final class FetchReceiverFactory: @unchecked Sendable {
         self.fetchSubscription = fetchSubscription
         self.receiverContinuation = receiverStream.continuation
         self.receiverIterator = receiverStream.stream.makeAsyncIterator()
-        self.activeReceivers = Mutex<[ObjectIdentifier: FetchReceiver]>([:])
         sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
             guard let self else { return }
             let receiver: FetchReceiver = FetchReceiver(
@@ -35,15 +32,7 @@ public final class FetchReceiverFactory: @unchecked Sendable {
                 fetchSubscription: fetchSubscription,
                 initialData: initialData
             )
-            let receiverID: ObjectIdentifier = ObjectIdentifier(receiver)
-            receiver.onClose = { [weak self] receiver in
-                self?.removeActiveReceiver(receiver)
-            }
-            self.activeReceivers.withLock { activeReceivers in
-                activeReceivers[receiverID] = receiver
-            }
             self.receiverContinuation.yield(receiver)
-            receiver.start()
         }
     }
 
@@ -54,12 +43,6 @@ public final class FetchReceiverFactory: @unchecked Sendable {
     /// Waits for the next inbound fetch stream receiver.
     public func accept() async -> FetchReceiver? {
         await receiverIterator.next()
-    }
-
-    private func removeActiveReceiver(_ receiver: FetchReceiver) {
-        _ = activeReceivers.withLock { activeReceivers in
-            activeReceivers.removeValue(forKey: ObjectIdentifier(receiver))
-        }
     }
 
     private static func makeReceiverStream() -> (

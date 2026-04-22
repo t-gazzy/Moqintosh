@@ -29,8 +29,6 @@ struct FetchReceiverTests {
             ),
             initialData: Data()
         )
-        receiver.start()
-
         let receivedObject: SubgroupObject? = try await receiver.receive()
         let closedObject: SubgroupObject? = try await receiver.receive()
 
