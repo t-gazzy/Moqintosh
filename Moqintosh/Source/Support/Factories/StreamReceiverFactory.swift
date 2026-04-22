@@ -35,7 +35,7 @@ public final class StreamReceiverFactory: @unchecked Sendable {
                 header: header,
                 initialData: initialData
             )
-            self.receiverContinuation.yield(receiver)
+            self.yield(receiver)
         }
     }
 
@@ -48,12 +48,34 @@ public final class StreamReceiverFactory: @unchecked Sendable {
         await receiverIterator.next()
     }
 
+    private func yield(_ receiver: StreamReceiver) {
+        let result: AsyncStream<StreamReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
+        switch result {
+        case .enqueued:
+            break
+        case .dropped:
+            OSLogger.warn(
+                "Dropped inbound stream receiver because StreamReceiverFactory buffer is full (trackAlias: \(receiver.header.trackAlias))"
+            )
+        case .terminated:
+            OSLogger.debug(
+                "Dropped inbound stream receiver because StreamReceiverFactory is terminated (trackAlias: \(receiver.header.trackAlias))"
+            )
+        @unknown default:
+            OSLogger.warn(
+                "Dropped inbound stream receiver for an unknown reason (trackAlias: \(receiver.header.trackAlias))"
+            )
+        }
+    }
+
     private static func makeReceiverStream() -> (
         stream: AsyncStream<StreamReceiver>,
         continuation: AsyncStream<StreamReceiver>.Continuation
     ) {
         var streamContinuation: AsyncStream<StreamReceiver>.Continuation?
-        let stream: AsyncStream<StreamReceiver> = AsyncStream<StreamReceiver> { continuation in
+        let stream: AsyncStream<StreamReceiver> = AsyncStream<StreamReceiver>(
+            bufferingPolicy: .bufferingOldest(256)
+        ) { continuation in
             streamContinuation = continuation
         }
         guard let streamContinuation else {

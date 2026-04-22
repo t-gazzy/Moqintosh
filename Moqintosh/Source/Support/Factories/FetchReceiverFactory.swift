@@ -32,7 +32,7 @@ public final class FetchReceiverFactory: @unchecked Sendable {
                 fetchSubscription: fetchSubscription,
                 initialData: initialData
             )
-            self.receiverContinuation.yield(receiver)
+            self.yield(receiver)
         }
     }
 
@@ -45,12 +45,34 @@ public final class FetchReceiverFactory: @unchecked Sendable {
         await receiverIterator.next()
     }
 
+    private func yield(_ receiver: FetchReceiver) {
+        let result: AsyncStream<FetchReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
+        switch result {
+        case .enqueued:
+            break
+        case .dropped:
+            OSLogger.warn(
+                "Dropped inbound fetch receiver because FetchReceiverFactory buffer is full (requestID: \(receiver.fetchSubscription.requestID))"
+            )
+        case .terminated:
+            OSLogger.debug(
+                "Dropped inbound fetch receiver because FetchReceiverFactory is terminated (requestID: \(receiver.fetchSubscription.requestID))"
+            )
+        @unknown default:
+            OSLogger.warn(
+                "Dropped inbound fetch receiver for an unknown reason (requestID: \(receiver.fetchSubscription.requestID))"
+            )
+        }
+    }
+
     private static func makeReceiverStream() -> (
         stream: AsyncStream<FetchReceiver>,
         continuation: AsyncStream<FetchReceiver>.Continuation
     ) {
         var streamContinuation: AsyncStream<FetchReceiver>.Continuation?
-        let stream: AsyncStream<FetchReceiver> = AsyncStream<FetchReceiver> { continuation in
+        let stream: AsyncStream<FetchReceiver> = AsyncStream<FetchReceiver>(
+            bufferingPolicy: .bufferingOldest(256)
+        ) { continuation in
             streamContinuation = continuation
         }
         guard let streamContinuation else {
