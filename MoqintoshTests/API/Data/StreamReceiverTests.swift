@@ -11,7 +11,7 @@ import Testing
 
 struct StreamReceiverTests {
 
-    @Test func inboundObjectNotifiesDelegate() async {
+    @Test func inboundObjectYieldsObject() async throws {
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
@@ -37,20 +37,12 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
-        receiver.delegate = delegate
+        let receivedObject: SubgroupObject? = try await receiver.receive()
 
-        receiver.start()
-
-        while delegate.receivedObjects.isEmpty {
-            await Task.yield()
-        }
-
-        #expect(delegate.receivedObjects.count == 1)
-        #expect(delegate.receivedObjects[0].objectID == 0)
+        #expect(receivedObject?.objectID == 0)
     }
 
-    @Test func chunkedObjectNotifiesDelegate() async {
+    @Test func chunkedObjectYieldsObject() async throws {
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abcdef".utf8))))
         let encoded: Data = object.encode()
@@ -80,17 +72,9 @@ struct StreamReceiverTests {
             header: header,
             initialData: Data()
         )
-        let delegate: TestStreamReceiverDelegate = TestStreamReceiverDelegate()
-        receiver.delegate = delegate
+        let receivedObject: SubgroupObject? = try await receiver.receive()
 
-        receiver.start()
-
-        while delegate.receivedObjects.isEmpty {
-            await Task.yield()
-        }
-
-        #expect(delegate.receivedObjects.count == 1)
-        if case .payload(let payload) = delegate.receivedObjects[0].content {
+        if case .payload(let payload) = receivedObject?.content {
             #expect(payload.equals(Data("abcdef".utf8)))
         } else {
             Issue.record("Expected payload content")

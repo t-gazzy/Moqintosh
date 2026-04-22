@@ -43,6 +43,8 @@ final class SampleSessionController {
     private var datagramReceiver: DatagramReceiver?
     private var streamSendTask: Task<Void, Never>?
     private var datagramSendTask: Task<Void, Never>?
+    private var streamReceiveTask: Task<Void, Never>?
+    private var datagramReceiveTask: Task<Void, Never>?
     private var nextStreamGroupID: UInt64
     private var nextStreamObjectID: UInt64
     private var nextDatagramGroupID: UInt64
@@ -94,6 +96,8 @@ final class SampleSessionController {
         self.datagramReceiver = nil
         self.streamSendTask = nil
         self.datagramSendTask = nil
+        self.streamReceiveTask = nil
+        self.datagramReceiveTask = nil
         self.nextStreamGroupID = 0
         self.nextStreamObjectID = 0
         self.nextDatagramGroupID = 0
@@ -193,8 +197,13 @@ final class SampleSessionController {
             let subscription: Subscription = try await self.subscriber.subscribe(resource: resource)
             let streamReceiverFactory: StreamReceiverFactory = self.subscriber.makeStreamReceiverFactory(for: subscription)
             let datagramReceiver: DatagramReceiver = self.subscriber.makeDatagramReceiver(for: subscription)
-            streamReceiverFactory.delegate = self.streamEventPrinter
-            datagramReceiver.delegate = self.datagramEventPrinter
+            self.stopReceiveLoops()
+            self.streamReceiveTask = Task { [streamEventPrinter = self.streamEventPrinter] in
+                await streamEventPrinter.receive(from: streamReceiverFactory)
+            }
+            self.datagramReceiveTask = Task { [datagramEventPrinter = self.datagramEventPrinter] in
+                await datagramEventPrinter.receive(from: datagramReceiver)
+            }
             self.subscribedTrack = subscription
             self.streamReceiverFactory = streamReceiverFactory
             self.datagramReceiver = datagramReceiver
@@ -316,6 +325,13 @@ final class SampleSessionController {
         datagramSendTask?.cancel()
         streamSendTask = nil
         datagramSendTask = nil
+    }
+
+    private func stopReceiveLoops() {
+        streamReceiveTask?.cancel()
+        datagramReceiveTask?.cancel()
+        streamReceiveTask = nil
+        datagramReceiveTask = nil
     }
 
     private func registerRemotePublishedNamespace(_ prefix: TrackNamespace) {

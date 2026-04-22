@@ -8,7 +8,8 @@
 import Foundation
 import Moqintosh
 
-final class SampleDatagramEventPrinter: DatagramReceiverDelegate {
+// Safe because the printer is immutable after initialization and all callbacks are @Sendable.
+final class SampleDatagramEventPrinter: @unchecked Sendable {
 
     private let configuration: SampleConfiguration
     private let onReceivedData: @Sendable (String) -> Void
@@ -18,7 +19,13 @@ final class SampleDatagramEventPrinter: DatagramReceiverDelegate {
         self.onReceivedData = onReceivedData
     }
 
-    func datagramReceiver(_ receiver: DatagramReceiver, didReceive datagram: ObjectDatagram) {
+    func receive(from receiver: DatagramReceiver) async {
+        while !Task.isCancelled, let datagram: ObjectDatagram = await receiver.receive() {
+            print(datagram: datagram)
+        }
+    }
+
+    private func print(datagram: ObjectDatagram) {
         let receivedAt: Date = Date()
         let timestampText: String = configuration.makeDisplayTimestamp(date: receivedAt)
         let objectIDText: String
