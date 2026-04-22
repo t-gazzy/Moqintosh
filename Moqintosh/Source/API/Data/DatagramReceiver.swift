@@ -26,7 +26,7 @@ public final class DatagramReceiver: @unchecked Sendable {
         self.datagramIterator = datagramStream.stream.makeAsyncIterator()
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
-            self.datagramContinuation.yield(datagram)
+            self.yield(datagram)
         }
     }
 
@@ -37,6 +37,20 @@ public final class DatagramReceiver: @unchecked Sendable {
     /// Waits for the next datagram, or returns nil when the receiver closes.
     public func receive() async -> ObjectDatagram? {
         await datagramIterator.next()
+    }
+
+    private func yield(_ datagram: ObjectDatagram) {
+        let result: AsyncStream<ObjectDatagram>.Continuation.YieldResult = datagramContinuation.yield(datagram)
+        switch result {
+        case .enqueued:
+            break
+        case .dropped:
+            OSLogger.warn("Dropped OBJECT_DATAGRAM because DatagramReceiver buffer is full (trackAlias: \(datagram.trackAlias))")
+        case .terminated:
+            OSLogger.debug("Dropped OBJECT_DATAGRAM because DatagramReceiver is terminated (trackAlias: \(datagram.trackAlias))")
+        @unknown default:
+            OSLogger.warn("Dropped OBJECT_DATAGRAM for an unknown reason (trackAlias: \(datagram.trackAlias))")
+        }
     }
 
     private static func makeDatagramStream() -> (
