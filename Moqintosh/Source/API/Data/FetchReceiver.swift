@@ -7,69 +7,78 @@
 
 import Foundation
 
-/// Receives objects emitted by a fetch stream.
-public protocol FetchReceiverDelegate: AnyObject {
-    /// Called when a fetch object is received.
-    func fetchReceiver(_ receiver: FetchReceiver, didReceive object: SubgroupObject)
-    /// Called when the fetch stream closes.
-    func fetchReceiverDidClose(_ receiver: FetchReceiver)
-}
-
-// Safe because receiveTask is the only concurrent execution context and delegate callbacks are serialized on delegateQueue.
+// Safe because receiveTask is the only concurrent execution context and object delivery happens through AsyncThrowingStream.
 /// Receives subgroup objects from an accepted fetch stream.
 public final class FetchReceiver: @unchecked Sendable {
 
-    /// The delegate that receives fetch callbacks.
-    public weak var delegate: (any FetchReceiverDelegate)?
+    /// The objects received from this fetch stream.
+    public let objects: AsyncThrowingStream<SubgroupObject, Error>
     /// The accepted fetch subscription associated with this receiver.
     public let fetchSubscription: FetchSubscription
 
     private let stream: TransportUniReceiveStream
     private let initialData: Data
-    private let delegateQueue: DispatchQueue
+    private let objectContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
     private var receiveTask: Task<Void, Never>?
+    var onClose: (@Sendable (FetchReceiver) async -> Void)?
 
     init(stream: TransportUniReceiveStream, fetchSubscription: FetchSubscription, initialData: Data) {
+        let objectStream: (
+            stream: AsyncThrowingStream<SubgroupObject, Error>,
+            continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+        ) = FetchReceiver.makeObjectStream()
+        self.objects = objectStream.stream
         self.stream = stream
         self.fetchSubscription = fetchSubscription
         self.initialData = initialData
-        self.delegateQueue = DispatchQueue(label: "Moqintosh.FetchReceiverDelegate")
+        self.objectContinuation = objectStream.continuation
         self.receiveTask = nil
+        self.onClose = nil
     }
 
     deinit {
         receiveTask?.cancel()
+        objectContinuation.finish()
     }
 
     func start() {
         precondition(receiveTask == nil, "FetchReceiver.start() must only be called once")
-        receiveTask = Task { [stream, initialData, delegateQueue] in
+        receiveTask = Task { [stream, initialData, objectContinuation] in
             let frameReader: FetchObjectFrameReader = FetchObjectFrameReader(initialData: initialData)
             do {
                 while !Task.isCancelled {
                     let object: SubgroupObject = try await frameReader.read(from: stream)
-                    delegateQueue.sync { [weak self] in
-                        guard let self else { return }
-                        self.delegate?.fetchReceiver(self, didReceive: object)
-                    }
+                    objectContinuation.yield(object)
                 }
             } catch is CancellationError {
+                objectContinuation.finish()
+            } catch StreamReceiveCompletionError.closed {
+                objectContinuation.finish()
             } catch {
                 OSLogger.debug("Fetch receive loop ended: \(error)")
+                objectContinuation.finish(throwing: error)
             }
-            delegateQueue.sync { [weak self] in
-                guard let self else { return }
-                self.delegate?.fetchReceiverDidClose(self)
-            }
+            await self.onClose?(self)
         }
     }
 
     func stop() {
         receiveTask?.cancel()
         receiveTask = nil
+        objectContinuation.finish()
     }
-}
 
-public extension FetchReceiverDelegate {
-    func fetchReceiverDidClose(_ receiver: FetchReceiver) {}
+    private static func makeObjectStream() -> (
+        stream: AsyncThrowingStream<SubgroupObject, Error>,
+        continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+    ) {
+        var streamContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation?
+        let stream: AsyncThrowingStream<SubgroupObject, Error> = AsyncThrowingStream<SubgroupObject, Error> { continuation in
+            streamContinuation = continuation
+        }
+        guard let streamContinuation else {
+            preconditionFailure("AsyncThrowingStream must create a continuation")
+        }
+        return (stream, streamContinuation)
+    }
 }

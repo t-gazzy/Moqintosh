@@ -11,7 +11,7 @@ import Testing
 
 struct StreamReceiverFactoryTests {
 
-    @Test func inboundUniStreamCreatesReceiver() async {
+    @Test func inboundUniStreamYieldsReceiver() async {
         let controlStream: MockTransportBiStream = MockTransportBiStream()
         let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
@@ -33,8 +33,7 @@ struct StreamReceiverFactoryTests {
             filter: .largestObject
         )
         let factory: StreamReceiverFactory = subscriber.makeStreamReceiverFactory(for: subscription)
-        let delegate: TestStreamReceiverFactoryDelegate = TestStreamReceiverFactoryDelegate()
-        factory.delegate = delegate
+        var iterator: AsyncStream<StreamReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: header.encode(), isComplete: false)],
@@ -43,12 +42,9 @@ struct StreamReceiverFactoryTests {
 
         connection.receiveUniStream(stream)
 
-        while delegate.receivers.isEmpty {
-            await Task.yield()
-        }
+        let streamReceiver: StreamReceiver? = await iterator.next()
 
-        #expect(delegate.receivers.count == 1)
-        if case .explicit(let subgroupID) = delegate.receivers[0].header.subgroupID {
+        if case .explicit(let subgroupID) = streamReceiver?.header.subgroupID {
             #expect(subgroupID == 5)
         } else {
             Issue.record("Expected an explicit subgroup ID")

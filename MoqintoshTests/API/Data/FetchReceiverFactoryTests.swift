@@ -11,7 +11,7 @@ import Testing
 
 struct FetchReceiverFactoryTests {
 
-    @Test func inboundUniStreamCreatesReceiver() async {
+    @Test func inboundUniStreamYieldsReceiver() async {
         let controlStream: MockTransportBiStream = MockTransportBiStream()
         let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
@@ -28,8 +28,7 @@ struct FetchReceiverFactoryTests {
             maxCacheDuration: nil
         )
         let factory: FetchReceiverFactory = subscriber.makeFetchReceiverFactory(for: fetchSubscription)
-        let delegate: TestFetchReceiverFactoryDelegate = TestFetchReceiverFactoryDelegate()
-        factory.delegate = delegate
+        var iterator: AsyncStream<FetchReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: FetchHeader(requestID: 1).encode(), isComplete: false)],
             receiveError: nil
@@ -37,11 +36,8 @@ struct FetchReceiverFactoryTests {
 
         connection.receiveUniStream(stream)
 
-        while delegate.receivers.isEmpty {
-            await Task.yield()
-        }
+        let fetchReceiver: FetchReceiver? = await iterator.next()
 
-        #expect(delegate.receivers.count == 1)
-        #expect(delegate.receivers[0].fetchSubscription.requestID == 1)
+        #expect(fetchReceiver?.fetchSubscription.requestID == 1)
     }
 }

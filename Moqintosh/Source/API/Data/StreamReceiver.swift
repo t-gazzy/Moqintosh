@@ -7,66 +7,80 @@
 
 import Foundation
 
-/// Receives subgroup objects delivered on a subscription stream.
-public protocol StreamReceiverDelegate: AnyObject {
-    /// Called when a subgroup object is received.
-    func streamReceiver(_ receiver: StreamReceiver, didReceive object: SubgroupObject) async
-    /// Called when the receive stream closes.
-    func streamReceiverDidClose(_ receiver: StreamReceiver) async
-}
-
 // Safe because receiveTask is the only concurrent execution context and delegate callbacks run on that task.
 /// Receives subgroup objects for a subscribed track.
 public final class StreamReceiver: @unchecked Sendable {
 
-    /// The delegate that receives stream callbacks.
-    public weak var delegate: (any StreamReceiverDelegate)?
+    /// The objects received from this stream.
+    public let objects: AsyncThrowingStream<SubgroupObject, Error>
     /// The subgroup header associated with this receive stream.
     public let header: SubgroupHeader
 
     private let stream: TransportUniReceiveStream
     private let subscription: Subscription
     private let initialData: Data
+    private let objectContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
     private var receiveTask: Task<Void, Never>?
     var onClose: (@Sendable (StreamReceiver) async -> Void)?
 
     init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
+        let objectStream: (
+            stream: AsyncThrowingStream<SubgroupObject, Error>,
+            continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+        ) = StreamReceiver.makeObjectStream()
+        self.objects = objectStream.stream
         self.stream = stream
         self.subscription = subscription
         self.header = header
         self.initialData = initialData
+        self.objectContinuation = objectStream.continuation
         self.receiveTask = nil
         self.onClose = nil
     }
 
     deinit {
         receiveTask?.cancel()
+        objectContinuation.finish()
     }
 
     func start() {
         precondition(receiveTask == nil, "StreamReceiver.start() must only be called once")
-        receiveTask = Task { [stream, header, initialData] in
+        receiveTask = Task { [stream, header, initialData, objectContinuation] in
             let frameReader: SubgroupObjectFrameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
             do {
                 while !Task.isCancelled {
                     let object: SubgroupObject = try await frameReader.read(from: stream)
-                    await self.delegate?.streamReceiver(self, didReceive: object)
+                    objectContinuation.yield(object)
                 }
             } catch is CancellationError {
+                objectContinuation.finish()
+            } catch StreamReceiveCompletionError.closed {
+                objectContinuation.finish()
             } catch {
                 OSLogger.debug("Stream receive loop ended: \(error)")
+                objectContinuation.finish(throwing: error)
             }
             await self.onClose?(self)
-            await self.delegate?.streamReceiverDidClose(self)
         }
     }
 
     func stop() {
         receiveTask?.cancel()
         receiveTask = nil
+        objectContinuation.finish()
     }
-}
 
-public extension StreamReceiverDelegate {
-    func streamReceiverDidClose(_ receiver: StreamReceiver) async {}
+    private static func makeObjectStream() -> (
+        stream: AsyncThrowingStream<SubgroupObject, Error>,
+        continuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation
+    ) {
+        var streamContinuation: AsyncThrowingStream<SubgroupObject, Error>.Continuation?
+        let stream: AsyncThrowingStream<SubgroupObject, Error> = AsyncThrowingStream<SubgroupObject, Error> { continuation in
+            streamContinuation = continuation
+        }
+        guard let streamContinuation else {
+            preconditionFailure("AsyncThrowingStream must create a continuation")
+        }
+        return (stream, streamContinuation)
+    }
 }

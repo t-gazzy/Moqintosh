@@ -7,30 +7,46 @@
 
 import Foundation
 
-/// Receives datagram delivery callbacks for a subscription.
-public protocol DatagramReceiverDelegate: AnyObject {
-    /// Called when an object datagram is received for the bound subscription.
-    func datagramReceiver(_ receiver: DatagramReceiver, didReceive datagram: ObjectDatagram)
-}
-
 /// Receives object datagrams for a subscribed track.
 public final class DatagramReceiver {
 
-    /// The delegate that receives datagram callbacks.
-    public weak var delegate: (any DatagramReceiverDelegate)?
+    /// The datagrams received for this subscription.
+    public let datagrams: AsyncStream<ObjectDatagram>
     /// The subscription associated with this receiver.
     public let subscription: Subscription
-    private let delegateQueue: DispatchQueue
+    private let datagramContinuation: AsyncStream<ObjectDatagram>.Continuation
 
     init(sessionContext: SessionContext, subscription: Subscription) {
+        let datagramStream: (
+            stream: AsyncStream<ObjectDatagram>,
+            continuation: AsyncStream<ObjectDatagram>.Continuation
+        ) = DatagramReceiver.makeDatagramStream()
+        self.datagrams = datagramStream.stream
         self.subscription = subscription
-        self.delegateQueue = DispatchQueue(label: "Moqintosh.DatagramReceiverDelegate")
+        self.datagramContinuation = datagramStream.continuation
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
-            self.delegateQueue.sync { [weak self] in
-                guard let self else { return }
-                self.delegate?.datagramReceiver(self, didReceive: datagram)
-            }
+            self.datagramContinuation.yield(datagram)
         }
+    }
+
+    deinit {
+        datagramContinuation.finish()
+    }
+
+    private static func makeDatagramStream() -> (
+        stream: AsyncStream<ObjectDatagram>,
+        continuation: AsyncStream<ObjectDatagram>.Continuation
+    ) {
+        var streamContinuation: AsyncStream<ObjectDatagram>.Continuation?
+        let stream: AsyncStream<ObjectDatagram> = AsyncStream<ObjectDatagram>(
+            bufferingPolicy: .bufferingNewest(256)
+        ) { continuation in
+            streamContinuation = continuation
+        }
+        guard let streamContinuation else {
+            preconditionFailure("AsyncStream must create a continuation")
+        }
+        return (stream, streamContinuation)
     }
 }
