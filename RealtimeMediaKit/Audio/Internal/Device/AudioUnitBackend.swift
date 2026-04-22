@@ -343,7 +343,7 @@ extension AudioUnitBackend {
         )
         client?.audioBackend(self, willRender: &frame)
 
-        var audioBufferList: UnsafeMutableAudioBufferListPointer = UnsafeMutableAudioBufferListPointer(ioData)
+        let audioBufferList: UnsafeMutableAudioBufferListPointer = UnsafeMutableAudioBufferListPointer(ioData)
         guard let buffer: UnsafeMutableAudioBufferListPointer.Element = audioBufferList.first else {
             return noErr
         }
