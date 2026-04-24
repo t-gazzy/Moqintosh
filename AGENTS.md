@@ -3,6 +3,12 @@
 ## Language
 - Respond concisely and politely in the language used by the user.
 
+## Project Context
+- Before making architectural or protocol-level changes, read `README.md`.
+- Use `README.md` as the source of truth for project goals, supported MOQT scope, and out-of-scope areas.
+- This project implements a MOQT client on Apple platforms using `Network.framework`.
+- Relay behavior and WebTransport are out of scope unless explicitly requested.
+
 ## Code Style
 1. All comments must be written in English.
 2. Write concise code and avoid redundancy.
@@ -22,6 +28,9 @@
    - Force unwrapping (`!`) is allowed only when a `nil` value is a programming error (i.e., it should never happen at runtime). In all other cases, use `guard let` or `if let`.
    - To enforce API call ordering (e.g., `initialize()` must be called before `doSomething()`), use `precondition` or `preconditionFailure` with a descriptive message instead of `!`.
    - Do not use manual `lock()` / `unlock()` pairs. Use scoped synchronization such as `defer`, `withLock`, actor isolation, or other APIs that cannot forget unlock.
+   - Prefer actor isolation for shared mutable state when the performance impact is acceptable.
+   - Before introducing manual synchronization or `@unchecked Sendable`, first consider actor isolation, ownership changes, or `@MainActor`.
+   - On hot paths, if actor isolation would add unnecessary overhead, use the simplest safe primitive and document the reason briefly in code.
 9. **Annotations**:
    - Apply necessary attributes like `@escaping`, `@discardableResult`, `@MainActor`, and `@Observable` appropriately.
    - Do not use `@unchecked Sendable` by default.
