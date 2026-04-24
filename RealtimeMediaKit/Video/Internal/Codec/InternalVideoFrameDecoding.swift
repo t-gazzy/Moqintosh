@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol InternalVideoFrameDecoding: AnyObject {
+protocol InternalVideoFrameDecoding: AnyObject, Sendable {
     func decode(_ packet: VideoEncodedPacket) async throws -> VideoFrame
     func finish() async throws
 }

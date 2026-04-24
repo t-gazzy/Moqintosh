@@ -36,7 +36,8 @@ final class VideoFrameSinkStore: @unchecked Sendable {
 }
 
 extension VideoFrameSinkStore {
-    private struct State {
+    // Safe because the sink reference is only accessed while holding the store mutex.
+    private struct State: @unchecked Sendable {
         var sink: (any VideoFrameSink)?
 
         init(sink: (any VideoFrameSink)?) {

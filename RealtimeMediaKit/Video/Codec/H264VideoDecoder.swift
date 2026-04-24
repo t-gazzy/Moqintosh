@@ -7,7 +7,8 @@
 
 import Foundation
 
-public final class H264VideoDecoder: VideoFrameDecoder {
+// Safe because decoder state is owned by the instance and used through async calls.
+public final class H264VideoDecoder: @unchecked Sendable, VideoFrameDecoder {
     private let implementation: any InternalVideoFrameDecoding
 
     public init() {

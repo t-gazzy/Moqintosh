@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct CallApplicationSampleApp: App {
+    @StateObject private var viewModel: CallApplicationViewModel
+
+    init() {
+        let coordinator: CallApplicationCoordinator = CallApplicationCoordinator()
+        self._viewModel = StateObject(
+            wrappedValue: CallApplicationViewModel(coordinator: coordinator)
+        )
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
         }
     }
 }

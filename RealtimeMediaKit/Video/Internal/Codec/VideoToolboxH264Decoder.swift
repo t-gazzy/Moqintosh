@@ -10,7 +10,8 @@ import CoreVideo
 import Foundation
 import VideoToolbox
 
-final class VideoToolboxH264Decoder: InternalVideoFrameDecoding {
+// Safe because VideoToolbox decoder state is confined to the instance lifecycle.
+final class VideoToolboxH264Decoder: @unchecked Sendable, InternalVideoFrameDecoding {
     private var currentParameterSets: H264ParameterSets?
     private var formatDescription: CMFormatDescription?
     private var decompressionSession: VTDecompressionSession?

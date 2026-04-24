@@ -36,7 +36,8 @@ final class AudioFrameSinkStore: @unchecked Sendable {
 }
 
 extension AudioFrameSinkStore {
-    private struct State {
+    // Safe because the sink reference is only accessed while holding the store mutex.
+    private struct State: @unchecked Sendable {
         var sink: (any AudioFrameSink)?
 
         init(sink: (any AudioFrameSink)?) {

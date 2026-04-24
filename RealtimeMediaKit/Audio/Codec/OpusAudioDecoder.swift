@@ -7,7 +7,8 @@
 
 import Foundation
 
-public final class OpusAudioDecoder: AudioPacketDecoder {
+// Safe because decoder state is owned by the instance and accessed synchronously.
+public final class OpusAudioDecoder: @unchecked Sendable, AudioPacketDecoder {
     private let implementation: any InternalAudioPacketDecoding
 
     public init(outputFormat: AudioFormat) throws {

@@ -8,7 +8,8 @@
 import AVFAudio
 import Foundation
 
-final class AudioConverterOpusDecoder: InternalAudioPacketDecoding {
+// Safe because AVAudioConverter state is confined to the decoder instance.
+final class AudioConverterOpusDecoder: @unchecked Sendable, InternalAudioPacketDecoding {
     private let configuration: OpusDecoderConfiguration
     private let outputFormat: AudioFormat
     private let converter: AVAudioConverter

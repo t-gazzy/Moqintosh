@@ -7,6 +7,6 @@
 
 import Foundation
 
-public protocol AudioPacketDecoder: AnyObject {
+public protocol AudioPacketDecoder: AnyObject, Sendable {
     func decode(_ packet: AudioEncodedPacket) throws -> AudioFrame
 }

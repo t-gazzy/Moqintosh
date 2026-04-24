@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol VideoFrameDecoder: AnyObject {
+public protocol VideoFrameDecoder: AnyObject, Sendable {
     func decode(_ packet: VideoEncodedPacket) async throws -> VideoFrame
     func finish() async throws
 }
