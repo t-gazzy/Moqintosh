@@ -41,17 +41,15 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate, @unchecked S
     }
 
     func connection(_ connection: TransportConnection, didReceiveDatagram bytes: Data) {
-        Task {
-            do {
-                let datagram: ObjectDatagram = try .decode(bytes)
-                guard let handler: DatagramReceiverStore.Handler = await sessionContext.datagramReceiverStore.handler(for: datagram.trackAlias) else {
-                    OSLogger.warn("No datagram receiver registered for track alias \(datagram.trackAlias)")
-                    return
-                }
-                handler(datagram)
-            } catch {
-                OSLogger.error("Failed to decode OBJECT_DATAGRAM: \(error)")
+        do {
+            let datagram: ObjectDatagram = try .decode(bytes)
+            guard let handler: DatagramReceiverStore.Handler = sessionContext.datagramReceiverStore.handler(for: datagram.trackAlias) else {
+                OSLogger.warn("No datagram receiver registered for track alias \(datagram.trackAlias)")
+                return
             }
+            handler(datagram)
+        } catch {
+            OSLogger.error("Failed to decode OBJECT_DATAGRAM: \(error)")
         }
     }
 

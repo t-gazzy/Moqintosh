@@ -24,7 +24,7 @@ public final class DatagramReceiver: @unchecked Sendable {
         self.subscription = subscription
         self.datagramContinuation = datagramStream.continuation
         self.datagramIterator = datagramStream.stream.makeAsyncIterator()
-        await sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
+        sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             self.yield(datagram)
         }

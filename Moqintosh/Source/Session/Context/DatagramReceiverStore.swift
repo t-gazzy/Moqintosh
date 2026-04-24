@@ -6,22 +6,27 @@
 //
 
 import Foundation
+import Synchronization
 
-actor DatagramReceiverStore {
+final class DatagramReceiverStore: Sendable {
 
     typealias Handler = @Sendable (ObjectDatagram) -> Void
 
-    private var handlers: [UInt64: Handler]
+    private let handlers: Mutex<[UInt64: Handler]>
 
     init() {
-        self.handlers = [:]
+        self.handlers = Mutex<[UInt64: Handler]>([:])
     }
 
     func register(trackAlias: UInt64, handler: @escaping Handler) {
-        handlers[trackAlias] = handler
+        handlers.withLock { handlers in
+            handlers[trackAlias] = handler
+        }
     }
 
     func handler(for trackAlias: UInt64) -> Handler? {
-        handlers[trackAlias]
+        handlers.withLock { handlers in
+            handlers[trackAlias]
+        }
     }
 }
