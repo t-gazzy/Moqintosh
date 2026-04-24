@@ -17,6 +17,7 @@ struct DatagramReceiverTests {
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscription: Subscription = Subscription(
             requestID: 1,
             publishedTrack: PublishedTrack(
@@ -31,7 +32,7 @@ struct DatagramReceiverTests {
             subscriberPriority: 3,
             filter: .largestObject
         )
-        let datagramReceiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
+        let datagramReceiver: DatagramReceiver = await session.makeSubscriber().makeDatagramReceiver(for: subscription)
         let datagram: ObjectDatagram = ObjectDatagram(
             trackAlias: 7,
             groupID: 4,

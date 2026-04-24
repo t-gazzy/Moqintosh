@@ -21,6 +21,7 @@ struct StreamSenderFactoryTests {
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let factory: StreamSenderFactory = session.makePublisher().makeStreamSenderFactory(
             for: PublishedTrack(
                 requestID: 1,

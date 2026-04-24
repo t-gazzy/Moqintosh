@@ -17,7 +17,7 @@ public final class FetchReceiverFactory: @unchecked Sendable {
     private let receiverContinuation: AsyncStream<FetchReceiver>.Continuation
     private var receiverIterator: AsyncStream<FetchReceiver>.Iterator
 
-    init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) {
+    init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) async {
         let receiverStream: (
             stream: AsyncStream<FetchReceiver>,
             continuation: AsyncStream<FetchReceiver>.Continuation
@@ -25,7 +25,7 @@ public final class FetchReceiverFactory: @unchecked Sendable {
         self.fetchSubscription = fetchSubscription
         self.receiverContinuation = receiverStream.continuation
         self.receiverIterator = receiverStream.stream.makeAsyncIterator()
-        sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
+        await sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
             guard let self else { return }
             let receiver: FetchReceiver = FetchReceiver(
                 stream: stream,

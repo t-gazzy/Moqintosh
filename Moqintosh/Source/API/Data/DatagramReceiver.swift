@@ -16,7 +16,7 @@ public final class DatagramReceiver: @unchecked Sendable {
     private let datagramContinuation: AsyncStream<ObjectDatagram>.Continuation
     private var datagramIterator: AsyncStream<ObjectDatagram>.Iterator
 
-    init(sessionContext: SessionContext, subscription: Subscription) {
+    init(sessionContext: SessionContext, subscription: Subscription) async {
         let datagramStream: (
             stream: AsyncStream<ObjectDatagram>,
             continuation: AsyncStream<ObjectDatagram>.Continuation
@@ -24,7 +24,7 @@ public final class DatagramReceiver: @unchecked Sendable {
         self.subscription = subscription
         self.datagramContinuation = datagramStream.continuation
         self.datagramIterator = datagramStream.stream.makeAsyncIterator()
-        sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
+        await sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             self.yield(datagram)
         }

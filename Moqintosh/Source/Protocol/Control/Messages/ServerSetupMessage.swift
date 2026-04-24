@@ -40,7 +40,7 @@ struct ServerSetupMessage {
 
         var message = Data()
         message.writeVarint(ServerSetupMessage.type.rawValue)
-        let length = UInt16(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)

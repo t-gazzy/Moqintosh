@@ -44,8 +44,7 @@ struct ClientSetupMessage {
 
         var message = Data()
         message.writeVarint(ClientSetupMessage.type.rawValue)
-        // Length is 16-bit big-endian
-        let length = UInt16(payload.count)
+        let length: UInt16 = UInt16(payload.count)
         message.append(UInt8(length >> 8))
         message.append(UInt8(length & 0xFF))
         message.append(payload)

@@ -17,6 +17,7 @@ struct StreamReceiverFactoryTests {
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
             requestID: 1,
@@ -32,7 +33,7 @@ struct StreamReceiverFactoryTests {
             subscriberPriority: 3,
             filter: .largestObject
         )
-        let factory: StreamReceiverFactory = subscriber.makeStreamReceiverFactory(for: subscription)
+        let factory: StreamReceiverFactory = await subscriber.makeStreamReceiverFactory(for: subscription)
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 7, groupID: 4, subgroupID: .explicit(5), publisherPriority: 6)
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: header.encode(), isComplete: false)],

@@ -18,7 +18,7 @@ public final class StreamReceiverFactory: @unchecked Sendable {
     private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
     private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
 
-    init(sessionContext: SessionContext, subscription: Subscription) {
+    init(sessionContext: SessionContext, subscription: Subscription) async {
         let receiverStream: (
             stream: AsyncStream<StreamReceiver>,
             continuation: AsyncStream<StreamReceiver>.Continuation
@@ -27,7 +27,7 @@ public final class StreamReceiverFactory: @unchecked Sendable {
         self.subscription = subscription
         self.receiverContinuation = receiverStream.continuation
         self.receiverIterator = receiverStream.stream.makeAsyncIterator()
-        sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
+        await sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
                 stream: stream,

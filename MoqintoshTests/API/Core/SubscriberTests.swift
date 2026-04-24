@@ -16,6 +16,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<Void, Error> = .init {
@@ -25,7 +26,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveRequest(with: SubscribeNamespaceOKMessage(requestID: 0))
+        await context.requestStore.resolveRequest(with: SubscribeNamespaceOKMessage(requestID: 0))
         try await task.value
 
         #expect(stream.sentBytes[0].first == UInt8(MessageType.subscribeNamespace.rawValue))
@@ -36,6 +37,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<Subscription, Error> = .init {
@@ -47,7 +49,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveSubscribeRequest(
+        await context.requestStore.resolveSubscribeRequest(
             with: SubscribeOKMessage(
                 requestID: 0,
                 trackAlias: 1,
@@ -69,6 +71,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
             requestID: 6,
@@ -96,6 +99,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let resource: TrackResource = TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8))
 
@@ -110,7 +114,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveFetchRequest(
+        await context.requestStore.resolveFetchRequest(
             with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
@@ -135,6 +139,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let fetchSubscription: FetchSubscription = FetchSubscription(
             requestID: 10,
@@ -157,6 +162,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
             requestID: 8,
@@ -180,7 +186,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveFetchRequest(
+        await context.requestStore.resolveFetchRequest(
             with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
@@ -207,6 +213,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let subscription: Subscription = Subscription(
             requestID: 12,
@@ -230,7 +237,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveFetchRequest(
+        await context.requestStore.resolveFetchRequest(
             with: FetchOKMessage(
                 requestID: 0,
                 groupOrder: .ascending,
@@ -257,6 +264,7 @@ struct SubscriberTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
 
         let task: Task<TrackStatus, Error> = .init {
@@ -268,7 +276,7 @@ struct SubscriberTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveTrackStatusRequest(
+        await context.requestStore.resolveTrackStatusRequest(
             with: TrackStatusOKMessage(
                 requestID: 0,
                 trackStatus: TrackStatus(

@@ -6,10 +6,8 @@
 //
 
 import Foundation
-import Synchronization
 
-// Safe because mutable session state is serialized through state and request stores own their own synchronization.
-final class SessionContext: @unchecked Sendable {
+actor SessionContext {
 
     private struct State {
         var nextRequestID: UInt64
@@ -19,15 +17,15 @@ final class SessionContext: @unchecked Sendable {
         var inboundSubscriptionResources: [UInt64: TrackResource]
     }
 
-    weak var session: Session?
+    private weak var session: Session?
 
-    let connection: TransportConnection
-    let controlStream: TransportBiStream
-    let requestStore: SessionRequestStore
-    let streamReceiverStore: StreamReceiverStore
-    let fetchReceiverStore: FetchReceiverStore
-    let datagramReceiverStore: DatagramReceiverStore
-    private let state: Mutex<State>
+    private let connection: TransportConnection
+    private let controlStream: TransportBiStream
+    nonisolated let requestStore: SessionRequestStore
+    nonisolated let streamReceiverStore: StreamReceiverStore
+    nonisolated let fetchReceiverStore: FetchReceiverStore
+    nonisolated let datagramReceiverStore: DatagramReceiverStore
+    private var state: State
 
     init(connection: TransportConnection, controlStream: TransportBiStream, remoteMaxRequestID: UInt64 = 0) {
         self.connection = connection
@@ -36,14 +34,12 @@ final class SessionContext: @unchecked Sendable {
         self.streamReceiverStore = StreamReceiverStore()
         self.fetchReceiverStore = FetchReceiverStore()
         self.datagramReceiverStore = DatagramReceiverStore()
-        self.state = Mutex<State>(
-            State(
-                nextRequestID: 0,
-                nextTrackAlias: 0,
-                remoteMaxRequestID: remoteMaxRequestID,
-                blockedRequestID: nil,
-                inboundSubscriptionResources: [:]
-            )
+        self.state = State(
+            nextRequestID: 0,
+            nextTrackAlias: 0,
+            remoteMaxRequestID: remoteMaxRequestID,
+            blockedRequestID: nil,
+            inboundSubscriptionResources: [:]
         )
     }
 
@@ -51,18 +47,18 @@ final class SessionContext: @unchecked Sendable {
 
     /// Issues the next Request ID and advances the counter.
     func issueRequestID() async throws -> UInt64 {
-        let result: (id: UInt64?, blockedRequestID: UInt64?, maxRequestID: UInt64) = state.withLock { state in
-            let id: UInt64 = state.nextRequestID
-            guard id <= state.remoteMaxRequestID else {
-                let messageRequestID: UInt64? = state.blockedRequestID == state.remoteMaxRequestID ? nil : state.remoteMaxRequestID
-                state.blockedRequestID = state.remoteMaxRequestID
-                return (nil, messageRequestID, state.remoteMaxRequestID)
-            }
+        let id: UInt64 = state.nextRequestID
+        let result: (id: UInt64?, blockedRequestID: UInt64?, maxRequestID: UInt64)
+        if id <= state.remoteMaxRequestID {
             state.nextRequestID += 2
-            return (id, nil, state.remoteMaxRequestID)
+            result = (id, nil, state.remoteMaxRequestID)
+        } else {
+            let messageRequestID: UInt64? = state.blockedRequestID == state.remoteMaxRequestID ? nil : state.remoteMaxRequestID
+            state.blockedRequestID = state.remoteMaxRequestID
+            result = (nil, messageRequestID, state.remoteMaxRequestID)
         }
-        if let id: UInt64 = result.id {
-            return id
+        if let issuedID: UInt64 = result.id {
+            return issuedID
         }
         if let blockedRequestID: UInt64 = result.blockedRequestID {
             let message: RequestsBlockedMessage = RequestsBlockedMessage(requestID: blockedRequestID)
@@ -73,41 +69,51 @@ final class SessionContext: @unchecked Sendable {
     }
 
     func issueTrackAlias() -> UInt64 {
-        state.withLock { state in
-            let alias: UInt64 = state.nextTrackAlias
-            state.nextTrackAlias += 1
-            return alias
-        }
+        let alias: UInt64 = state.nextTrackAlias
+        state.nextTrackAlias += 1
+        return alias
     }
 
     func updateRemoteMaxRequestID(_ requestID: UInt64) {
-        state.withLock { state in
-            guard requestID > state.remoteMaxRequestID else {
-                return
-            }
-            state.remoteMaxRequestID = requestID
-            if let blockedRequestID: UInt64 = state.blockedRequestID, blockedRequestID < requestID {
-                state.blockedRequestID = nil
-            }
+        guard requestID > state.remoteMaxRequestID else {
+            return
+        }
+        state.remoteMaxRequestID = requestID
+        if let blockedRequestID: UInt64 = state.blockedRequestID, blockedRequestID < requestID {
+            state.blockedRequestID = nil
         }
     }
 
     func registerInboundSubscriptionResource(requestID: UInt64, resource: TrackResource) {
-        state.withLock { state in
-            state.inboundSubscriptionResources[requestID] = resource
-        }
+        state.inboundSubscriptionResources[requestID] = resource
     }
 
     func inboundSubscriptionResource(for requestID: UInt64) -> TrackResource? {
-        state.withLock { state in
-            state.inboundSubscriptionResources[requestID]
-        }
+        state.inboundSubscriptionResources[requestID]
     }
 
     func removeInboundSubscriptionResource(requestID: UInt64) {
-        state.withLock { state in
-            _ = state.inboundSubscriptionResources.removeValue(forKey: requestID)
-        }
+        _ = state.inboundSubscriptionResources.removeValue(forKey: requestID)
+    }
+
+    func openUniStream() async throws -> TransportUniSendStream {
+        try await connection.openUniStream()
+    }
+
+    func sendDatagram(bytes: Data) async throws {
+        try await connection.sendDatagram(bytes: bytes)
+    }
+
+    func setSession(_ session: Session) {
+        self.session = session
+    }
+
+    func currentSession() -> Session? {
+        session
+    }
+
+    func setConnectionDelegate(_ delegate: any TransportConnectionDelegate) {
+        connection.delegate = delegate
     }
 }
 
@@ -118,12 +124,14 @@ extension SessionContext: ControlMessageChannel {
 
     func performPublishNamespaceRequest(requestID: UInt64, bytes: Data) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            requestStore.addRequest(requestID, continuation: continuation)
+            Task {
+                await requestStore.addRequest(requestID, continuation: continuation)
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failRequest(requestID, error: error)
+                    await self.requestStore.failRequest(requestID, error: error)
                 }
             }
         }
@@ -131,12 +139,14 @@ extension SessionContext: ControlMessageChannel {
 
     func performPublishRequest(requestID: UInt64, publishedTrack: PublishedTrack, bytes: Data) async throws -> PublishedTrack {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PublishedTrack, Error>) in
-            requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+            Task {
+                await requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failPublishRequest(requestID, error: error)
+                    await self.requestStore.failPublishRequest(requestID, error: error)
                 }
             }
         }
@@ -144,12 +154,14 @@ extension SessionContext: ControlMessageChannel {
 
     func performSubscribeNamespaceRequest(requestID: UInt64, bytes: Data) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            requestStore.addRequest(requestID, continuation: continuation)
+            Task {
+                await requestStore.addRequest(requestID, continuation: continuation)
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failRequest(requestID, error: error)
+                    await self.requestStore.failRequest(requestID, error: error)
                 }
             }
         }
@@ -165,20 +177,22 @@ extension SessionContext: ControlMessageChannel {
         bytes: Data
     ) async throws -> Subscription {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Subscription, Error>) in
-            requestStore.addSubscribeRequest(
-                requestID,
-                resource: resource,
-                subscriberPriority: subscriberPriority,
-                requestedGroupOrder: requestedGroupOrder,
-                forward: forward,
-                filter: filter,
-                continuation: continuation
-            )
+            Task {
+                await requestStore.addSubscribeRequest(
+                    requestID,
+                    resource: resource,
+                    subscriberPriority: subscriberPriority,
+                    requestedGroupOrder: requestedGroupOrder,
+                    forward: forward,
+                    filter: filter,
+                    continuation: continuation
+                )
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failSubscribeRequest(requestID, error: error)
+                    await self.requestStore.failSubscribeRequest(requestID, error: error)
                 }
             }
         }
@@ -186,12 +200,14 @@ extension SessionContext: ControlMessageChannel {
 
     func performTrackStatusRequest(requestID: UInt64, bytes: Data) async throws -> TrackStatus {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<TrackStatus, Error>) in
-            requestStore.addTrackStatusRequest(requestID, continuation: continuation)
+            Task {
+                await requestStore.addTrackStatusRequest(requestID, continuation: continuation)
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failTrackStatusRequest(requestID, error: error)
+                    await self.requestStore.failTrackStatusRequest(requestID, error: error)
                 }
             }
         }
@@ -204,17 +220,19 @@ extension SessionContext: ControlMessageChannel {
         bytes: Data
     ) async throws -> FetchSubscription {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<FetchSubscription, Error>) in
-            requestStore.addFetchRequest(
-                requestID,
-                resource: resource,
-                subscriberPriority: subscriberPriority,
-                continuation: continuation
-            )
+            Task {
+                await requestStore.addFetchRequest(
+                    requestID,
+                    resource: resource,
+                    subscriberPriority: subscriberPriority,
+                    continuation: continuation
+                )
+            }
             Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
-                    self.requestStore.failFetchRequest(requestID, error: error)
+                    await self.requestStore.failFetchRequest(requestID, error: error)
                 }
             }
         }
