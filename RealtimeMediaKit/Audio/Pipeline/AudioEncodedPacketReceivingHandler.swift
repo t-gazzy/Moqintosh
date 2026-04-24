@@ -7,20 +7,28 @@
 
 import Foundation
 
-// Safe because receive loop state is owned by RealtimeMediaReceivingHandler.
+// Safe because receive loop state is owned by RealtimeMediaReceivingHandler and sink access is synchronized.
 public final class AudioEncodedPacketReceivingHandler: @unchecked Sendable {
     private let receivingHandler: RealtimeMediaReceivingHandler
+    private let sinkStore: AudioFrameSinkStore
 
     public init(
         receiver: any RealtimeMediaPacketReceiver,
         decoder: any AudioPacketDecoder,
         outputFormat: AudioFormat,
-        sink: any AudioFrameSink,
+        sink: (any AudioFrameSink)? = nil,
         errorHandler: @escaping @Sendable (Error) -> Void = { _ in }
     ) {
+        let sinkStore: AudioFrameSinkStore = AudioFrameSinkStore(sink: sink)
+        self.sinkStore = sinkStore
         self.receivingHandler = RealtimeMediaReceivingHandler(
             receiver: receiver,
             packetHandler: { packet in
+                guard let sink: any AudioFrameSink = sinkStore.sink() else {
+                    OSLogger.debug("Dropped audio media packet because no audio frame sink is attached.")
+                    return
+                }
+
                 let encodedPacket: AudioEncodedPacket = AudioEncodedPacket(
                     payload: packet.payload,
                     frameCount: Int(packet.duration),
@@ -35,6 +43,15 @@ public final class AudioEncodedPacketReceivingHandler: @unchecked Sendable {
 
     public init(receivingHandler: RealtimeMediaReceivingHandler) {
         self.receivingHandler = receivingHandler
+        self.sinkStore = AudioFrameSinkStore(sink: nil)
+    }
+
+    public func attachSink(_ sink: any AudioFrameSink) {
+        sinkStore.attach(sink)
+    }
+
+    public func detachSink() {
+        sinkStore.detach()
     }
 
     public func finish() {
