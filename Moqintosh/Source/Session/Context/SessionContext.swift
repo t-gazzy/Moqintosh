@@ -126,8 +126,6 @@ extension SessionContext: ControlMessageChannel {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Task {
                 await requestStore.addRequest(requestID, continuation: continuation)
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
@@ -141,8 +139,6 @@ extension SessionContext: ControlMessageChannel {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<PublishedTrack, Error>) in
             Task {
                 await requestStore.addPublishRequest(requestID, publishedTrack: publishedTrack, continuation: continuation)
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
@@ -156,8 +152,6 @@ extension SessionContext: ControlMessageChannel {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             Task {
                 await requestStore.addRequest(requestID, continuation: continuation)
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
@@ -187,8 +181,6 @@ extension SessionContext: ControlMessageChannel {
                     filter: filter,
                     continuation: continuation
                 )
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
@@ -202,8 +194,6 @@ extension SessionContext: ControlMessageChannel {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<TrackStatus, Error>) in
             Task {
                 await requestStore.addTrackStatusRequest(requestID, continuation: continuation)
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
@@ -227,8 +217,6 @@ extension SessionContext: ControlMessageChannel {
                     subscriberPriority: subscriberPriority,
                     continuation: continuation
                 )
-            }
-            Task {
                 do {
                     try await self.controlStream.send(bytes: bytes)
                 } catch {
