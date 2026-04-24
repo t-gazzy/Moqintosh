@@ -21,7 +21,7 @@ final class SampleAppController {
     private let configuration: SampleConfiguration
 
     init(configuration: SampleConfiguration = SampleConfiguration()) {
-        self.destinationText = "localhost:4434"
+        self.destinationText = "localhost:4433"
         self.statusText = ""
         self.isConnecting = false
         self.sessionController = nil

@@ -31,6 +31,8 @@ final class SessionFactory {
             remoteMaxRequestID: maxRequestID
         )
         let receiver = ControlMessageReceiver(controlStream: controlStream)
-        return Session(sessionContext: context, controlMessageReceiver: receiver)
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
+        return session
     }
 }

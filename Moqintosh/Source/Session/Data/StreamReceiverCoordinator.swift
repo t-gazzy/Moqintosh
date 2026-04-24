@@ -22,13 +22,13 @@ final class StreamReceiverCoordinator: TransportConnectionDelegate, @unchecked S
                 let header: StreamHeader = try await readHeader(from: stream)
                 switch header {
                 case .subgroup(let subgroupHeader, let initialData):
-                    guard let handler: StreamReceiverStore.Handler = sessionContext.streamReceiverStore.handler(for: subgroupHeader.trackAlias) else {
+                    guard let handler: StreamReceiverStore.Handler = await sessionContext.streamReceiverStore.handler(for: subgroupHeader.trackAlias) else {
                         OSLogger.warn("No stream receiver registered for track alias \(subgroupHeader.trackAlias)")
                         return
                     }
                     handler(stream, subgroupHeader, initialData)
                 case .fetch(let fetchHeader, let initialData):
-                    guard let handler: FetchReceiverStore.Handler = sessionContext.fetchReceiverStore.handler(for: fetchHeader.requestID) else {
+                    guard let handler: FetchReceiverStore.Handler = await sessionContext.fetchReceiverStore.handler(for: fetchHeader.requestID) else {
                         OSLogger.warn("No fetch receiver registered for request ID \(fetchHeader.requestID)")
                         return
                     }

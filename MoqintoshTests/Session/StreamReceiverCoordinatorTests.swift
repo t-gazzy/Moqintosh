@@ -34,7 +34,7 @@ struct StreamReceiverCoordinatorTests {
             receiveError: nil
         )
         connection.delegate = coordinator
-        context.streamReceiverStore.register(trackAlias: 7) { receivedStream, receivedHeader, receivedInitialData in
+        await context.streamReceiverStore.register(trackAlias: 7) { receivedStream, receivedHeader, receivedInitialData in
             recorder.record(stream: receivedStream, header: receivedHeader, initialData: receivedInitialData)
         }
 
@@ -76,7 +76,7 @@ struct StreamReceiverCoordinatorTests {
             receiveError: nil
         )
         connection.delegate = coordinator
-        context.fetchReceiverStore.register(requestID: 11) { receivedStream, receivedHeader, receivedInitialData in
+        await context.fetchReceiverStore.register(requestID: 11) { receivedStream, receivedHeader, receivedInitialData in
             recorder.record(stream: receivedStream, header: receivedHeader, initialData: receivedInitialData)
         }
 

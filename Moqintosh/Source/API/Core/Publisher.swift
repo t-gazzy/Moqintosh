@@ -46,7 +46,7 @@ public final class Publisher: @unchecked Sendable {
         forward: Bool = true
     ) async throws -> PublishedTrack {
         let requestID: UInt64 = try await controlMessageChannel.issueRequestID()
-        let trackAlias: UInt64 = controlMessageChannel.issueTrackAlias()
+        let trackAlias: UInt64 = await controlMessageChannel.issueTrackAlias()
         let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: requestID,
             resource: resource,
@@ -98,7 +98,7 @@ public final class Publisher: @unchecked Sendable {
 
     /// Opens a fetch stream sender for an accepted inbound fetch request.
     public func makeFetchSender(for fetchRequest: FetchRequest) async throws -> FetchSender {
-        let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
+        let stream: TransportUniSendStream = try await sessionContext.openUniStream()
         return try await FetchSender(stream: stream, requestID: fetchRequest.requestID)
     }
 }

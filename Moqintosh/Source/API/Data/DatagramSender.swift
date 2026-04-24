@@ -38,6 +38,6 @@ public final class DatagramSender: @unchecked Sendable {
             content: content
         )
         OSLogger.debug("Sending OBJECT_DATAGRAM (trackAlias: \(publishedTrack.trackAlias), groupID: \(groupID))")
-        try await sessionContext.connection.sendDatagram(bytes: datagram.encode())
+        try await sessionContext.sendDatagram(bytes: datagram.encode())
     }
 }

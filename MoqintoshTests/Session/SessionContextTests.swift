@@ -39,11 +39,11 @@ struct SessionContextTests {
         #expect(stream.sentBytes[0].first == UInt8(MessageType.requestsBlocked.rawValue))
     }
 
-    @Test func issueTrackAliasIncrementsByOne() {
+    @Test func issueTrackAliasIncrementsByOne() async {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
-        #expect(context.issueTrackAlias() == 0)
-        #expect(context.issueTrackAlias() == 1)
-        #expect(context.issueTrackAlias() == 2)
+        #expect(await context.issueTrackAlias() == 0)
+        #expect(await context.issueTrackAlias() == 1)
+        #expect(await context.issueTrackAlias() == 2)
     }
 
     @Test func resolvePublishRequestReturnsPublishedTrack() async throws {
@@ -59,17 +59,19 @@ struct SessionContextTests {
 
         let task: Task<PublishedTrack, Error> = .init {
             try await withCheckedThrowingContinuation { continuation in
-                context.requestStore.addPublishRequest(2, publishedTrack: publishedTrack, continuation: continuation)
-                context.requestStore.resolvePublishRequest(
-                    with: PublishOKMessage(
-                        requestID: 2,
-                        forward: true,
-                        subscriberPriority: 0,
-                        groupOrder: .ascending,
-                        filter: .largestObject,
-                        deliveryTimeout: nil
+                Task {
+                    await context.requestStore.addPublishRequest(2, publishedTrack: publishedTrack, continuation: continuation)
+                    await context.requestStore.resolvePublishRequest(
+                        with: PublishOKMessage(
+                            requestID: 2,
+                            forward: true,
+                            subscriberPriority: 0,
+                            groupOrder: .ascending,
+                            filter: .largestObject,
+                            deliveryTimeout: nil
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -81,18 +83,20 @@ struct SessionContextTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(), controlStream: MockTransportBiStream())
         let task: Task<Subscription, Error> = .init {
             try await withCheckedThrowingContinuation { continuation in
-                context.requestStore.addSubscribeRequest(
-                    4,
-                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
-                    subscriberPriority: 0,
-                    requestedGroupOrder: .ascending,
-                    forward: true,
-                    filter: .largestObject,
-                    continuation: continuation
-                )
-                context.requestStore.rejectSubscribeRequest(
-                    with: SubscribeErrorMessage(requestID: 4, errorCode: 5, reasonPhrase: "rejected")
-                )
+                Task {
+                    await context.requestStore.addSubscribeRequest(
+                        4,
+                        resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("audio".utf8)),
+                        subscriberPriority: 0,
+                        requestedGroupOrder: .ascending,
+                        forward: true,
+                        filter: .largestObject,
+                        continuation: continuation
+                    )
+                    await context.requestStore.rejectSubscribeRequest(
+                        with: SubscribeErrorMessage(requestID: 4, errorCode: 5, reasonPhrase: "rejected")
+                    )
+                }
             }
         }
 
