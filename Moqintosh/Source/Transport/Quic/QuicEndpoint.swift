@@ -36,11 +36,11 @@ final class QuicEndpoint: TransportEndpoint {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let _ = connection.onStateUpdate { _, state in
                 let resumeIfNeeded: (@Sendable (Result<Void, Error>) -> Void) = { result in
-                    let shouldResume: Bool = didResumeContinuation.withLock { didResumeContinuation in
-                        guard !didResumeContinuation else {
+                    let shouldResume: Bool = didResumeContinuation.withLock { hasResumed in
+                        guard !hasResumed else {
                             return false
                         }
-                        didResumeContinuation = true
+                        hasResumed = true
                         return true
                     }
                     guard shouldResume else {
