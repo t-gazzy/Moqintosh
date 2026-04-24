@@ -17,6 +17,7 @@ struct ControlMessageReceiverTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 

@@ -16,7 +16,7 @@ public final class DatagramReceiver: @unchecked Sendable {
     private let datagramContinuation: AsyncStream<ObjectDatagram>.Continuation
     private var datagramIterator: AsyncStream<ObjectDatagram>.Iterator
 
-    init(sessionContext: SessionContext, subscription: Subscription) {
+    init(sessionContext: SessionContext, subscription: Subscription) async {
         let datagramStream: (
             stream: AsyncStream<ObjectDatagram>,
             continuation: AsyncStream<ObjectDatagram>.Continuation

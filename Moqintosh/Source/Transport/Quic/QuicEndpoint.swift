@@ -6,6 +6,7 @@
 //
 
 import Network
+import Synchronization
 
 /// QUIC-based transport endpoint using Network.framework with ALPN set to "moq-00".
 final class QuicEndpoint: TransportEndpoint {
@@ -31,18 +32,37 @@ final class QuicEndpoint: TransportEndpoint {
             }
             return quic
         }
+        let didResumeContinuation: Mutex<Bool> = Mutex<Bool>(false)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             let _ = connection.onStateUpdate { _, state in
+                let resumeIfNeeded: (@Sendable (Result<Void, Error>) -> Void) = { result in
+                    let shouldResume: Bool = didResumeContinuation.withLock { hasResumed in
+                        guard !hasResumed else {
+                            return false
+                        }
+                        hasResumed = true
+                        return true
+                    }
+                    guard shouldResume else {
+                        return
+                    }
+                    switch result {
+                    case .success:
+                        continuation.resume()
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                }
                 switch state {
                 case .ready:
                     OSLogger.info("Connection ready: \(connection)")
-                    continuation.resume()
+                    resumeIfNeeded(.success(()))
                 case .failed(let error):
                     OSLogger.error("Connection failed: \(error)")
-                    continuation.resume(throwing: error)
+                    resumeIfNeeded(.failure(error))
                 case .cancelled:
                     OSLogger.warn("Connection cancelled")
-                    continuation.resume(throwing: CancellationError())
+                    resumeIfNeeded(.failure(CancellationError()))
                 default:
                     OSLogger.debug("Connection state changed: \(state)")
                 }

@@ -26,7 +26,7 @@ public final class StreamSenderFactory: @unchecked Sendable {
         usesExtensions: Bool = false,
         containsEndOfGroup: Bool = false
     ) async throws -> StreamSender {
-        let stream: TransportUniSendStream = try await sessionContext.connection.openUniStream()
+        let stream: TransportUniSendStream = try await sessionContext.openUniStream()
         let header: SubgroupHeader = SubgroupHeader(
             trackAlias: publishedTrack.trackAlias,
             groupID: groupID,

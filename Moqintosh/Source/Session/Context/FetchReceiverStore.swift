@@ -7,27 +7,21 @@
 
 import Foundation
 
-final class FetchReceiverStore {
+actor FetchReceiverStore {
 
-    typealias Handler = (TransportUniReceiveStream, FetchHeader, Data) -> Void
+    typealias Handler = @Sendable (TransportUniReceiveStream, FetchHeader, Data) -> Void
 
-    private let stateQueue: DispatchQueue
     private var handlers: [UInt64: Handler]
 
     init() {
-        self.stateQueue = DispatchQueue(label: "Moqintosh.FetchReceiverStore")
         self.handlers = [:]
     }
 
     func register(requestID: UInt64, handler: @escaping Handler) {
-        stateQueue.sync {
-            handlers[requestID] = handler
-        }
+        handlers[requestID] = handler
     }
 
     func handler(for requestID: UInt64) -> Handler? {
-        stateQueue.sync {
-            handlers[requestID]
-        }
+        handlers[requestID]
     }
 }

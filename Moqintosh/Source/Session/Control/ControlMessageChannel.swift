@@ -9,7 +9,7 @@ import Foundation
 
 protocol ControlMessageChannel: AnyObject {
     func issueRequestID() async throws -> UInt64
-    func issueTrackAlias() -> UInt64
+    func issueTrackAlias() async -> UInt64
     func sendControlMessage(bytes: Data) async throws
     func performPublishNamespaceRequest(requestID: UInt64, bytes: Data) async throws
     func performPublishRequest(requestID: UInt64, publishedTrack: PublishedTrack, bytes: Data) async throws -> PublishedTrack

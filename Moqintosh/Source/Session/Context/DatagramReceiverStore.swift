@@ -6,27 +6,26 @@
 //
 
 import Foundation
+import Synchronization
 
-final class DatagramReceiverStore {
+final class DatagramReceiverStore: Sendable {
 
-    typealias Handler = (ObjectDatagram) -> Void
+    typealias Handler = @Sendable (ObjectDatagram) -> Void
 
-    private let stateQueue: DispatchQueue
-    private var handlers: [UInt64: Handler]
+    private let handlers: Mutex<[UInt64: Handler]>
 
     init() {
-        self.stateQueue = DispatchQueue(label: "Moqintosh.DatagramReceiverStore")
-        self.handlers = [:]
+        self.handlers = Mutex<[UInt64: Handler]>([:])
     }
 
-    func register(trackAlias: UInt64, handler: @escaping (ObjectDatagram) -> Void) {
-        stateQueue.sync {
+    func register(trackAlias: UInt64, handler: @escaping Handler) {
+        handlers.withLock { handlers in
             handlers[trackAlias] = handler
         }
     }
 
-    func handler(for trackAlias: UInt64) -> ((ObjectDatagram) -> Void)? {
-        stateQueue.sync {
+    func handler(for trackAlias: UInt64) -> Handler? {
+        handlers.withLock { handlers in
             handlers[trackAlias]
         }
     }

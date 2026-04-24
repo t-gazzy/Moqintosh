@@ -7,9 +7,10 @@
 
 import Foundation
 
+// Safe because Session delegates shared mutable coordination to actor-isolated SessionContext after one-time startup.
 /// Represents a MOQT session created from an Endpoint.
 /// Use this to create a Publisher or Subscriber.
-public final class Session {
+public final class Session: @unchecked Sendable {
 
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
@@ -21,9 +22,12 @@ public final class Session {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
         self.streamReceiverCoordinator = StreamReceiverCoordinator(sessionContext: sessionContext)
-        self.context.session = self
-        self.context.connection.delegate = streamReceiverCoordinator
-        self.controlMessageReceiver.start(dispatcher: ControlMessageDispatcher(sessionContext: sessionContext))
+    }
+
+    func start() async {
+        await context.setSession(self)
+        await context.setConnectionDelegate(streamReceiverCoordinator)
+        controlMessageReceiver.start(dispatcher: ControlMessageDispatcher(sessionContext: context))
     }
 
     // MARK: - Factory

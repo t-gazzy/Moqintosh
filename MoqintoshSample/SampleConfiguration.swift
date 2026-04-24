@@ -17,7 +17,7 @@ struct SampleConfiguration {
 
     let defaultPort: UInt16
 
-    init(defaultPort: UInt16 = 4434) {
+    init(defaultPort: UInt16 = 4433) {
         self.defaultPort = defaultPort
     }
 

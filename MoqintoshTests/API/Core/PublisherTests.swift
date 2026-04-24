@@ -16,6 +16,7 @@ struct PublisherTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let publisher: Publisher = session.makePublisher()
 
         let task: Task<Void, Error> = .init {
@@ -25,7 +26,7 @@ struct PublisherTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolveRequest(with: PublishNamespaceOKMessage(requestID: 0))
+        await context.requestStore.resolveRequest(with: PublishNamespaceOKMessage(requestID: 0))
         try await task.value
 
         let sent: Data = stream.sentBytes[0]
@@ -37,6 +38,7 @@ struct PublisherTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let publisher: Publisher = session.makePublisher()
 
         let task: Task<PublishedTrack, Error> = .init {
@@ -48,7 +50,7 @@ struct PublisherTests {
         while stream.sentBytes.isEmpty {
             await Task.yield()
         }
-        context.requestStore.resolvePublishRequest(
+        await context.requestStore.resolvePublishRequest(
             with: PublishOKMessage(
                 requestID: 0,
                 forward: true,
@@ -69,6 +71,7 @@ struct PublisherTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let publisher: Publisher = session.makePublisher()
         let publishedTrack: PublishedTrack = PublishedTrack(
             requestID: 4,
@@ -90,6 +93,7 @@ struct PublisherTests {
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let publisher: Publisher = session.makePublisher()
 
         try await publisher.publishNamespaceDone(trackNamespace: TrackNamespace(strings: ["live"]))

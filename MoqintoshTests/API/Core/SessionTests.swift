@@ -10,22 +10,24 @@ import Testing
 
 struct SessionTests {
 
-    @Test func makePublisherReturnsPublisher() {
+    @Test func makePublisherReturnsPublisher() async {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
 
         let publisher: Publisher = session.makePublisher()
 
         #expect(type(of: publisher) == Publisher.self)
     }
 
-    @Test func makeSubscriberReturnsSubscriber() {
+    @Test func makeSubscriberReturnsSubscriber() async {
         let stream: MockTransportBiStream = MockTransportBiStream()
         let context: SessionContext = SessionContext(connection: MockTransportConnection(biStream: stream), controlStream: stream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: stream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
 
         let subscriber: Subscriber = session.makeSubscriber()
 

@@ -17,6 +17,7 @@ struct FetchReceiverFactoryTests {
         let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
         let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
         let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
         let subscriber: Subscriber = session.makeSubscriber()
         let fetchSubscription: FetchSubscription = FetchSubscription(
             requestID: 1,
@@ -27,7 +28,7 @@ struct FetchReceiverFactoryTests {
             endLocation: Location(group: 3, object: 4),
             maxCacheDuration: nil
         )
-        let factory: FetchReceiverFactory = subscriber.makeFetchReceiverFactory(for: fetchSubscription)
+        let factory: FetchReceiverFactory = await subscriber.makeFetchReceiverFactory(for: fetchSubscription)
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [TransportUniReceiveResult(bytes: FetchHeader(requestID: 1).encode(), isComplete: false)],
             receiveError: nil

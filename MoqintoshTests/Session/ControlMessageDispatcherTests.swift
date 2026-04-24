@@ -19,6 +19,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
@@ -46,6 +47,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.subscribeError = SubscribeRequestError(
             code: .trackDoesNotExist,
@@ -81,6 +83,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.trackStatusResult = TrackStatus(
             expires: 5,
@@ -117,6 +120,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
@@ -163,6 +167,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 
@@ -179,6 +184,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         delegate.fetchResponse = FetchResponse(
             groupOrder: .ascending,
@@ -187,7 +193,7 @@ struct ControlMessageDispatcherTests {
             maxCacheDuration: nil
         )
         session.delegate = delegate
-        context.registerInboundSubscriptionResource(
+        await context.registerInboundSubscriptionResource(
             requestID: 4,
             resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8))
         )
@@ -232,6 +238,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         #expect(type(of: session) == Session.self)
 
         await dispatcher.handle(
@@ -266,6 +273,7 @@ struct ControlMessageDispatcherTests {
             sessionContext: context,
             controlMessageReceiver: ControlMessageReceiver(controlStream: stream)
         )
+        await session.start()
         let delegate: TestSessionDelegate = TestSessionDelegate()
         session.delegate = delegate
 

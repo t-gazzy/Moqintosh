@@ -223,17 +223,17 @@ public final class Subscriber: @unchecked Sendable {
     }
 
     /// Creates a stream receiver factory for an active subscription.
-    public func makeStreamReceiverFactory(for subscription: Subscription) -> StreamReceiverFactory {
-        StreamReceiverFactory(sessionContext: sessionContext, subscription: subscription)
+    public func makeStreamReceiverFactory(for subscription: Subscription) async -> StreamReceiverFactory {
+        await StreamReceiverFactory(sessionContext: sessionContext, subscription: subscription)
     }
 
     /// Creates a datagram receiver for an active subscription.
-    public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
-        DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
+    public func makeDatagramReceiver(for subscription: Subscription) async -> DatagramReceiver {
+        await DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
     }
 
     /// Creates a fetch receiver factory for an active fetch subscription.
-    public func makeFetchReceiverFactory(for fetchSubscription: FetchSubscription) -> FetchReceiverFactory {
-        FetchReceiverFactory(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
+    public func makeFetchReceiverFactory(for fetchSubscription: FetchSubscription) async -> FetchReceiverFactory {
+        await FetchReceiverFactory(sessionContext: sessionContext, fetchSubscription: fetchSubscription)
     }
 }

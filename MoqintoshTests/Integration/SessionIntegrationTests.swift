@@ -285,7 +285,7 @@ struct SessionIntegrationTests {
             controlStream: controlStream,
             trackAlias: 3
         )
-        let factory: StreamReceiverFactory = session.makeSubscriber().makeStreamReceiverFactory(for: subscription)
+        let factory: StreamReceiverFactory = await session.makeSubscriber().makeStreamReceiverFactory(for: subscription)
         let header: SubgroupHeader = SubgroupHeader(trackAlias: 3, groupID: 5, subgroupID: .explicit(7), publisherPriority: 9)
         let object: SubgroupObject = header.makeObject(objectID: 0, content: .payload(ReadOnlyBytes(Data("abc".utf8))))
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
@@ -323,7 +323,7 @@ struct SessionIntegrationTests {
             controlStream: controlStream,
             trackAlias: 6
         )
-        let receiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
+        let receiver: DatagramReceiver = await session.makeSubscriber().makeDatagramReceiver(for: subscription)
 
         connection.receiveDatagram(
             bytes: ObjectDatagram(
@@ -357,7 +357,7 @@ struct SessionIntegrationTests {
             session: session,
             controlStream: controlStream
         )
-        let factory: FetchReceiverFactory = session.makeSubscriber().makeFetchReceiverFactory(for: fetchSubscription)
+        let factory: FetchReceiverFactory = await session.makeSubscriber().makeFetchReceiverFactory(for: fetchSubscription)
         let stream: MockTransportUniReceiveStream = MockTransportUniReceiveStream(
             receiveQueue: [
                 TransportUniReceiveResult(
