@@ -9,11 +9,11 @@ import Foundation
 import Synchronization
 
 // Safe because sequence and timestamp state is protected by state.
-public final class AudioEncodedPacketSendingHandler: @unchecked Sendable, AudioEncodedPacketSink {
+final class AudioEncodedPacketSendingHandler: @unchecked Sendable, AudioEncodedPacketSink {
     private let sendingHandler: RealtimeMediaSendingHandler
     private let state: Mutex<State>
 
-    public init(
+    init(
         sender: any RealtimeMediaPacketSender,
         initialSequenceNumber: UInt64 = 0,
         initialTimestamp: Int64 = 0,
@@ -30,7 +30,7 @@ public final class AudioEncodedPacketSendingHandler: @unchecked Sendable, AudioE
         )
     }
 
-    public init(
+    init(
         sendingHandler: RealtimeMediaSendingHandler,
         initialSequenceNumber: UInt64 = 0,
         initialTimestamp: Int64 = 0
@@ -41,7 +41,7 @@ public final class AudioEncodedPacketSendingHandler: @unchecked Sendable, AudioE
         )
     }
 
-    public func handleEncodedPacket(_ packet: AudioEncodedPacket) {
+    func handleEncodedPacket(_ packet: AudioEncodedPacket) {
         let timedPacket: TimedMediaPacket = state.withLock { state in
             let duration: Int64 = Int64(packet.frameCount)
             let timedPacket: TimedMediaPacket = TimedMediaPacket(

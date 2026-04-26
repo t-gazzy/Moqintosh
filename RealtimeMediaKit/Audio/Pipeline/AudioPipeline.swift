@@ -8,18 +8,18 @@
 import Foundation
 
 // Safe because processors are configured before the realtime path starts.
-public final class AudioPipeline: @unchecked Sendable {
+final class AudioPipeline: @unchecked Sendable {
     private var processors: [any AudioProcessor]
 
-    public init(processors: [any AudioProcessor] = []) {
+    init(processors: [any AudioProcessor] = []) {
         self.processors = processors
     }
 
-    public func appendProcessor(_ processor: any AudioProcessor) {
+    func appendProcessor(_ processor: any AudioProcessor) {
         processors.append(processor)
     }
 
-    public func removeAllProcessors() {
+    func removeAllProcessors() {
         processors.removeAll(keepingCapacity: true)
     }
 

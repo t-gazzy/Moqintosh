@@ -7,6 +7,26 @@
 
 import Foundation
 
+public enum RealtimeMediaLifecycleEvent {
+    case didStart
+    case didStop
+    case didFail(any Error)
+}
+
+func makeRealtimeMediaLifecycleEventStream() -> (
+    stream: AsyncStream<RealtimeMediaLifecycleEvent>,
+    continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+) {
+    var streamContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation?
+    let stream: AsyncStream<RealtimeMediaLifecycleEvent> = AsyncStream<RealtimeMediaLifecycleEvent> { continuation in
+        streamContinuation = continuation
+    }
+    guard let streamContinuation else {
+        preconditionFailure("AsyncStream must create a continuation.")
+    }
+    return (stream, streamContinuation)
+}
+
 // Safe because AsyncStream.Continuation supports concurrent yield and the send loop owns consumption.
 public final class RealtimeMediaSendingHandler: @unchecked Sendable {
     private let continuation: AsyncStream<TimedMediaPacket>.Continuation

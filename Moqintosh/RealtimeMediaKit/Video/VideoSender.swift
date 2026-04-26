@@ -8,8 +8,10 @@
 import Foundation
 
 public final class VideoSender {
+    public let events: AsyncStream<RealtimeMediaLifecycleEvent>
+
     private let pipeline: VideoSenderPipeline
-    private let errorHandler: @Sendable (Error) -> Void
+    private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var sendTask: Task<Void, Never>?
 
     public init(
@@ -17,9 +19,12 @@ public final class VideoSender {
         format: VideoFormat,
         cameraPosition: CameraPosition = .front,
         bitrate: Int? = 500_000,
-        keyFrameInterval: Int = 30,
-        errorHandler: @escaping @Sendable (Error) -> Void = { _ in }
+        keyFrameInterval: Int = 30
     ) throws {
+        let eventStream: (
+            stream: AsyncStream<RealtimeMediaLifecycleEvent>,
+            continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+        ) = makeRealtimeMediaLifecycleEventStream()
         let capturer: CameraVideoSource = try CameraVideoSource(
             configuration: CameraVideoConfiguration(
                 position: cameraPosition,
@@ -35,24 +40,25 @@ public final class VideoSender {
         )
         let sink: VideoEncodedPacketSendingHandler = VideoEncodedPacketSendingHandler(
             sender: packetSender,
-            errorHandler: errorHandler
+            errorHandler: { error in
+                eventStream.continuation.yield(.didFail(error))
+            }
         )
 
+        self.events = eventStream.stream
         self.pipeline = VideoSenderPipeline(
             capturer: capturer,
             encoder: encoder,
             sink: sink
         )
-        self.errorHandler = errorHandler
+        self.eventContinuation = eventStream.continuation
         self.sendTask = nil
     }
 
     deinit {
         sendTask?.cancel()
         pipeline.sink.finish()
-        Task {
-            try? await pipeline.capturer.stop()
-        }
+        eventContinuation.finish()
     }
 
     public func start() async throws {
@@ -64,7 +70,7 @@ public final class VideoSender {
         let capturer: CameraVideoSource = pipeline.capturer
         let encoder: H264VideoEncoder = pipeline.encoder
         let sink: VideoEncodedPacketSendingHandler = pipeline.sink
-        let errorHandler: @Sendable (Error) -> Void = self.errorHandler
+        let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation = self.eventContinuation
 
         self.sendTask = Task<Void, Never> {
             do {
@@ -73,14 +79,19 @@ public final class VideoSender {
                     sink.handleEncodedPacket(packet)
                 }
             } catch {
-                errorHandler(error)
+                eventContinuation.yield(.didFail(error))
             }
         }
+        eventContinuation.yield(.didStart)
     }
 
-    public func stop() async {
+    public func stop() async throws {
         sendTask?.cancel()
         sendTask = nil
-        try? await pipeline.capturer.stop()
+        do {
+            try await pipeline.capturer.stop()
+        } catch VideoDeviceError.notRunning {
+        }
+        eventContinuation.yield(.didStop)
     }
 }

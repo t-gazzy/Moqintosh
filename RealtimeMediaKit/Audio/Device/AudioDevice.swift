@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol AudioDevice: AnyObject {
+protocol AudioDevice: AnyObject {
     var configuration: AudioDeviceConfiguration { get }
     var pipeline: AudioPipeline { get }
 

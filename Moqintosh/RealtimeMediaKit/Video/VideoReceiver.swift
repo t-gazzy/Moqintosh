@@ -8,27 +8,34 @@
 import Foundation
 
 public final class VideoReceiver {
+    public let events: AsyncStream<RealtimeMediaLifecycleEvent>
+
     private let packetReceiver: any RealtimeMediaPacketReceiver
     private let pipeline: VideoReceiverPipeline
-    private let errorHandler: @Sendable (Error) -> Void
+    private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var receivingHandler: VideoEncodedPacketReceivingHandler?
 
     public init(
         packetReceiver: any RealtimeMediaPacketReceiver,
-        sink: any VideoFrameSink,
-        errorHandler: @escaping @Sendable (Error) -> Void = { _ in }
+        sink: any VideoFrameSink
     ) {
+        let eventStream: (
+            stream: AsyncStream<RealtimeMediaLifecycleEvent>,
+            continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+        ) = makeRealtimeMediaLifecycleEventStream()
+        self.events = eventStream.stream
         self.packetReceiver = packetReceiver
         self.pipeline = VideoReceiverPipeline(
             decoder: H264VideoDecoder(),
             sink: sink
         )
-        self.errorHandler = errorHandler
+        self.eventContinuation = eventStream.continuation
         self.receivingHandler = nil
     }
 
     deinit {
         receivingHandler?.finish()
+        eventContinuation.finish()
     }
 
     public func start() async throws {
@@ -39,12 +46,16 @@ public final class VideoReceiver {
             receiver: packetReceiver,
             decoder: pipeline.decoder,
             sink: pipeline.sink,
-            errorHandler: errorHandler
+            errorHandler: { [eventContinuation] error in
+                eventContinuation.yield(.didFail(error))
+            }
         )
+        eventContinuation.yield(.didStart)
     }
 
     public func stop() async {
         receivingHandler?.finish()
         receivingHandler = nil
+        eventContinuation.yield(.didStop)
     }
 }

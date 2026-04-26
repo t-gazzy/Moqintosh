@@ -7,14 +7,14 @@
 
 import Foundation
 
-public final class SystemAudioDevice: AudioDevice {
-    public let configuration: AudioDeviceConfiguration
-    public let pipeline: AudioPipeline
-    public weak var renderSource: (any AudioFrameSource)?
+final class SystemAudioDevice: AudioDevice {
+    let configuration: AudioDeviceConfiguration
+    let pipeline: AudioPipeline
+    weak var renderSource: (any AudioFrameSource)?
 
     private let backend: any InternalAudioBackend
 
-    public init(
+    init(
         configuration: AudioDeviceConfiguration,
         pipeline: AudioPipeline = AudioPipeline()
     ) throws {
@@ -25,13 +25,13 @@ public final class SystemAudioDevice: AudioDevice {
         OSLogger.debug("Created system audio device. backend=\(configuration.backend) inputEnabled=\(configuration.inputEnabled) outputEnabled=\(configuration.outputEnabled)")
     }
 
-    public func start() throws {
+    func start() throws {
         OSLogger.info("Starting system audio device.")
         try backend.start()
         OSLogger.info("System audio device started.")
     }
 
-    public func stop() throws {
+    func stop() throws {
         OSLogger.info("Stopping system audio device.")
         try backend.stop()
         OSLogger.info("System audio device stopped.")

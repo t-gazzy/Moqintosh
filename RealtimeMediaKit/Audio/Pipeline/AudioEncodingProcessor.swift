@@ -8,12 +8,12 @@
 import Foundation
 
 // Safe because encoder and sink lifetimes are externally managed and not mutated on the realtime path.
-public final class AudioEncodingProcessor: @unchecked Sendable, AudioProcessor {
+final class AudioEncodingProcessor: @unchecked Sendable, AudioProcessor {
     private let encoder: any AudioFrameEncoder
     private weak var sink: (any AudioEncodedPacketSink)?
     private let errorHandler: @Sendable (Error) -> Void
 
-    public init(
+    init(
         encoder: any AudioFrameEncoder,
         sink: any AudioEncodedPacketSink,
         errorHandler: @escaping @Sendable (Error) -> Void = { _ in }
@@ -23,7 +23,7 @@ public final class AudioEncodingProcessor: @unchecked Sendable, AudioProcessor {
         self.errorHandler = errorHandler
     }
 
-    public func processCapture(_ frame: inout AudioFrame) {
+    func processCapture(_ frame: inout AudioFrame) {
         guard let sink else {
             OSLogger.warn("Dropped captured audio frame because no encoded packet sink is attached.")
             return

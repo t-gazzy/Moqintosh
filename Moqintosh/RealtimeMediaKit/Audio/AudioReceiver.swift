@@ -8,34 +8,41 @@
 import Foundation
 
 public final class AudioReceiver {
+    public let events: AsyncStream<RealtimeMediaLifecycleEvent>
+
     private let packetReceiver: any RealtimeMediaPacketReceiver
     private let pipeline: AudioReceiverPipeline
     private let outputFormat: AudioFormat
-    private let errorHandler: @Sendable (Error) -> Void
+    private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var receivingHandler: AudioEncodedPacketReceivingHandler?
 
     public init(
         packetReceiver: any RealtimeMediaPacketReceiver,
         outputFormat: AudioFormat,
-        sharedAudioDevice: SharedAudioDevice = .shared,
-        errorHandler: @escaping @Sendable (Error) -> Void = { _ in }
+        sharedAudioDevice: SharedAudioDevice = .shared
     ) throws {
+        let eventStream: (
+            stream: AsyncStream<RealtimeMediaLifecycleEvent>,
+            continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+        ) = makeRealtimeMediaLifecycleEventStream()
         let decoder: OpusAudioDecoder = try OpusAudioDecoder(outputFormat: outputFormat)
         let sink: SharedAudioSink = SharedAudioSink(
             sharedAudioDevice: sharedAudioDevice,
             format: outputFormat
         )
 
+        self.events = eventStream.stream
         self.packetReceiver = packetReceiver
         self.pipeline = AudioReceiverPipeline(decoder: decoder, sink: sink)
         self.outputFormat = outputFormat
-        self.errorHandler = errorHandler
+        self.eventContinuation = eventStream.continuation
         self.receivingHandler = nil
     }
 
     deinit {
         receivingHandler?.finish()
         pipeline.sink.stop()
+        eventContinuation.finish()
     }
 
     public func start() async throws {
@@ -50,11 +57,13 @@ public final class AudioReceiver {
                 decoder: pipeline.decoder,
                 outputFormat: outputFormat,
                 sink: pipeline.sink,
-                errorHandler: errorHandler
+                errorHandler: { [eventContinuation] error in
+                    eventContinuation.yield(.didFail(error))
+                }
             )
+            eventContinuation.yield(.didStart)
         } catch {
             pipeline.sink.stop()
-            errorHandler(error)
             throw error
         }
     }
@@ -63,5 +72,6 @@ public final class AudioReceiver {
         receivingHandler?.finish()
         receivingHandler = nil
         pipeline.sink.stop()
+        eventContinuation.yield(.didStop)
     }
 }

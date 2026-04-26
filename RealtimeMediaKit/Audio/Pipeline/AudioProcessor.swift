@@ -7,12 +7,12 @@
 
 import Foundation
 
-public protocol AudioProcessor: Sendable {
+protocol AudioProcessor: Sendable {
     func processCapture(_ frame: inout AudioFrame)
     func processRender(_ frame: inout AudioFrame)
 }
 
-public extension AudioProcessor {
+extension AudioProcessor {
     func processCapture(_ frame: inout AudioFrame) {}
 
     func processRender(_ frame: inout AudioFrame) {}

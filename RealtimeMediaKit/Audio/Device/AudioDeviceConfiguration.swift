@@ -7,14 +7,14 @@
 
 import Foundation
 
-public struct AudioDeviceConfiguration: Sendable {
-    public let format: AudioFormat
-    public let backend: AudioBackendKind
-    public let inputProcessing: AudioInputProcessing
-    public let inputEnabled: Bool
-    public let outputEnabled: Bool
+struct AudioDeviceConfiguration: Sendable {
+    let format: AudioFormat
+    let backend: AudioBackendKind
+    let inputProcessing: AudioInputProcessing
+    let inputEnabled: Bool
+    let outputEnabled: Bool
 
-    public init(
+    init(
         format: AudioFormat,
         backend: AudioBackendKind,
         inputProcessing: AudioInputProcessing,

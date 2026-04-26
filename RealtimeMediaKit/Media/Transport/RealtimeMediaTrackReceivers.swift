@@ -7,16 +7,16 @@
 
 import Foundation
 
-public struct RealtimeMediaTrackReceivers: Sendable {
-    public let audio: any RealtimeMediaPacketReceiver
-    public let video: any RealtimeMediaPacketReceiver
+struct RealtimeMediaTrackReceivers: Sendable {
+    let audio: any RealtimeMediaPacketReceiver
+    let video: any RealtimeMediaPacketReceiver
 
-    public init(audio: any RealtimeMediaPacketReceiver, video: any RealtimeMediaPacketReceiver) {
+    init(audio: any RealtimeMediaPacketReceiver, video: any RealtimeMediaPacketReceiver) {
         self.audio = audio
         self.video = video
     }
 
-    public func makeAudioReceivingHandler(
+    func makeAudioReceivingHandler(
         decoder: any AudioPacketDecoder,
         outputFormat: AudioFormat,
         sink: (any AudioFrameSink)? = nil,
@@ -31,7 +31,7 @@ public struct RealtimeMediaTrackReceivers: Sendable {
         )
     }
 
-    public func makeVideoReceivingHandler(
+    func makeVideoReceivingHandler(
         decoder: any VideoFrameDecoder,
         sink: (any VideoFrameSink)? = nil,
         errorHandler: @escaping @Sendable (Error) -> Void = { _ in }

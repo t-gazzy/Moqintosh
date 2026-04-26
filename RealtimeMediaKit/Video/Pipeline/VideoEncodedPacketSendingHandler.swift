@@ -10,11 +10,11 @@ import Foundation
 import Synchronization
 
 // Safe because sequence state is protected by state.
-public final class VideoEncodedPacketSendingHandler: @unchecked Sendable, VideoEncodedPacketSink {
+final class VideoEncodedPacketSendingHandler: @unchecked Sendable, VideoEncodedPacketSink {
     private let sendingHandler: RealtimeMediaSendingHandler
     private let state: Mutex<State>
 
-    public init(
+    init(
         sender: any RealtimeMediaPacketSender,
         initialSequenceNumber: UInt64 = 0,
         bufferingPolicy: AsyncStream<TimedMediaPacket>.Continuation.BufferingPolicy = .bufferingNewest(256),
@@ -28,7 +28,7 @@ public final class VideoEncodedPacketSendingHandler: @unchecked Sendable, VideoE
         self.state = Mutex<State>(State(sequenceNumber: initialSequenceNumber))
     }
 
-    public init(
+    init(
         sendingHandler: RealtimeMediaSendingHandler,
         initialSequenceNumber: UInt64 = 0
     ) {
@@ -36,7 +36,7 @@ public final class VideoEncodedPacketSendingHandler: @unchecked Sendable, VideoE
         self.state = Mutex<State>(State(sequenceNumber: initialSequenceNumber))
     }
 
-    public func handleEncodedPacket(_ packet: VideoEncodedPacket) {
+    func handleEncodedPacket(_ packet: VideoEncodedPacket) {
         let payload: Data = VideoEncodedPacketPayloadCodec.encode(packet)
         let sequenceNumber: UInt64 = state.withLock { state in
             let sequenceNumber: UInt64 = state.sequenceNumber

@@ -7,16 +7,16 @@
 
 import Foundation
 
-public struct RealtimeMediaTrackSenders: Sendable {
-    public let audio: any RealtimeMediaPacketSender
-    public let video: any RealtimeMediaPacketSender
+struct RealtimeMediaTrackSenders: Sendable {
+    let audio: any RealtimeMediaPacketSender
+    let video: any RealtimeMediaPacketSender
 
-    public init(audio: any RealtimeMediaPacketSender, video: any RealtimeMediaPacketSender) {
+    init(audio: any RealtimeMediaPacketSender, video: any RealtimeMediaPacketSender) {
         self.audio = audio
         self.video = video
     }
 
-    public func makeAudioSendingHandler(
+    func makeAudioSendingHandler(
         initialSequenceNumber: UInt64 = 0,
         initialTimestamp: Int64 = 0,
         bufferingPolicy: AsyncStream<TimedMediaPacket>.Continuation.BufferingPolicy = .bufferingNewest(256),
@@ -31,7 +31,7 @@ public struct RealtimeMediaTrackSenders: Sendable {
         )
     }
 
-    public func makeVideoSendingHandler(
+    func makeVideoSendingHandler(
         initialSequenceNumber: UInt64 = 0,
         bufferingPolicy: AsyncStream<TimedMediaPacket>.Continuation.BufferingPolicy = .bufferingNewest(256),
         errorHandler: @escaping @Sendable (Error) -> Void = { _ in }

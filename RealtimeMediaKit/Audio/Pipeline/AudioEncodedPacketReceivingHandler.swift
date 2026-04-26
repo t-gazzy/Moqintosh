@@ -8,11 +8,11 @@
 import Foundation
 
 // Safe because receive loop state is owned by RealtimeMediaReceivingHandler and sink access is synchronized.
-public final class AudioEncodedPacketReceivingHandler: @unchecked Sendable {
+final class AudioEncodedPacketReceivingHandler: @unchecked Sendable {
     private let receivingHandler: RealtimeMediaReceivingHandler
     private let sinkStore: AudioFrameSinkStore
 
-    public init(
+    init(
         receiver: any RealtimeMediaPacketReceiver,
         decoder: any AudioPacketDecoder,
         outputFormat: AudioFormat,
@@ -41,20 +41,20 @@ public final class AudioEncodedPacketReceivingHandler: @unchecked Sendable {
         )
     }
 
-    public init(receivingHandler: RealtimeMediaReceivingHandler) {
+    init(receivingHandler: RealtimeMediaReceivingHandler) {
         self.receivingHandler = receivingHandler
         self.sinkStore = AudioFrameSinkStore(sink: nil)
     }
 
-    public func attachSink(_ sink: any AudioFrameSink) {
+    func attachSink(_ sink: any AudioFrameSink) {
         sinkStore.attach(sink)
     }
 
-    public func detachSink() {
+    func detachSink() {
         sinkStore.detach()
     }
 
-    public func finish() {
+    func finish() {
         receivingHandler.finish()
     }
 }
