@@ -5,130 +5,15 @@
 //  Created by Codex on 2026/04/22.
 //
 
-import AVFoundation
 import Foundation
 import Moqintosh
-import RealtimeMediaKit
 
 #if canImport(UIKit)
-import UIKit
+import RealtimeMediaKit
 #endif
 
 @MainActor
 final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
-    private actor MediaHistoryStore {
-        struct StoredPacket {
-            let packet: TimedMediaPacket
-
-            var location: Location {
-                Location(group: 0, object: packet.sequenceNumber)
-            }
-        }
-
-        private var storage: [String: [StoredPacket]]
-
-        init() {
-            self.storage = [:]
-        }
-
-        func append(packet: TimedMediaPacket, for resourceKey: String) {
-            storage[resourceKey, default: []].append(StoredPacket(packet: packet))
-        }
-
-        func packets(for resourceKey: String) -> [StoredPacket] {
-            storage[resourceKey, default: []]
-        }
-
-        func packets(for resourceKey: String, start: Location, end: Location) -> [StoredPacket] {
-            storage[resourceKey, default: []].filter { storedPacket in
-                storedPacket.location.group >= start.group &&
-                    storedPacket.location.group <= end.group &&
-                    storedPacket.location.object >= start.object &&
-                    storedPacket.location.object <= end.object
-            }
-        }
-
-        func endLocation(for resourceKey: String) -> Location? {
-            storage[resourceKey, default: []].last?.location
-        }
-    }
-
-    private final class HistoryRecordingPacketSender: RealtimeMediaPacketSender {
-        private let sender: any RealtimeMediaPacketSender
-        private let historyStore: MediaHistoryStore
-        private let resourceKey: String
-
-        init(sender: any RealtimeMediaPacketSender, historyStore: MediaHistoryStore, resourceKey: String) {
-            self.sender = sender
-            self.historyStore = historyStore
-            self.resourceKey = resourceKey
-        }
-
-        func send(_ packet: TimedMediaPacket) async throws {
-            try await sender.send(packet)
-            await historyStore.append(packet: packet, for: resourceKey)
-        }
-    }
-
-    private final class ActiveSendSession {
-        let requestID: UInt64
-        let kind: CallApplicationPresentationState.TrackKind
-        let finishHandler: @MainActor () async -> Void
-
-        init(
-            requestID: UInt64,
-            kind: CallApplicationPresentationState.TrackKind,
-            finishHandler: @escaping @MainActor () async -> Void
-        ) {
-            self.requestID = requestID
-            self.kind = kind
-            self.finishHandler = finishHandler
-        }
-
-        @MainActor
-        func finish() async {
-            await finishHandler()
-        }
-    }
-
-    private final class RemoteTrackSession {
-        let subscription: Moqintosh.Subscription
-        let kind: CallApplicationPresentationState.TrackKind
-        #if canImport(UIKit)
-        let renderView: VideoRenderView?
-        #endif
-        var datagramHandler: AnyObject?
-        var streamHandlers: [AnyObject]
-        var datagramReceiveHandler: RealtimeMediaReceivingHandler?
-        var streamAcceptTask: Task<Void, Never>?
-
-        init(
-            subscription: Moqintosh.Subscription,
-            kind: CallApplicationPresentationState.TrackKind
-        ) {
-            self.subscription = subscription
-            self.kind = kind
-            #if canImport(UIKit)
-            if kind == .video {
-                self.renderView = VideoRenderView()
-            } else {
-                self.renderView = nil
-            }
-            #endif
-            self.streamHandlers = []
-        }
-
-        func finish() {
-            datagramReceiveHandler?.finish()
-            streamAcceptTask?.cancel()
-            streamHandlers.removeAll(keepingCapacity: false)
-            datagramHandler = nil
-            #if canImport(UIKit)
-            renderView?.flushAndRemoveImage()
-            #endif
-        }
-    }
-
     private struct PublishedNamespaceRecord {
         let id: UUID
         let namespace: TrackNamespace
@@ -216,10 +101,19 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
 
     weak var delegate: (any CallApplicationCoordinatorDelegate)?
 
-    private let historyStore: MediaHistoryStore
     private let audioFormat: AudioFormat
     private let videoFormat: VideoFormat
     private let iso8601Formatter: ISO8601DateFormatter
+    private lazy var mediaController: CallApplicationMediaController = CallApplicationMediaController(
+        audioFormat: audioFormat,
+        videoFormat: videoFormat,
+        onEvent: { [weak self] message in
+            self?.appendEvent(message)
+        },
+        onDataPacket: { [weak self] resource, packet in
+            self?.appendDataLog(resource: resource, packet: packet)
+        }
+    )
 
     private var state: CallApplicationPresentationState
     private weak var session: Session?
@@ -233,17 +127,7 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
     private var remoteTrackRecords: [RemoteTrackRecord]
     private var activeFetchRecords: [ActiveFetchRecord]
 
-    private var remoteTrackSessions: [UInt64: RemoteTrackSession]
-    private var activeSendSessions: [UInt64: ActiveSendSession]
-    private var activeFetchTasks: [UInt64: Task<Void, Never>]
-    private var playbackDevice: SystemAudioDevice?
-    private var playbackBuffer: AudioPlaybackBuffer?
-    private var captureDevice: SystemAudioDevice?
-    private var cameraSource: CameraVideoSource?
-    private var cameraTask: Task<Void, Never>?
-
     override init() {
-        self.historyStore = MediaHistoryStore()
         self.audioFormat = AudioFormat(
             sampleRate: 48_000,
             channelCount: 1,
@@ -258,9 +142,6 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
         self.inboundSubscriptionRecords = []
         self.remoteTrackRecords = []
         self.activeFetchRecords = []
-        self.remoteTrackSessions = [:]
-        self.activeSendSessions = [:]
-        self.activeFetchTasks = [:]
         super.init()
     }
 
@@ -405,49 +286,21 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
             return
         }
 
-        await stopSendSessions(for: record.kind)
+        await mediaController.stopSendSessions(for: record.kind)
 
         do {
             let resourceKey: String = self.resourceKey(for: record.publishedTrack.resource)
-            let packetSender: any RealtimeMediaPacketSender
-            switch mode {
-            case .stream:
-                let senderFactory: StreamSenderFactory = publisher.makeStreamSenderFactory(for: record.publishedTrack)
-                let streamSender: StreamSender = try await senderFactory.makeSender(groupID: 0)
-                packetSender = HistoryRecordingPacketSender(
-                    sender: MoqintoshStreamMediaSender(sender: streamSender),
-                    historyStore: historyStore,
-                    resourceKey: resourceKey
-                )
-            case .datagram:
-                let datagramSender: DatagramSender = publisher.makeDatagramSender(for: record.publishedTrack)
-                packetSender = HistoryRecordingPacketSender(
-                    sender: MoqintoshDatagramMediaSender(sender: datagramSender, groupID: 0),
-                    historyStore: historyStore,
-                    resourceKey: resourceKey
-                )
-            }
-
-            switch record.kind {
-            case .video:
-                try await startVideoSending(
-                    packetSender: packetSender,
-                    requestID: requestID,
-                    kind: record.kind
-                )
-            case .audio:
-                try await startAudioSending(
-                    packetSender: packetSender,
-                    requestID: requestID,
-                    kind: record.kind
-                )
-            case .data:
-                startDataSending(
-                    packetSender: packetSender,
-                    requestID: requestID,
-                    kind: record.kind
-                )
-            }
+            let packetSender: any RealtimeMediaPacketSender = try await mediaController.makePacketSender(
+                for: record.publishedTrack,
+                mode: mode,
+                resourceKey: resourceKey,
+                publisher: publisher
+            )
+            try await mediaController.startSending(
+                requestID: requestID,
+                kind: record.kind,
+                packetSender: packetSender
+            )
             inboundSubscriptionRecords[requestIndex].selectedMode = mode
             syncPresentationCollections()
             appendEvent("Started \(mode.rawValue) delivery for \(record.presentation.displayName)")
@@ -565,10 +418,11 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
             )
             activeFetchRecords.append(record)
             syncPresentationCollections()
-            let task: Task<Void, Never> = Task { [weak self] in
-                await self?.consumeFetch(for: record)
-            }
-            activeFetchTasks[record.fetchSubscription.requestID] = task
+            mediaController.beginFetchReceiving(
+                fetchSubscription: fetchSubscription,
+                kind: record.kind,
+                subscriber: subscriber
+            )
             appendEvent("Started fetch for \(record.presentation.displayName)")
         } catch {
             appendEvent("Failed to fetch remote track: \(error)")
@@ -585,8 +439,7 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
 
         do {
             try await subscriber.fetchCancel(for: record.fetchSubscription)
-            activeFetchTasks[requestID]?.cancel()
-            activeFetchTasks.removeValue(forKey: requestID)
+            mediaController.cancelFetchTask(requestID: requestID)
             activeFetchRecords.removeAll { $0.fetchSubscription.requestID == requestID }
             syncPresentationCollections()
             appendEvent("Sent fetch_cancel for \(record.presentation.displayName)")
@@ -610,10 +463,7 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
 
     #if canImport(UIKit)
     func videoRenderView(for remoteTrackID: UInt64?) -> VideoRenderView? {
-        guard let remoteTrackID else {
-            return nil
-        }
-        return remoteTrackSessions[remoteTrackID]?.renderView
+        mediaController.videoRenderView(for: remoteTrackID)
     }
     #endif
 }
@@ -670,7 +520,7 @@ extension CallApplicationCoordinator: SessionDelegate {
             "Received subscribe_update requestID=\(update.requestID) start=\(update.start.group):\(update.start.object) endGroup=\(update.endGroup) forward=\(update.forward)"
         )
         if !update.forward {
-            await stopSendSession(requestID: update.requestID)
+            await mediaController.stopSendSession(requestID: update.requestID)
         }
     }
 
@@ -678,13 +528,13 @@ extension CallApplicationCoordinator: SessionDelegate {
         appendEvent("Received unsubscribe for requestID=\(requestID)")
         inboundSubscriptionRecords.removeAll { $0.publishedTrack.requestID == requestID }
         syncPresentationCollections()
-        await stopSendSession(requestID: requestID)
+        await mediaController.stopSendSession(requestID: requestID)
     }
 
     func session(_ session: Session, didReceiveFetch request: FetchRequest) async -> FetchDecision {
         let requestResource: TrackResource = resource(from: request)
         let resourceKey: String = self.resourceKey(for: requestResource)
-        guard let endLocation: Location = await historyStore.endLocation(for: resourceKey) else {
+        guard let endLocation: Location = await mediaController.endLocation(for: resourceKey) else {
             appendEvent("Rejected fetch for \(resourceDescription(requestResource)) because no history exists.")
             return .reject(
                 FetchRequestError(
@@ -709,27 +559,29 @@ extension CallApplicationCoordinator: SessionDelegate {
                 )
             )
         }
-        let task: Task<Void, Never> = Task { [weak self] in
-            await self?.sendFetchResponse(
-                publisher: publisher,
-                request: request,
-                resourceKey: resourceKey
-            )
+        Task { [weak self] in
+            do {
+                try await self?.mediaController.sendFetchResponse(
+                    publisher: publisher,
+                    request: request,
+                    resourceKey: resourceKey
+                )
+            } catch {
+                self?.appendEvent("Failed to send fetch response: \(error)")
+            }
         }
-        activeFetchTasks[request.requestID] = task
         return .accept(response)
     }
 
     func session(_ session: Session, didReceiveFetchCancel requestID: UInt64) async {
         appendEvent("Received fetch_cancel for requestID=\(requestID)")
-        activeFetchTasks[requestID]?.cancel()
-        activeFetchTasks.removeValue(forKey: requestID)
+        mediaController.cancelFetchTask(requestID: requestID)
     }
 
     func session(_ session: Session, didReceiveTrackStatus request: TrackStatusRequest) async -> TrackStatusDecision {
         let requestResource: TrackResource = request.resource
         let resourceKey: String = self.resourceKey(for: requestResource)
-        guard let endLocation: Location = await historyStore.endLocation(for: resourceKey) else {
+        guard let endLocation: Location = await mediaController.endLocation(for: resourceKey) else {
             return .reject(
                 TrackStatusRequestError(
                     code: .trackDoesNotExist,
@@ -880,181 +732,6 @@ private extension CallApplicationCoordinator {
         }
     }
 
-    func stopSendSessions(for kind: CallApplicationPresentationState.TrackKind) async {
-        let requestIDs: [UInt64] = activeSendSessions.values
-            .filter { $0.kind == kind }
-            .map(\.requestID)
-        for requestID in requestIDs {
-            await stopSendSession(requestID: requestID)
-        }
-    }
-
-    func stopSendSession(requestID: UInt64) async {
-        guard let activeSession: ActiveSendSession = activeSendSessions.removeValue(forKey: requestID) else {
-            return
-        }
-        await activeSession.finish()
-    }
-
-    func startVideoSending(
-        packetSender: any RealtimeMediaPacketSender,
-        requestID: UInt64,
-        kind: CallApplicationPresentationState.TrackKind
-    ) async throws {
-        if cameraSource == nil {
-            cameraSource = try CameraVideoSource(
-                configuration: CameraVideoConfiguration(
-                    position: .front,
-                    format: videoFormat
-                )
-            )
-        }
-        guard let cameraSource else {
-            throw NSError(
-                domain: "CallApplicationSample",
-                code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "Camera source unavailable"]
-            )
-        }
-
-        let sendingHandler: VideoEncodedPacketSendingHandler = VideoEncodedPacketSendingHandler(sender: packetSender)
-        let encoder: H264VideoEncoder = try H264VideoEncoder(
-            configuration: H264EncoderConfiguration(
-                inputFormat: videoFormat,
-                bitrate: 500_000,
-                keyFrameInterval: 30
-            )
-        )
-
-        try await cameraSource.start()
-        cameraTask = Task { [weak self] in
-            do {
-                for try await frame in cameraSource.frames {
-                    let packet: VideoEncodedPacket = try await encoder.encode(frame)
-                    sendingHandler.handleEncodedPacket(packet)
-                }
-            } catch {
-                await self?.handleBackgroundError(error, context: "Video send")
-            }
-        }
-
-        activeSendSessions[requestID] = ActiveSendSession(
-            requestID: requestID,
-            kind: kind
-        ) { [weak self] in
-            self?.cameraTask?.cancel()
-            self?.cameraTask = nil
-            if let cameraSource: CameraVideoSource = self?.cameraSource {
-                try? await cameraSource.stop()
-            }
-        }
-    }
-
-    func startAudioSending(
-        packetSender: any RealtimeMediaPacketSender,
-        requestID: UInt64,
-        kind: CallApplicationPresentationState.TrackKind
-    ) async throws {
-        let sendingHandler: AudioEncodedPacketSendingHandler = AudioEncodedPacketSendingHandler(sender: packetSender)
-        let encoder: OpusAudioEncoder = try OpusAudioEncoder(
-            configuration: OpusEncoderConfiguration(
-                inputFormat: audioFormat,
-                frameCountPerPacket: 960,
-                bitrate: 32_000
-            )
-        )
-        if captureDevice == nil {
-            captureDevice = try SystemAudioDevice(
-                configuration: AudioDeviceConfiguration(
-                    format: audioFormat,
-                    backend: .voiceProcessingIO,
-                    inputProcessing: .voiceProcessed,
-                    inputEnabled: true,
-                    outputEnabled: false
-                )
-            )
-        }
-        guard let captureDevice else {
-            throw NSError(
-                domain: "CallApplicationSample",
-                code: 3,
-                userInfo: [NSLocalizedDescriptionKey: "Audio capture device unavailable"]
-            )
-        }
-
-        captureDevice.pipeline.removeAllProcessors()
-        captureDevice.pipeline.appendProcessor(
-            AudioEncodingProcessor(
-                encoder: encoder,
-                sink: sendingHandler
-            )
-        )
-        try captureDevice.start()
-
-        activeSendSessions[requestID] = ActiveSendSession(
-            requestID: requestID,
-            kind: kind
-        ) { [weak self] in
-            self?.captureDevice?.pipeline.removeAllProcessors()
-            try? self?.captureDevice?.stop()
-        }
-    }
-
-    func startDataSending(
-        packetSender: any RealtimeMediaPacketSender,
-        requestID: UInt64,
-        kind: CallApplicationPresentationState.TrackKind
-    ) {
-        let task: Task<Void, Never> = Task { [weak self] in
-            var sequenceNumber: UInt64 = 0
-            while !Task.isCancelled {
-                let timestampText: String = self?.iso8601Formatter.string(from: Date()) ?? ""
-                let packet: TimedMediaPacket = TimedMediaPacket(
-                    sequenceNumber: sequenceNumber,
-                    timestamp: Int64(Date().timeIntervalSince1970 * 1000.0),
-                    duration: 1,
-                    payload: Data(timestampText.utf8)
-                )
-                do {
-                    try await packetSender.send(packet)
-                } catch {
-                    await self?.handleBackgroundError(error, context: "Data send")
-                    return
-                }
-                sequenceNumber += 1
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-
-        activeSendSessions[requestID] = ActiveSendSession(
-            requestID: requestID,
-            kind: kind
-        ) {
-            task.cancel()
-        }
-    }
-
-    func ensurePlaybackDevice() throws -> AudioPlaybackBuffer {
-        if let playbackBuffer {
-            return playbackBuffer
-        }
-        let buffer: AudioPlaybackBuffer = AudioPlaybackBuffer(format: audioFormat)
-        let device: SystemAudioDevice = try SystemAudioDevice(
-            configuration: AudioDeviceConfiguration(
-                format: audioFormat,
-                backend: .remoteIO,
-                inputProcessing: .raw,
-                inputEnabled: false,
-                outputEnabled: true
-            )
-        )
-        device.renderSource = buffer
-        try device.start()
-        playbackDevice = device
-        playbackBuffer = buffer
-        return buffer
-    }
-
     func subscribeToRemoteTrack(resource: TrackResource) async {
         guard let subscriber else {
             return
@@ -1073,12 +750,12 @@ private extension CallApplicationCoordinator {
                 kind: trackKind(for: resource)
             )
             remoteTrackRecords.append(record)
-            remoteTrackSessions[subscription.requestID] = RemoteTrackSession(
-                subscription: subscription,
-                kind: record.kind
-            )
             syncPresentationCollections()
-            try await startReceiving(for: record)
+            try await mediaController.beginReceiving(
+                subscription: subscription,
+                kind: record.kind,
+                subscriber: subscriber
+            )
             appendEvent("Subscribed remote track \(record.presentation.displayName)")
         } catch {
             appendEvent("Failed to subscribe remote track: \(error)")
@@ -1086,210 +763,9 @@ private extension CallApplicationCoordinator {
     }
 
     func finishRemoteTrack(requestID: UInt64) {
-        remoteTrackSessions[requestID]?.finish()
-        remoteTrackSessions.removeValue(forKey: requestID)
+        mediaController.finishRemoteTrack(requestID: requestID)
         remoteTrackRecords.removeAll { $0.subscription.requestID == requestID }
         syncPresentationCollections()
-    }
-
-    private func startReceiving(for record: RemoteTrackRecord) async throws {
-        guard let subscriber else {
-            return
-        }
-        guard let remoteTrackSession: RemoteTrackSession = remoteTrackSessions[record.subscription.requestID] else {
-            return
-        }
-
-        let datagramReceiver: DatagramReceiver = subscriber.makeDatagramReceiver(for: record.subscription)
-        switch record.kind {
-        case .video:
-            #if canImport(UIKit)
-            let datagramHandler: VideoEncodedPacketReceivingHandler = VideoEncodedPacketReceivingHandler(
-                receiver: MoqintoshDatagramMediaReceiver(receiver: datagramReceiver),
-                decoder: H264VideoDecoder(),
-                sink: remoteTrackSession.renderView
-            )
-            remoteTrackSession.datagramHandler = datagramHandler
-            #endif
-        case .audio:
-            let playbackBuffer: AudioPlaybackBuffer = try ensurePlaybackDevice()
-            let datagramHandler: AudioEncodedPacketReceivingHandler = AudioEncodedPacketReceivingHandler(
-                receiver: MoqintoshDatagramMediaReceiver(receiver: datagramReceiver),
-                decoder: try OpusAudioDecoder(outputFormat: audioFormat),
-                outputFormat: audioFormat,
-                sink: playbackBuffer
-            )
-            remoteTrackSession.datagramHandler = datagramHandler
-        case .data:
-            let receiveHandler: RealtimeMediaReceivingHandler = RealtimeMediaReceivingHandler(
-                receiver: MoqintoshDatagramMediaReceiver(receiver: datagramReceiver),
-                packetHandler: { [weak self] packet in
-                    await self?.handleIncomingDataPacket(
-                        packet,
-                        resource: record.subscription.publishedTrack.resource
-                    )
-                }
-            )
-            remoteTrackSession.datagramReceiveHandler = receiveHandler
-        }
-
-        let streamFactory: StreamReceiverFactory = subscriber.makeStreamReceiverFactory(for: record.subscription)
-        remoteTrackSession.streamAcceptTask = Task { [weak self] in
-            while !Task.isCancelled {
-                guard let streamReceiver: StreamReceiver = await streamFactory.accept() else {
-                    return
-                }
-                await self?.attachStreamReceiver(
-                    streamReceiver,
-                    to: record.subscription.requestID
-                )
-            }
-        }
-    }
-
-    func attachStreamReceiver(_ streamReceiver: StreamReceiver, to remoteTrackID: UInt64) async {
-        guard let remoteTrackSession: RemoteTrackSession = remoteTrackSessions[remoteTrackID] else {
-            return
-        }
-
-        switch remoteTrackSession.kind {
-        case .video:
-            #if canImport(UIKit)
-            let handler: VideoEncodedPacketReceivingHandler = VideoEncodedPacketReceivingHandler(
-                receiver: MoqintoshStreamMediaReceiver(receiver: streamReceiver),
-                decoder: H264VideoDecoder(),
-                sink: remoteTrackSession.renderView
-            )
-            remoteTrackSession.streamHandlers.append(handler)
-            #endif
-        case .audio:
-            do {
-                let playbackBuffer: AudioPlaybackBuffer = try ensurePlaybackDevice()
-                let handler: AudioEncodedPacketReceivingHandler = AudioEncodedPacketReceivingHandler(
-                    receiver: MoqintoshStreamMediaReceiver(receiver: streamReceiver),
-                    decoder: try OpusAudioDecoder(outputFormat: audioFormat),
-                    outputFormat: audioFormat,
-                    sink: playbackBuffer
-                )
-                remoteTrackSession.streamHandlers.append(handler)
-            } catch {
-                appendEvent("Failed to attach audio stream receiver: \(error)")
-            }
-        case .data:
-            let receiveHandler: RealtimeMediaReceivingHandler = RealtimeMediaReceivingHandler(
-                receiver: MoqintoshStreamMediaReceiver(receiver: streamReceiver),
-                packetHandler: { [weak self] packet in
-                    await self?.handleIncomingDataPacket(
-                        packet,
-                        resource: remoteTrackSession.subscription.publishedTrack.resource
-                    )
-                }
-            )
-            remoteTrackSession.streamHandlers.append(receiveHandler)
-        }
-    }
-
-    func handleIncomingDataPacket(_ packet: TimedMediaPacket, resource: TrackResource) async {
-        appendDataLog(resource: resource, packet: packet)
-    }
-
-    private func consumeFetch(for record: ActiveFetchRecord) async {
-        guard let subscriber else {
-            return
-        }
-        let receiverFactory: FetchReceiverFactory = subscriber.makeFetchReceiverFactory(for: record.fetchSubscription)
-        while !Task.isCancelled {
-            guard let fetchReceiver: FetchReceiver = await receiverFactory.accept() else {
-                return
-            }
-            await consume(
-                fetchReceiver: fetchReceiver,
-                kind: record.kind,
-                resource: record.fetchSubscription.resource
-            )
-        }
-    }
-
-    func consume(
-        fetchReceiver: FetchReceiver,
-        kind: CallApplicationPresentationState.TrackKind,
-        resource: TrackResource
-    ) async {
-        do {
-            while let object: SubgroupObject = try await fetchReceiver.receive() {
-                switch object.content {
-                case .payload(let payload):
-                    let packet: TimedMediaPacket = try RealtimeMediaPacketPayloadCodec.decode(
-                        sequenceNumber: object.objectID,
-                        payload: payload.materialize()
-                    )
-                    switch kind {
-                    case .video:
-                        #if canImport(UIKit)
-                        if let videoRecord: RemoteTrackRecord = remoteTrackRecords.first(where: { $0.kind == .video }),
-                           let renderView: VideoRenderView = remoteTrackSessions[videoRecord.subscription.requestID]?.renderView {
-                            let decodedFrame: VideoFrame = try await H264VideoDecoder().decode(
-                                try VideoEncodedPacketPayloadCodec.decode(packet)
-                            )
-                            try await renderView.handleDecodedFrame(decodedFrame)
-                        }
-                        #endif
-                    case .audio:
-                        let playbackBuffer: AudioPlaybackBuffer = try ensurePlaybackDevice()
-                        let decodedFrame: AudioFrame = try OpusAudioDecoder(outputFormat: audioFormat).decode(
-                            AudioEncodedPacket(
-                                payload: packet.payload,
-                                frameCount: Int(packet.duration),
-                                sourceFormat: audioFormat
-                            )
-                        )
-                        playbackBuffer.append(decodedFrame)
-                    case .data:
-                        appendDataLog(resource: resource, packet: packet)
-                    }
-                case .status:
-                    break
-                }
-            }
-        } catch {
-            appendEvent("Fetch receive failed: \(error)")
-        }
-    }
-
-    func sendFetchResponse(
-        publisher: Moqintosh.Publisher,
-        request: FetchRequest,
-        resourceKey: String
-    ) async {
-        do {
-            let sender: FetchSender = try await publisher.makeFetchSender(for: request)
-            let packets: [MediaHistoryStore.StoredPacket]
-            switch request {
-            case .standalone(_, _, _, _, let start, let end):
-                packets = await historyStore.packets(for: resourceKey, start: start, end: end)
-            case .joiningRelative:
-                packets = await historyStore.packets(for: resourceKey)
-            case .joiningAbsolute(_, _, _, _, _, let startGroup):
-                let start: Location = Location(group: startGroup, object: 0)
-                let end: Location = await historyStore.endLocation(for: resourceKey) ?? Location(group: startGroup, object: 0)
-                packets = await historyStore.packets(for: resourceKey, start: start, end: end)
-            }
-
-            for (index, storedPacket) in packets.enumerated() {
-                let isLast: Bool = index == packets.count - 1
-                try await sender.send(
-                    groupID: 0,
-                    subgroupID: 0,
-                    objectID: storedPacket.packet.sequenceNumber,
-                    publisherPriority: 0,
-                    endOfFetch: isLast,
-                    content: .payload(RealtimeMediaPacketPayloadCodec.encode(storedPacket.packet))
-                )
-            }
-            activeFetchTasks.removeValue(forKey: request.requestID)
-        } catch {
-            appendEvent("Failed to send fetch response: \(error)")
-        }
     }
 
     func resource(from request: FetchRequest) -> TrackResource {
@@ -1301,9 +777,5 @@ private extension CallApplicationCoordinator {
         case .joiningAbsolute(_, _, let resource, _, _, _):
             return resource
         }
-    }
-
-    func handleBackgroundError(_ error: Error, context: String) async {
-        appendEvent("\(context) error: \(error)")
     }
 }
