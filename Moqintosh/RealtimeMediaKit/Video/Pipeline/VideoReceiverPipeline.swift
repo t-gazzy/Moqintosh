@@ -8,14 +8,53 @@
 import Foundation
 
 final class VideoReceiverPipeline {
+    let source: any RealtimeMediaPacketReceiver
     let decoder: H264VideoDecoder
     let sink: any VideoFrameSink
+    let events: AsyncStream<RealtimeMediaLifecycleEvent>
+
+    private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+    private var receivingHandler: VideoEncodedPacketReceivingHandler?
 
     init(
-        decoder: H264VideoDecoder,
+        packetReceiver: any RealtimeMediaPacketReceiver,
         sink: any VideoFrameSink
     ) {
-        self.decoder = decoder
+        let eventStream: (
+            stream: AsyncStream<RealtimeMediaLifecycleEvent>,
+            continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
+        ) = makeRealtimeMediaLifecycleEventStream()
+        self.source = packetReceiver
+        self.decoder = H264VideoDecoder()
         self.sink = sink
+        self.events = eventStream.stream
+        self.eventContinuation = eventStream.continuation
+        self.receivingHandler = nil
+    }
+
+    deinit {
+        receivingHandler?.finish()
+        eventContinuation.finish()
+    }
+
+    func start() throws {
+        guard receivingHandler == nil else {
+            throw VideoDeviceError.alreadyRunning
+        }
+        receivingHandler = VideoEncodedPacketReceivingHandler(
+            receiver: source,
+            decoder: decoder,
+            sink: sink,
+            errorHandler: { [eventContinuation] error in
+                eventContinuation.yield(.didFail(error))
+            }
+        )
+        eventContinuation.yield(.didStart)
+    }
+
+    func stop() {
+        receivingHandler?.finish()
+        receivingHandler = nil
+        eventContinuation.yield(.didStop)
     }
 }
