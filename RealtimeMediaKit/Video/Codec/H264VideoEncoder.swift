@@ -7,7 +7,8 @@
 
 import Foundation
 
-public final class H264VideoEncoder: VideoFrameEncoder {
+// Safe because encoder state is owned by the instance and used through async calls.
+public final class H264VideoEncoder: @unchecked Sendable, VideoFrameEncoder {
     private let implementation: any InternalVideoFrameEncoding
 
     public init(configuration: H264EncoderConfiguration) throws {

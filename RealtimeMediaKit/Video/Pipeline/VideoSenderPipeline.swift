@@ -27,6 +27,7 @@ final class VideoSenderPipeline {
             stream: AsyncStream<RealtimeMediaLifecycleEvent>,
             continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
         ) = makeRealtimeMediaLifecycleEventStream()
+        let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation = eventStream.continuation
         self.source = try CameraVideoSource(
             configuration: CameraVideoConfiguration(
                 position: cameraPosition,
@@ -43,11 +44,11 @@ final class VideoSenderPipeline {
         self.sink = VideoEncodedPacketSendingHandler(
             sender: packetSender,
             errorHandler: { error in
-                eventStream.continuation.yield(.didFail(error))
+                eventContinuation.yield(.didFail(error))
             }
         )
         self.events = eventStream.stream
-        self.eventContinuation = eventStream.continuation
+        self.eventContinuation = eventContinuation
         self.sendTask = nil
     }
 
@@ -62,14 +63,14 @@ final class VideoSenderPipeline {
         }
 
         try await source.start()
-        let source: CameraVideoSource = self.source
+        let frames: AsyncThrowingStream<VideoFrame, Error> = self.source.frames
         let encoder: H264VideoEncoder = self.encoder
         let sink: VideoEncodedPacketSendingHandler = self.sink
         let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation = self.eventContinuation
 
         self.sendTask = Task<Void, Never> {
             do {
-                for try await frame in source.frames {
+                for try await frame in frames {
                     let packet: VideoEncodedPacket = try await encoder.encode(frame)
                     sink.handleEncodedPacket(packet)
                 }

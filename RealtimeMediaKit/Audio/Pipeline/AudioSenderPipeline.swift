@@ -28,6 +28,7 @@ final class AudioSenderPipeline {
             stream: AsyncStream<RealtimeMediaLifecycleEvent>,
             continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
         ) = makeRealtimeMediaLifecycleEventStream()
+        let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation = eventStream.continuation
         self.sharedAudioDevice = sharedAudioDevice
         self.format = format
         self.encoder = try OpusAudioEncoder(
@@ -40,11 +41,11 @@ final class AudioSenderPipeline {
         self.sink = AudioEncodedPacketSendingHandler(
             sender: packetSender,
             errorHandler: { error in
-                eventStream.continuation.yield(.didFail(error))
+                eventContinuation.yield(.didFail(error))
             }
         )
         self.events = eventStream.stream
-        self.eventContinuation = eventStream.continuation
+        self.eventContinuation = eventContinuation
         self.isRunning = false
     }
 

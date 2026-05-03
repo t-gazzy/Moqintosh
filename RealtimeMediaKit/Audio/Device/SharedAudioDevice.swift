@@ -88,7 +88,7 @@ public final class SharedAudioDevice: @unchecked Sendable {
         }
     }
 
-    func acquirePlaybackBuffer(format: AudioFormat) throws -> AudioPlaybackBuffer {
+    public func acquirePlaybackBuffer(format: AudioFormat) throws -> AudioPlaybackBuffer {
         try state.withLock { state in
             let device: SystemAudioDevice = try makeDeviceIfNeeded(format: format, state: &state)
             guard let playbackBuffer: AudioPlaybackBuffer = state.playbackBuffer else {
@@ -106,7 +106,7 @@ public final class SharedAudioDevice: @unchecked Sendable {
         }
     }
 
-    func releasePlayback() {
+    public func releasePlayback() {
         do {
             try state.withLock { state in
                 if state.playbackClientCount > 0 {
