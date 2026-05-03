@@ -5,7 +5,7 @@
 //  Created by Codex on 2026/04/22.
 //
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import Foundation
 
 extension VideoRenderView: VideoFrameSink {

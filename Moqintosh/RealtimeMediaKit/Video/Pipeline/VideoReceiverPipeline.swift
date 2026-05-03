@@ -8,11 +8,11 @@
 import Foundation
 
 final class VideoReceiverPipeline {
-    let source: any RealtimeMediaPacketReceiver
-    let decoder: H264VideoDecoder
-    let sink: any VideoFrameSink
     let events: AsyncStream<RealtimeMediaLifecycleEvent>
 
+    private let source: any RealtimeMediaPacketReceiver
+    private let decoder: H264VideoDecoder
+    private let sink: any VideoFrameSink
     private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var receivingHandler: VideoEncodedPacketReceivingHandler?
 

@@ -5,7 +5,7 @@
 //  Created by Codex on 2026/04/21.
 //
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import AVFoundation
 import CoreMedia
 import CoreVideo

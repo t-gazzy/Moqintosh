@@ -8,11 +8,12 @@
 import Foundation
 
 final class AudioSenderPipeline {
-    let source: SharedAudioSource
-    let encoder: OpusAudioEncoder
-    let sink: AudioEncodedPacketSendingHandler
     let events: AsyncStream<RealtimeMediaLifecycleEvent>
 
+    private let sharedAudioDevice: SharedAudioDevice
+    private let format: AudioFormat
+    private let encoder: OpusAudioEncoder
+    private let sink: AudioEncodedPacketSendingHandler
     private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var isRunning: Bool
 
@@ -27,7 +28,8 @@ final class AudioSenderPipeline {
             stream: AsyncStream<RealtimeMediaLifecycleEvent>,
             continuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
         ) = makeRealtimeMediaLifecycleEventStream()
-        self.source = SharedAudioSource(sharedAudioDevice: sharedAudioDevice, format: format)
+        self.sharedAudioDevice = sharedAudioDevice
+        self.format = format
         self.encoder = try OpusAudioEncoder(
             configuration: OpusEncoderConfiguration(
                 inputFormat: format,
@@ -56,7 +58,8 @@ final class AudioSenderPipeline {
         guard !isRunning else {
             throw AudioDeviceError.alreadyRunning
         }
-        try source.start(
+        try sharedAudioDevice.startCapture(
+            format: format,
             encoder: encoder,
             sink: sink,
             errorHandler: { [eventContinuation] error in
@@ -71,7 +74,7 @@ final class AudioSenderPipeline {
         guard isRunning else {
             return
         }
-        source.stop(sink: sink)
+        sharedAudioDevice.stopCapture(sink: sink)
         isRunning = false
         eventContinuation.yield(.didStop)
     }

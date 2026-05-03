@@ -8,11 +8,11 @@
 import Foundation
 
 final class VideoSenderPipeline {
-    let source: CameraVideoSource
-    let encoder: H264VideoEncoder
-    let sink: VideoEncodedPacketSendingHandler
     let events: AsyncStream<RealtimeMediaLifecycleEvent>
 
+    private let source: CameraVideoSource
+    private let encoder: H264VideoEncoder
+    private let sink: VideoEncodedPacketSendingHandler
     private let eventContinuation: AsyncStream<RealtimeMediaLifecycleEvent>.Continuation
     private var sendTask: Task<Void, Never>?
 
