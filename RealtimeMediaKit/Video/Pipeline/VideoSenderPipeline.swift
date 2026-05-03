@@ -53,7 +53,6 @@ final class VideoSenderPipeline {
 
     deinit {
         sendTask?.cancel()
-        sink.finish()
         eventContinuation.finish()
     }
 

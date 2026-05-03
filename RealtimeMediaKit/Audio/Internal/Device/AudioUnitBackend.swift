@@ -343,16 +343,12 @@ extension AudioUnitBackend {
         )
         client?.audioBackend(self, willRender: &frame)
 
-        let audioBufferList: UnsafeMutableAudioBufferListPointer = UnsafeMutableAudioBufferListPointer(ioData)
-        guard let buffer: UnsafeMutableAudioBufferListPointer.Element = audioBufferList.first else {
+        let buffer: AudioBuffer = ioData.pointee.mBuffers
+        guard let destination: UnsafeMutableRawPointer = buffer.mData else {
             return noErr
         }
 
         frame.withUnsafeSamplePointer { samplePointer in
-            guard let destination: UnsafeMutableRawPointer = buffer.mData else {
-                return
-            }
-
             destination.copyMemory(
                 from: samplePointer,
                 byteCount: min(

@@ -49,8 +49,7 @@ final class AudioSenderPipeline {
     }
 
     deinit {
-        source.stop(sink: sink)
-        sink.finish()
+        sharedAudioDevice.stopCapture(sink: sink)
         eventContinuation.finish()
     }
 
