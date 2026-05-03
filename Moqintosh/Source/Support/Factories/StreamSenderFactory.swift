@@ -5,9 +5,8 @@
 //  Created by Codex on 2026/04/10.
 //
 
-// Safe because the factory forwards stream creation into SessionContext and does not maintain mutable shared state.
 /// Creates subgroup stream senders for a published track.
-public final class StreamSenderFactory: @unchecked Sendable {
+public final class StreamSenderFactory: Sendable {
 
     private let sessionContext: SessionContext
     /// The published track associated with senders created by this factory.

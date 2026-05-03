@@ -5,11 +5,10 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
-// Safe because mutable session state is synchronized by SessionContext and Subscriber does not add mutable shared state.
 /// Represents a MOQT subscriber created from a session.
 ///
 /// Use this type to request namespaces, subscriptions, fetches, and track status updates.
-public final class Subscriber: @unchecked Sendable {
+public final class Subscriber: Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext

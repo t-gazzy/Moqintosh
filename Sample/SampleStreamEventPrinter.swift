@@ -8,8 +8,7 @@
 import Foundation
 import Moqintosh
 
-// Safe because the printer is immutable after initialization and all callbacks are @Sendable.
-final class SampleStreamEventPrinter: @unchecked Sendable {
+final class SampleStreamEventPrinter: Sendable {
 
     private let configuration: SampleConfiguration
     private let onEvent: @Sendable (String) -> Void

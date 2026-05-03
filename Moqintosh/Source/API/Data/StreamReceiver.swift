@@ -7,9 +7,8 @@
 
 import Foundation
 
-// Safe because receive() is intended for app-owned consumption.
 /// Receives subgroup objects for a subscribed track.
-public final class StreamReceiver: @unchecked Sendable {
+public final class StreamReceiver: Sendable {
 
     /// The subgroup header associated with this receive stream.
     public let header: SubgroupHeader

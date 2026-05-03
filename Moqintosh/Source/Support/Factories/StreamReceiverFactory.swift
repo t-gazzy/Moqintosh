@@ -7,26 +7,19 @@
 
 import Foundation
 
-// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates stream receivers for inbound subgroup streams on a subscription.
-public final class StreamReceiverFactory: @unchecked Sendable {
+public final class StreamReceiverFactory: Sendable {
 
     /// The subscription associated with receivers created by this factory.
     public let subscription: Subscription
 
     private let sessionContext: SessionContext
-    private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
-    private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
+    private let queue: AsyncElementQueue<StreamReceiver>
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
-        let receiverStream: (
-            stream: AsyncStream<StreamReceiver>,
-            continuation: AsyncStream<StreamReceiver>.Continuation
-        ) = StreamReceiverFactory.makeReceiverStream()
         self.sessionContext = sessionContext
         self.subscription = subscription
-        self.receiverContinuation = receiverStream.continuation
-        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
+        self.queue = AsyncElementQueue<StreamReceiver>(bufferLimit: 256)
         await sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
@@ -35,21 +28,26 @@ public final class StreamReceiverFactory: @unchecked Sendable {
                 header: header,
                 initialData: initialData
             )
-            self.yield(receiver)
+            Task {
+                await self.yield(receiver)
+            }
         }
     }
 
     deinit {
-        receiverContinuation.finish()
+        let queue: AsyncElementQueue<StreamReceiver> = self.queue
+        Task {
+            await queue.finish()
+        }
     }
 
     /// Waits for the next inbound subgroup stream receiver.
     public func accept() async -> StreamReceiver? {
-        await receiverIterator.next()
+        await queue.next()
     }
 
-    private func yield(_ receiver: StreamReceiver) {
-        let result: AsyncStream<StreamReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
+    private func yield(_ receiver: StreamReceiver) async {
+        let result: AsyncElementQueue<StreamReceiver>.EnqueueResult = await queue.enqueue(receiver)
         switch result {
         case .enqueued:
             break
@@ -68,19 +66,62 @@ public final class StreamReceiverFactory: @unchecked Sendable {
         }
     }
 
-    private static func makeReceiverStream() -> (
-        stream: AsyncStream<StreamReceiver>,
-        continuation: AsyncStream<StreamReceiver>.Continuation
-    ) {
-        var streamContinuation: AsyncStream<StreamReceiver>.Continuation?
-        let stream: AsyncStream<StreamReceiver> = AsyncStream<StreamReceiver>(
-            bufferingPolicy: .bufferingOldest(256)
-        ) { continuation in
-            streamContinuation = continuation
+}
+
+private actor AsyncElementQueue<Element: Sendable> {
+
+    enum EnqueueResult {
+        case enqueued
+        case dropped
+        case terminated
+    }
+
+    private let bufferLimit: Int
+    private var elements: [Element]
+    private var waiters: [CheckedContinuation<Element?, Never>]
+    private var isFinished: Bool
+
+    init(bufferLimit: Int) {
+        self.bufferLimit = bufferLimit
+        self.elements = []
+        self.waiters = []
+        self.isFinished = false
+    }
+
+    func enqueue(_ element: Element) -> EnqueueResult {
+        if isFinished {
+            return .terminated
         }
-        guard let streamContinuation else {
-            preconditionFailure("AsyncStream must create a continuation")
+        if let waiter: CheckedContinuation<Element?, Never> = waiters.first {
+            waiters.removeFirst()
+            waiter.resume(returning: element)
+            return .enqueued
         }
-        return (stream, streamContinuation)
+        if elements.count >= bufferLimit {
+            return .dropped
+        }
+        elements.append(element)
+        return .enqueued
+    }
+
+    func next() async -> Element? {
+        if !elements.isEmpty {
+            return elements.removeFirst()
+        }
+        if isFinished {
+            return nil
+        }
+        return await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func finish() {
+        isFinished = true
+        let pendingWaiters: [CheckedContinuation<Element?, Never>] = waiters
+        waiters.removeAll()
+        for waiter: CheckedContinuation<Element?, Never> in pendingWaiters {
+            waiter.resume(returning: nil)
+        }
     }
 }

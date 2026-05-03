@@ -29,15 +29,12 @@
    - To enforce API call ordering (e.g., `initialize()` must be called before `doSomething()`), use `precondition` or `preconditionFailure` with a descriptive message instead of `!`.
    - Do not use manual `lock()` / `unlock()` pairs. Use scoped synchronization such as `defer`, `withLock`, actor isolation, or other APIs that cannot forget unlock.
    - Prefer actor isolation for shared mutable state when the performance impact is acceptable.
-   - Before introducing manual synchronization or `@unchecked Sendable`, first consider actor isolation, ownership changes, or `@MainActor`.
+   - `@unchecked Sendable` is prohibited. Resolve Sendable requirements with actor isolation, ownership changes, `@MainActor`, explicit task lifecycle management, or other safe designs.
    - On hot paths, if actor isolation would add unnecessary overhead, use the simplest safe primitive and document the reason briefly in code.
 9. **Annotations**:
    - Apply necessary attributes like `@escaping`, `@discardableResult`, `@MainActor`, and `@Observable` appropriately.
-   - Do not use `@unchecked Sendable` by default.
-   - Use `@unchecked Sendable` only when no practical safe alternative is available.
-   - Before introducing `@unchecked Sendable`, first consider ownership changes, actor isolation, `@MainActor`, or explicit task lifecycle management.
-   - When `@unchecked Sendable` is unavoidable, add a concise English comment immediately above the type explaining why it is safe.
-   - Never add `@unchecked Sendable` without a justification comment.
+   - `@unchecked Sendable` is prohibited.
+   - Satisfy Sendable constraints through safe language features such as actor isolation, `@MainActor`, ownership changes, explicit task lifecycle management, or by redesigning the type boundaries.
 10. **Separation of Responsibilities**:
    - Keep each type focused on a single responsibility. Split state management, protocol serialization, transport handling, and domain behavior when they start to mix.
 

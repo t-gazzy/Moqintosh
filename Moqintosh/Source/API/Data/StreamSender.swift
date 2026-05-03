@@ -8,9 +8,8 @@
 import Foundation
 import Synchronization
 
-// Safe because mutable send state is serialized through previousObjectID.
 /// Sends objects on a single subgroup stream.
-public final class StreamSender: @unchecked Sendable {
+public final class StreamSender: Sendable {
 
     /// The payload or terminal status carried by a subgroup object.
     public enum Content {

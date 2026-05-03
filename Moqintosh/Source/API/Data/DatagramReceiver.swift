@@ -7,40 +7,38 @@
 
 import Foundation
 
-// Safe because datagram delivery is serialized through AsyncStream and receive() is intended for app-owned consumption.
 /// Receives object datagrams for a subscribed track.
-public final class DatagramReceiver: @unchecked Sendable {
+public final class DatagramReceiver: Sendable {
 
     /// The subscription associated with this receiver.
     public let subscription: Subscription
-    private let datagramContinuation: AsyncStream<ObjectDatagram>.Continuation
-    private var datagramIterator: AsyncStream<ObjectDatagram>.Iterator
+    private let queue: AsyncElementQueue<ObjectDatagram>
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
-        let datagramStream: (
-            stream: AsyncStream<ObjectDatagram>,
-            continuation: AsyncStream<ObjectDatagram>.Continuation
-        ) = DatagramReceiver.makeDatagramStream()
         self.subscription = subscription
-        self.datagramContinuation = datagramStream.continuation
-        self.datagramIterator = datagramStream.stream.makeAsyncIterator()
+        self.queue = AsyncElementQueue<ObjectDatagram>(bufferLimit: 256)
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
-            self.yield(datagram)
+            Task {
+                await self.yield(datagram)
+            }
         }
     }
 
     deinit {
-        datagramContinuation.finish()
+        let queue: AsyncElementQueue<ObjectDatagram> = self.queue
+        Task {
+            await queue.finish()
+        }
     }
 
     /// Waits for the next datagram, or returns nil when the receiver closes.
     public func receive() async -> ObjectDatagram? {
-        await datagramIterator.next()
+        await queue.next()
     }
 
-    private func yield(_ datagram: ObjectDatagram) {
-        let result: AsyncStream<ObjectDatagram>.Continuation.YieldResult = datagramContinuation.yield(datagram)
+    private func yield(_ datagram: ObjectDatagram) async {
+        let result: AsyncElementQueue<ObjectDatagram>.EnqueueResult = await queue.enqueue(datagram)
         switch result {
         case .enqueued:
             break
@@ -53,19 +51,64 @@ public final class DatagramReceiver: @unchecked Sendable {
         }
     }
 
-    private static func makeDatagramStream() -> (
-        stream: AsyncStream<ObjectDatagram>,
-        continuation: AsyncStream<ObjectDatagram>.Continuation
-    ) {
-        var streamContinuation: AsyncStream<ObjectDatagram>.Continuation?
-        let stream: AsyncStream<ObjectDatagram> = AsyncStream<ObjectDatagram>(
-            bufferingPolicy: .bufferingNewest(256)
-        ) { continuation in
-            streamContinuation = continuation
+}
+
+private actor AsyncElementQueue<Element: Sendable> {
+
+    enum EnqueueResult {
+        case enqueued
+        case dropped
+        case terminated
+    }
+
+    private let bufferLimit: Int
+    private var elements: [Element]
+    private var waiters: [CheckedContinuation<Element?, Never>]
+    private var isFinished: Bool
+
+    init(bufferLimit: Int) {
+        self.bufferLimit = bufferLimit
+        self.elements = []
+        self.waiters = []
+        self.isFinished = false
+    }
+
+    func enqueue(_ element: Element) -> EnqueueResult {
+        if isFinished {
+            return .terminated
         }
-        guard let streamContinuation else {
-            preconditionFailure("AsyncStream must create a continuation")
+        if let waiter: CheckedContinuation<Element?, Never> = waiters.first {
+            waiters.removeFirst()
+            waiter.resume(returning: element)
+            return .enqueued
         }
-        return (stream, streamContinuation)
+        if elements.count >= bufferLimit {
+            _ = elements.removeFirst()
+            elements.append(element)
+            return .dropped
+        }
+        elements.append(element)
+        return .enqueued
+    }
+
+    func next() async -> Element? {
+        if !elements.isEmpty {
+            return elements.removeFirst()
+        }
+        if isFinished {
+            return nil
+        }
+        return await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func finish() {
+        isFinished = true
+        let pendingWaiters: [CheckedContinuation<Element?, Never>] = waiters
+        waiters.removeAll()
+        for waiter: CheckedContinuation<Element?, Never> in pendingWaiters {
+            waiter.resume(returning: nil)
+        }
     }
 }

@@ -7,9 +7,8 @@
 
 import Foundation
 
-// Safe because the sender forwards directly into SessionContext and does not maintain mutable shared state.
 /// Sends `OBJECT_DATAGRAM` frames for a published track.
-public final class DatagramSender: @unchecked Sendable {
+public final class DatagramSender: Sendable {
 
     /// The published track associated with this sender.
     public let publishedTrack: PublishedTrack
