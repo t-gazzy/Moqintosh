@@ -9,7 +9,7 @@ import Foundation
 import Moqintosh
 import RealtimeMediaKit
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import UIKit
 #endif
 
@@ -97,7 +97,7 @@ final class CallApplicationMediaController {
     private final class RemoteTrackSession {
         let subscription: Moqintosh.Subscription
         let kind: CallApplicationPresentationState.TrackKind
-        #if canImport(UIKit)
+        #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
         let renderView: VideoRenderView?
         #endif
         var datagramHandler: AnyObject?
@@ -112,7 +112,7 @@ final class CallApplicationMediaController {
         ) {
             self.subscription = subscription
             self.kind = kind
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
             if kind == .video {
                 self.renderView = VideoRenderView()
             } else {
@@ -130,7 +130,7 @@ final class CallApplicationMediaController {
             eventTasks.removeAll(keepingCapacity: false)
             streamHandlers.removeAll(keepingCapacity: false)
             datagramHandler = nil
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
             renderView?.flushAndRemoveImage()
             #endif
         }
@@ -294,7 +294,7 @@ final class CallApplicationMediaController {
         }
     }
 
-    #if canImport(UIKit)
+    #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
     func videoRenderView(for remoteTrackID: UInt64?) -> VideoRenderView? {
         guard let remoteTrackID else {
             return nil
@@ -394,7 +394,7 @@ private extension CallApplicationMediaController {
         let datagramReceiver: DatagramReceiver = await subscriber.makeDatagramReceiver(for: subscription)
         switch kind {
         case .video:
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
             let datagramHandler: VideoReceiver = VideoReceiver(
                 packetReceiver: MoqintoshDatagramMediaReceiver(receiver: datagramReceiver),
                 sink: remoteTrackSession.renderView!
@@ -446,7 +446,7 @@ private extension CallApplicationMediaController {
 
         switch remoteTrackSession.kind {
         case .video:
-            #if canImport(UIKit)
+            #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
             let handler: VideoReceiver = VideoReceiver(
                 packetReceiver: MoqintoshStreamMediaReceiver(receiver: streamReceiver),
                 sink: remoteTrackSession.renderView!
@@ -518,7 +518,7 @@ private extension CallApplicationMediaController {
                     )
                     switch kind {
                     case .video:
-                        #if canImport(UIKit)
+                        #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
                         if let firstVideoTrackID: UInt64 = remoteTrackSessions.first(where: { $0.value.kind == .video })?.key,
                            let renderView: VideoRenderView = remoteTrackSessions[firstVideoTrackID]?.renderView {
                             let decodedFrame: VideoFrame = try await H264VideoDecoder().decode(

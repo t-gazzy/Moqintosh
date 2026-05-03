@@ -8,7 +8,7 @@
 import Foundation
 import Moqintosh
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import RealtimeMediaKit
 #endif
 
@@ -461,7 +461,7 @@ final class CallApplicationCoordinator: NSObject, CallApplicationCoordinating {
         }
     }
 
-    #if canImport(UIKit)
+    #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
     func videoRenderView(for remoteTrackID: UInt64?) -> VideoRenderView? {
         mediaController.videoRenderView(for: remoteTrackID)
     }

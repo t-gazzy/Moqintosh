@@ -8,7 +8,7 @@
 import Combine
 import Foundation
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import RealtimeMediaKit
 #endif
 
@@ -109,7 +109,7 @@ final class CallApplicationViewModel: ObservableObject {
         presentationState.eventLogLines
     }
 
-    #if canImport(UIKit)
+    #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
     var selectedVideoRenderView: VideoRenderView? {
         coordinator.videoRenderView(for: selectedRemoteVideoTrackID)
     }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import RealtimeMediaKit
 #endif
 
@@ -47,7 +47,7 @@ protocol CallApplicationCoordinating: AnyObject {
     func cancelFetch(requestID: UInt64) async
     func sendGoAway() async
 
-    #if canImport(UIKit)
+    #if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
     func videoRenderView(for remoteTrackID: UInt64?) -> VideoRenderView?
     #endif
 }
