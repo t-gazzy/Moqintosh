@@ -44,7 +44,6 @@ final class QuicConnection: TransportConnection, Sendable {
                     return
                 }
                 OSLogger.debug("Received inbound UniStream (streamID: \(stream.streamID))")
-                let delegate: (any TransportConnectionDelegate)? = self.delegate
                 delegate?.connection(self, didReceiveUniStream: QuicUniReceiveStream(stream: stream))
             }
         }
@@ -54,7 +53,6 @@ final class QuicConnection: TransportConnection, Sendable {
                 let datagrams: QUIC.Datagrams<QUICDatagram> = try await connection.datagrams
                 for try await message in datagrams.messages {
                     OSLogger.debug("Received inbound datagram")
-                    let delegate: (any TransportConnectionDelegate)? = self.delegate
                     delegate?.connection(self, didReceiveDatagram: message.content)
                 }
             } catch {

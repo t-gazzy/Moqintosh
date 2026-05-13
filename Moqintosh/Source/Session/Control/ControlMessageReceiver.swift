@@ -18,9 +18,7 @@ final class ControlMessageReceiver: Sendable {
     }
 
     deinit {
-        receiveTask.withLock { receiveTask in
-            receiveTask?.cancel()
-        }
+        stop()
     }
 
     func start(dispatcher: ControlMessageDispatcher) {

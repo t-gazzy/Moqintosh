@@ -71,8 +71,7 @@ public final class Session: Sendable {
         prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
     ) async -> PublishNamespaceDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(
+        await delegate?.session(
             self,
             didReceivePublishNamespace: prefix,
             authorizationToken: authorizationToken
@@ -80,8 +79,7 @@ public final class Session: Sendable {
     }
 
     func didReceivePublish(resource: TrackResource) async -> PublishDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(self, didReceivePublish: resource)
+        await delegate?.session(self, didReceivePublish: resource)
             ?? .accept(PublishAcceptance())
     }
 
@@ -89,8 +87,7 @@ public final class Session: Sendable {
         prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
     ) async -> SubscribeNamespaceDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(
+        await delegate?.session(
             self,
             didReceiveSubscribeNamespace: prefix,
             authorizationToken: authorizationToken
@@ -98,60 +95,49 @@ public final class Session: Sendable {
     }
 
     func didReceiveSubscribe(publishedTrack: PublishedTrack) async -> SubscribeDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(self, didReceiveSubscribe: publishedTrack)
+        await delegate?.session(self, didReceiveSubscribe: publishedTrack)
             ?? .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
     }
 
     func didReceiveGoAway(newSessionURI: String?) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveGoAway: newSessionURI)
     }
 
     func didReceiveSubscribeUpdate(_ update: SubscribeUpdate) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveSubscribeUpdate: update)
     }
 
     func didReceiveUnsubscribe(requestID: UInt64) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveUnsubscribe: requestID)
     }
 
     func fetchDecision(for request: FetchRequest) async -> FetchDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(self, didReceiveFetch: request)
+        await delegate?.session(self, didReceiveFetch: request)
             ?? .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func didReceiveFetchCancel(requestID: UInt64) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveFetchCancel: requestID)
     }
 
     func trackStatusDecision(for request: TrackStatusRequest) async -> TrackStatusDecision {
-        let delegate: (any SessionDelegate)? = self.delegate
-        return await delegate?.session(self, didReceiveTrackStatus: request)
+        await delegate?.session(self, didReceiveTrackStatus: request)
             ?? .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func didReceivePublishDone(_ publishDone: PublishDone) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishDone: publishDone)
     }
 
     func didReceivePublishNamespaceDone(trackNamespace: TrackNamespace) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishNamespaceDone: trackNamespace)
     }
 
     func didReceivePublishNamespaceCancel(_ cancellation: PublishNamespaceCancel) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishNamespaceCancel: cancellation)
     }
 
     func didReceiveUnsubscribeNamespace(namespacePrefix: TrackNamespace) async {
-        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveUnsubscribeNamespace: namespacePrefix)
     }
 }
