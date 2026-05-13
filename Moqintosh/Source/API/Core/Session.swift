@@ -6,22 +6,40 @@
 //
 
 import Foundation
+import Synchronization
 
-// Safe because Session delegates shared mutable coordination to actor-isolated SessionContext after one-time startup.
 /// Represents a MOQT session created from an Endpoint.
 /// Use this to create a Publisher or Subscriber.
-public final class Session: @unchecked Sendable {
+public final class Session: Sendable {
+
+    private struct DelegateStorage {
+        weak var delegate: (any SessionDelegate)?
+    }
 
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
     private let streamReceiverCoordinator: StreamReceiverCoordinator
+    private let delegateStorage: Mutex<DelegateStorage>
+
     /// The delegate that receives inbound control message events.
-    public weak var delegate: (any SessionDelegate)?
+    public var delegate: (any SessionDelegate)? {
+        get {
+            delegateStorage.withLock { storage in
+                storage.delegate
+            }
+        }
+        set {
+            delegateStorage.withLock { storage in
+                storage.delegate = newValue
+            }
+        }
+    }
 
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
         self.streamReceiverCoordinator = StreamReceiverCoordinator(sessionContext: sessionContext)
+        self.delegateStorage = Mutex<DelegateStorage>(DelegateStorage(delegate: nil))
     }
 
     func start() async {
@@ -53,7 +71,8 @@ public final class Session: @unchecked Sendable {
         prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
     ) async -> PublishNamespaceDecision {
-        await delegate?.session(
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(
             self,
             didReceivePublishNamespace: prefix,
             authorizationToken: authorizationToken
@@ -61,7 +80,8 @@ public final class Session: @unchecked Sendable {
     }
 
     func didReceivePublish(resource: TrackResource) async -> PublishDecision {
-        await delegate?.session(self, didReceivePublish: resource)
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(self, didReceivePublish: resource)
             ?? .accept(PublishAcceptance())
     }
 
@@ -69,7 +89,8 @@ public final class Session: @unchecked Sendable {
         prefix: TrackNamespace,
         authorizationToken: AuthorizationToken?
     ) async -> SubscribeNamespaceDecision {
-        await delegate?.session(
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(
             self,
             didReceiveSubscribeNamespace: prefix,
             authorizationToken: authorizationToken
@@ -77,49 +98,60 @@ public final class Session: @unchecked Sendable {
     }
 
     func didReceiveSubscribe(publishedTrack: PublishedTrack) async -> SubscribeDecision {
-        await delegate?.session(self, didReceiveSubscribe: publishedTrack)
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(self, didReceiveSubscribe: publishedTrack)
             ?? .accept(SubscribeAcceptance(publishedTrack: publishedTrack))
     }
 
     func didReceiveGoAway(newSessionURI: String?) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveGoAway: newSessionURI)
     }
 
     func didReceiveSubscribeUpdate(_ update: SubscribeUpdate) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveSubscribeUpdate: update)
     }
 
     func didReceiveUnsubscribe(requestID: UInt64) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveUnsubscribe: requestID)
     }
 
     func fetchDecision(for request: FetchRequest) async -> FetchDecision {
-        await delegate?.session(self, didReceiveFetch: request)
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(self, didReceiveFetch: request)
             ?? .reject(FetchRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func didReceiveFetchCancel(requestID: UInt64) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveFetchCancel: requestID)
     }
 
     func trackStatusDecision(for request: TrackStatusRequest) async -> TrackStatusDecision {
-        await delegate?.session(self, didReceiveTrackStatus: request)
+        let delegate: (any SessionDelegate)? = self.delegate
+        return await delegate?.session(self, didReceiveTrackStatus: request)
             ?? .reject(TrackStatusRequestError(code: .trackDoesNotExist, reason: "Track does not exist"))
     }
 
     func didReceivePublishDone(_ publishDone: PublishDone) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishDone: publishDone)
     }
 
     func didReceivePublishNamespaceDone(trackNamespace: TrackNamespace) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishNamespaceDone: trackNamespace)
     }
 
     func didReceivePublishNamespaceCancel(_ cancellation: PublishNamespaceCancel) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceivePublishNamespaceCancel: cancellation)
     }
 
     func didReceiveUnsubscribeNamespace(namespacePrefix: TrackNamespace) async {
+        let delegate: (any SessionDelegate)? = self.delegate
         await delegate?.session(self, didReceiveUnsubscribeNamespace: namespacePrefix)
     }
 }
