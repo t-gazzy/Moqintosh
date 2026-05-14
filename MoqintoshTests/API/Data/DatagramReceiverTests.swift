@@ -52,4 +52,37 @@ struct DatagramReceiverTests {
             Issue.record("Expected payload content")
         }
     }
+
+    @Test func receiveReturnsNilWhenCancelled() async throws {
+        let controlStream: MockTransportBiStream = MockTransportBiStream()
+        let connection: MockTransportConnection = MockTransportConnection(biStream: controlStream)
+        let context: SessionContext = SessionContext(connection: connection, controlStream: controlStream)
+        let receiver: ControlMessageReceiver = ControlMessageReceiver(controlStream: controlStream)
+        let session: Session = Session(sessionContext: context, controlMessageReceiver: receiver)
+        await session.start()
+        let subscription: Subscription = Subscription(
+            requestID: 1,
+            publishedTrack: PublishedTrack(
+                requestID: 1,
+                resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
+                trackAlias: 7,
+                groupOrder: .ascending,
+                contentExist: .noContent,
+                forward: true
+            ),
+            expires: 2,
+            subscriberPriority: 3,
+            filter: .largestObject
+        )
+        let datagramReceiver: DatagramReceiver = await session.makeSubscriber().makeDatagramReceiver(for: subscription)
+
+        let receiveTask: Task<ObjectDatagram?, Never> = Task {
+            await datagramReceiver.receive()
+        }
+        receiveTask.cancel()
+
+        let receivedDatagram: ObjectDatagram? = await receiveTask.value
+
+        #expect(receivedDatagram == nil)
+    }
 }

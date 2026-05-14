@@ -8,15 +8,36 @@
 import Foundation
 
 /// Receives object datagrams for a subscribed track.
-public final class DatagramReceiver: Sendable {
+public actor DatagramReceiver {
+
+    private enum EnqueueResult {
+        case enqueued
+        case dropped
+        case terminated
+    }
+
+    private struct Waiter {
+        let id: UInt64
+        let continuation: CheckedContinuation<ObjectDatagram?, Never>
+    }
 
     /// The subscription associated with this receiver.
-    public let subscription: Subscription
-    private let queue: AsyncElementQueue<ObjectDatagram>
+    public nonisolated let subscription: Subscription
+    private let bufferLimit: Int
+    private var datagrams: [ObjectDatagram]
+    private var waiters: [Waiter]
+    private var cancelledWaiterIDs: Set<UInt64>
+    private var nextWaiterID: UInt64
+    private var isFinished: Bool
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
         self.subscription = subscription
-        self.queue = AsyncElementQueue<ObjectDatagram>(bufferLimit: 256)
+        self.bufferLimit = 256
+        self.datagrams = []
+        self.waiters = []
+        self.cancelledWaiterIDs = []
+        self.nextWaiterID = 0
+        self.isFinished = false
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             Task {
@@ -26,19 +47,39 @@ public final class DatagramReceiver: Sendable {
     }
 
     deinit {
-        let queue: AsyncElementQueue<ObjectDatagram> = self.queue
-        Task {
-            await queue.finish()
+        for waiter: Waiter in waiters {
+            waiter.continuation.resume(returning: nil)
         }
     }
 
     /// Waits for the next datagram, or returns nil when the receiver closes.
     public func receive() async -> ObjectDatagram? {
-        await queue.next()
+        if !datagrams.isEmpty {
+            return datagrams.removeFirst()
+        }
+        if isFinished {
+            return nil
+        }
+
+        let waiterID: UInt64 = nextWaiterID
+        nextWaiterID += 1
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if Task.isCancelled || cancelledWaiterIDs.remove(waiterID) != nil {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                waiters.append(Waiter(id: waiterID, continuation: continuation))
+            }
+        } onCancel: {
+            Task {
+                await self.cancelWaiter(id: waiterID)
+            }
+        }
     }
 
-    private func yield(_ datagram: ObjectDatagram) async {
-        let result: AsyncElementQueue<ObjectDatagram>.EnqueueResult = await queue.enqueue(datagram)
+    private func yield(_ datagram: ObjectDatagram) {
+        let result: EnqueueResult = enqueue(datagram)
         switch result {
         case .enqueued:
             break
@@ -51,64 +92,30 @@ public final class DatagramReceiver: Sendable {
         }
     }
 
-}
-
-private actor AsyncElementQueue<Element: Sendable> {
-
-    enum EnqueueResult {
-        case enqueued
-        case dropped
-        case terminated
-    }
-
-    private let bufferLimit: Int
-    private var elements: [Element]
-    private var waiters: [CheckedContinuation<Element?, Never>]
-    private var isFinished: Bool
-
-    init(bufferLimit: Int) {
-        self.bufferLimit = bufferLimit
-        self.elements = []
-        self.waiters = []
-        self.isFinished = false
-    }
-
-    func enqueue(_ element: Element) -> EnqueueResult {
+    private func enqueue(_ datagram: ObjectDatagram) -> EnqueueResult {
         if isFinished {
             return .terminated
         }
-        if let waiter: CheckedContinuation<Element?, Never> = waiters.first {
+        if let waiter: Waiter = waiters.first {
             waiters.removeFirst()
-            waiter.resume(returning: element)
+            waiter.continuation.resume(returning: datagram)
             return .enqueued
         }
-        if elements.count >= bufferLimit {
-            _ = elements.removeFirst()
-            elements.append(element)
+        if datagrams.count >= bufferLimit {
+            _ = datagrams.removeFirst()
+            datagrams.append(datagram)
             return .dropped
         }
-        elements.append(element)
+        datagrams.append(datagram)
         return .enqueued
     }
 
-    func next() async -> Element? {
-        if !elements.isEmpty {
-            return elements.removeFirst()
+    private func cancelWaiter(id: UInt64) {
+        guard let index: Int = waiters.firstIndex(where: { $0.id == id }) else {
+            cancelledWaiterIDs.insert(id)
+            return
         }
-        if isFinished {
-            return nil
-        }
-        return await withCheckedContinuation { continuation in
-            waiters.append(continuation)
-        }
-    }
-
-    func finish() {
-        isFinished = true
-        let pendingWaiters: [CheckedContinuation<Element?, Never>] = waiters
-        waiters.removeAll()
-        for waiter: CheckedContinuation<Element?, Never> in pendingWaiters {
-            waiter.resume(returning: nil)
-        }
+        let waiter: Waiter = waiters.remove(at: index)
+        waiter.continuation.resume(returning: nil)
     }
 }

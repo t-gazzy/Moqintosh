@@ -8,10 +8,10 @@
 import Foundation
 
 /// Sends `OBJECT_DATAGRAM` frames for a published track.
-public final class DatagramSender: Sendable {
+public actor DatagramSender {
 
     /// The published track associated with this sender.
-    public let publishedTrack: PublishedTrack
+    public nonisolated let publishedTrack: PublishedTrack
 
     private let sessionContext: SessionContext
 

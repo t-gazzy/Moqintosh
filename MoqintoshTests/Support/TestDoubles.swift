@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Synchronization
 @testable import Moqintosh
 
 // Safe because mutable state is serialized through stateQueue in tests.
@@ -86,20 +87,36 @@ final class MockTransportBiStream: TransportBiStream, @unchecked Sendable {
     }
 }
 
-// Safe because the test double is only mutated by the test harness.
-final class MockTransportUniSendStream: TransportUniSendStream, @unchecked Sendable {
+final class MockTransportUniSendStream: TransportUniSendStream, Sendable {
 
-    private(set) var sentBytes: [Data]
-    private(set) var endOfStreamFlags: [Bool]
+    private struct State {
+        var sentBytes: [Data]
+        var endOfStreamFlags: [Bool]
+    }
+
+    private let state: Mutex<State>
+
+    var sentBytes: [Data] {
+        state.withLock { state in
+            state.sentBytes
+        }
+    }
+
+    var endOfStreamFlags: [Bool] {
+        state.withLock { state in
+            state.endOfStreamFlags
+        }
+    }
 
     init() {
-        self.sentBytes = []
-        self.endOfStreamFlags = []
+        self.state = Mutex<State>(State(sentBytes: [], endOfStreamFlags: []))
     }
 
     func send(bytes: Data, endOfStream: Bool) async throws {
-        sentBytes.append(bytes)
-        endOfStreamFlags.append(endOfStream)
+        state.withLock { state in
+            state.sentBytes.append(bytes)
+            state.endOfStreamFlags.append(endOfStream)
+        }
     }
 }
 

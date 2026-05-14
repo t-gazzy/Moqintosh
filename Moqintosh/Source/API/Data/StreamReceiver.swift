@@ -8,10 +8,10 @@
 import Foundation
 
 /// Receives subgroup objects for a subscribed track.
-public final class StreamReceiver: Sendable {
+public actor StreamReceiver {
 
     /// The subgroup header associated with this receive stream.
-    public let header: SubgroupHeader
+    public nonisolated let header: SubgroupHeader
 
     private let stream: TransportUniReceiveStream
     private let frameReader: SubgroupObjectFrameReader

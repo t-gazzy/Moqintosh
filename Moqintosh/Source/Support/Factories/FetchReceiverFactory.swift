@@ -8,10 +8,10 @@
 import Foundation
 
 /// Creates fetch receivers for inbound fetch streams.
-public final class FetchReceiverFactory: Sendable {
+public actor FetchReceiverFactory {
 
     /// The fetch subscription associated with receivers created by this factory.
-    public let fetchSubscription: FetchSubscription
+    public nonisolated let fetchSubscription: FetchSubscription
 
     private let queue: AsyncElementQueue<FetchReceiver>
 
@@ -67,6 +67,11 @@ public final class FetchReceiverFactory: Sendable {
 
 private actor AsyncElementQueue<Element: Sendable> {
 
+    private struct Waiter {
+        let id: UInt64
+        let continuation: CheckedContinuation<Element?, Never>
+    }
+
     enum EnqueueResult {
         case enqueued
         case dropped
@@ -75,13 +80,17 @@ private actor AsyncElementQueue<Element: Sendable> {
 
     private let bufferLimit: Int
     private var elements: [Element]
-    private var waiters: [CheckedContinuation<Element?, Never>]
+    private var waiters: [Waiter]
+    private var cancelledWaiterIDs: Set<UInt64>
+    private var nextWaiterID: UInt64
     private var isFinished: Bool
 
     init(bufferLimit: Int) {
         self.bufferLimit = bufferLimit
         self.elements = []
         self.waiters = []
+        self.cancelledWaiterIDs = []
+        self.nextWaiterID = 0
         self.isFinished = false
     }
 
@@ -89,9 +98,9 @@ private actor AsyncElementQueue<Element: Sendable> {
         if isFinished {
             return .terminated
         }
-        if let waiter: CheckedContinuation<Element?, Never> = waiters.first {
+        if let waiter: Waiter = waiters.first {
             waiters.removeFirst()
-            waiter.resume(returning: element)
+            waiter.continuation.resume(returning: element)
             return .enqueued
         }
         if elements.count >= bufferLimit {
@@ -108,17 +117,39 @@ private actor AsyncElementQueue<Element: Sendable> {
         if isFinished {
             return nil
         }
-        return await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+
+        let waiterID: UInt64 = nextWaiterID
+        nextWaiterID += 1
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                if Task.isCancelled || cancelledWaiterIDs.remove(waiterID) != nil {
+                    continuation.resume(returning: nil)
+                    return
+                }
+                waiters.append(Waiter(id: waiterID, continuation: continuation))
+            }
+        } onCancel: {
+            Task {
+                await self.cancelWaiter(id: waiterID)
+            }
         }
     }
 
     func finish() {
         isFinished = true
-        let pendingWaiters: [CheckedContinuation<Element?, Never>] = waiters
+        let pendingWaiters: [Waiter] = waiters
         waiters.removeAll()
-        for waiter: CheckedContinuation<Element?, Never> in pendingWaiters {
-            waiter.resume(returning: nil)
+        for waiter: Waiter in pendingWaiters {
+            waiter.continuation.resume(returning: nil)
         }
+    }
+
+    private func cancelWaiter(id: UInt64) {
+        guard let index: Int = waiters.firstIndex(where: { $0.id == id }) else {
+            cancelledWaiterIDs.insert(id)
+            return
+        }
+        let waiter: Waiter = waiters.remove(at: index)
+        waiter.continuation.resume(returning: nil)
     }
 }
