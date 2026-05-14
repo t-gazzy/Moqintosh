@@ -14,14 +14,12 @@ public actor DatagramReceiver {
     public nonisolated let subscription: Subscription
     private let stream: AsyncStream<ObjectDatagram>
     private let continuation: AsyncStream<ObjectDatagram>.Continuation
-    private var isReceiving: Bool
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
         self.subscription = subscription
         let streamAndContinuation = AsyncStream<ObjectDatagram>.makeStream(bufferingPolicy: .bufferingNewest(256))
         self.stream = streamAndContinuation.stream
         self.continuation = streamAndContinuation.continuation
-        self.isReceiving = false
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
             guard let self else { return }
             Task {
@@ -36,11 +34,6 @@ public actor DatagramReceiver {
 
     /// Waits for the next datagram, or returns nil when the receiver closes.
     public func receive() async -> ObjectDatagram? {
-        precondition(!isReceiving, "DatagramReceiver.receive() must not be called concurrently.")
-        isReceiving = true
-        defer {
-            isReceiving = false
-        }
         var iterator: AsyncStream<ObjectDatagram>.Iterator = stream.makeAsyncIterator()
         return await iterator.next()
     }

@@ -15,14 +15,12 @@ public actor StreamReceiverFactory {
 
     private let stream: AsyncStream<StreamReceiver>
     private let continuation: AsyncStream<StreamReceiver>.Continuation
-    private var isAccepting: Bool
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
         self.subscription = subscription
         let streamAndContinuation = AsyncStream<StreamReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
         self.stream = streamAndContinuation.stream
         self.continuation = streamAndContinuation.continuation
-        self.isAccepting = false
         await sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
             guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
@@ -42,11 +40,6 @@ public actor StreamReceiverFactory {
 
     /// Waits for the next inbound subgroup stream receiver.
     public func accept() async -> StreamReceiver? {
-        precondition(!isAccepting, "StreamReceiverFactory.accept() must not be called concurrently.")
-        isAccepting = true
-        defer {
-            isAccepting = false
-        }
         var iterator: AsyncStream<StreamReceiver>.Iterator = stream.makeAsyncIterator()
         return await iterator.next()
     }

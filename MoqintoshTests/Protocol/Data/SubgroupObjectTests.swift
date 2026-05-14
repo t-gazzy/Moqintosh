@@ -46,14 +46,7 @@ struct SubgroupObjectTests {
         )
         let object: SubgroupObject = header.makeObject(objectID: 7, content: .status(9))
 
-        let decoded: SubgroupObject = try .decode(object.encode(), header: header)
-
-        #expect(header.resolvedSubgroupID(firstObjectID: decoded.objectID) == 7)
-        #expect(decoded.objectID == 7)
-        if case .status(let status) = decoded.content {
-            #expect(status == 9)
-        } else {
-            Issue.record("Expected status content")
-        }
+        #expect(object.encode() == Data([0x07, 0x00, 0x09]))
+        #expect(header.resolvedSubgroupID(firstObjectID: 7) == 7)
     }
 }

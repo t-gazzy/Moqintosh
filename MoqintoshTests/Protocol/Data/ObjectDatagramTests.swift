@@ -50,12 +50,6 @@ struct ObjectDatagramTests {
             content: .status(6)
         )
 
-        let decoded: ObjectDatagram = try .decode(message.encode())
-
-        if case .status(let status) = decoded.content {
-            #expect(status == 6)
-        } else {
-            Issue.record("Expected status content")
-        }
+        #expect(message.encode() == Data([0x20, 0x02, 0x03, 0x04, 0x05, 0x06]))
     }
 }

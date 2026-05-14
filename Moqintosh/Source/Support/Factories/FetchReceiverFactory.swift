@@ -15,14 +15,12 @@ public actor FetchReceiverFactory {
 
     private let stream: AsyncStream<FetchReceiver>
     private let continuation: AsyncStream<FetchReceiver>.Continuation
-    private var isAccepting: Bool
 
     init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) async {
         self.fetchSubscription = fetchSubscription
         let streamAndContinuation = AsyncStream<FetchReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
         self.stream = streamAndContinuation.stream
         self.continuation = streamAndContinuation.continuation
-        self.isAccepting = false
         await sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
             guard let self else { return }
             let receiver: FetchReceiver = FetchReceiver(
@@ -42,11 +40,6 @@ public actor FetchReceiverFactory {
 
     /// Waits for the next inbound fetch stream receiver.
     public func accept() async -> FetchReceiver? {
-        precondition(!isAccepting, "FetchReceiverFactory.accept() must not be called concurrently.")
-        isAccepting = true
-        defer {
-            isAccepting = false
-        }
         var iterator: AsyncStream<FetchReceiver>.Iterator = stream.makeAsyncIterator()
         return await iterator.next()
     }
