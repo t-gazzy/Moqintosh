@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an inbound `TRACK_STATUS` request.
-public struct TrackStatusRequest {
+public struct TrackStatusRequest: Sendable {
 
     /// The request identifier associated with the query.
     public let requestID: UInt64

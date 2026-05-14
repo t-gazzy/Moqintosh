@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents a `SUBSCRIBE_UPDATE` received from the peer.
-public struct SubscribeUpdate {
+public struct SubscribeUpdate: Sendable {
 
     /// The request identifier of the subscription being updated.
     public let requestID: UInt64
