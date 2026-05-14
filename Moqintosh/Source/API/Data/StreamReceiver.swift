@@ -16,7 +16,7 @@ public actor StreamReceiver {
     private let stream: TransportUniReceiveStream
     private let frameReader: SubgroupObjectFrameReader
 
-    init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
+    init(stream: TransportUniReceiveStream, header: SubgroupHeader, initialData: Data) {
         self.stream = stream
         self.header = header
         self.frameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)
