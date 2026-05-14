@@ -51,7 +51,7 @@ public actor FetchReceiverFactory {
         return await iterator.next()
     }
 
-    private func yield(_ receiver: FetchReceiver) async {
+    private func yield(_ receiver: FetchReceiver) {
         switch continuation.yield(receiver) {
         case .enqueued:
             break

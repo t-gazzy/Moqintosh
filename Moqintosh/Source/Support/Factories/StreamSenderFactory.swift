@@ -6,11 +6,11 @@
 //
 
 /// Creates subgroup stream senders for a published track.
-public actor StreamSenderFactory {
+public final class StreamSenderFactory: Sendable {
 
     private let sessionContext: SessionContext
     /// The published track associated with senders created by this factory.
-    public nonisolated let publishedTrack: PublishedTrack
+    public let publishedTrack: PublishedTrack
 
     init(sessionContext: SessionContext, publishedTrack: PublishedTrack) {
         self.sessionContext = sessionContext
