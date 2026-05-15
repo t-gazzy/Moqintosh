@@ -15,25 +15,15 @@ struct SampleConfiguration: Sendable {
         let sentAtMilliseconds: Int64
     }
 
-    let defaultPort: UInt16
-
-    nonisolated init(defaultPort: UInt16 = 4433) {
-        self.defaultPort = defaultPort
-    }
+    nonisolated init() {}
 
     nonisolated func makeEndpoint(from addressText: String) -> Endpoint? {
         let trimmedAddress: String = addressText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedAddress.isEmpty else { return nil }
-        let components: [String] = trimmedAddress.split(separator: ":", maxSplits: 1).map(String.init)
-        let host: String = components[0]
-        let port: UInt16
-        if components.count == 2 {
-            guard let parsedPort: UInt16 = UInt16(components[1]) else { return nil }
-            port = parsedPort
-        } else {
-            port = defaultPort
+        guard !trimmedAddress.isEmpty,
+              let url: URL = URL(string: trimmedAddress) else {
+            return nil
         }
-        return Endpoint(host: host, port: port)
+        return Endpoint(url: url)
     }
 
     nonisolated func makeNamespace(from text: String) -> TrackNamespace? {
