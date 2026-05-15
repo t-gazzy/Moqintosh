@@ -227,8 +227,8 @@ public final class Subscriber: Sendable {
     }
 
     /// Creates a datagram receiver for an active subscription.
-    public func makeDatagramReceiver(for subscription: Subscription) async -> DatagramReceiver {
-        await DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
+    public func makeDatagramReceiver(for subscription: Subscription) -> DatagramReceiver {
+        DatagramReceiver(sessionContext: sessionContext, subscription: subscription)
     }
 
     /// Creates a fetch receiver factory for an active fetch subscription.

@@ -25,7 +25,10 @@ final class SampleStreamEventPrinter: Sendable {
     }
 
     func receive(from factory: StreamReceiverFactory) async {
-        while !Task.isCancelled, let receiver: StreamReceiver = await factory.accept() {
+        for await receiver in factory.receivers {
+            if Task.isCancelled {
+                break
+            }
             onEvent("Created stream receiver")
             Task { [weak self, receiver] in
                 await self?.receive(from: receiver)

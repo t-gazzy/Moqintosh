@@ -8,40 +8,35 @@
 import Foundation
 
 /// Creates stream receivers for inbound subgroup streams on a subscription.
-public actor StreamReceiverFactory {
+public final class StreamReceiverFactory: Sendable {
 
     /// The subscription associated with receivers created by this factory.
-    public nonisolated let subscription: Subscription
+    public let subscription: Subscription
 
-    private let stream: AsyncStream<StreamReceiver>
+    /// Inbound subgroup stream receivers. Iterate this stream from a single consumer.
+    public let receivers: AsyncStream<StreamReceiver>
     private let continuation: AsyncStream<StreamReceiver>.Continuation
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
         self.subscription = subscription
-        let streamAndContinuation = AsyncStream<StreamReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
-        self.stream = streamAndContinuation.stream
+        let streamAndContinuation: (
+            stream: AsyncStream<StreamReceiver>,
+            continuation: AsyncStream<StreamReceiver>.Continuation
+        ) = AsyncStream<StreamReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
+        self.receivers = streamAndContinuation.stream
         self.continuation = streamAndContinuation.continuation
         await sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
-            guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
                 stream: stream,
                 header: header,
                 initialData: initialData
             )
-            Task {
-                await self.yield(receiver)
-            }
+            self?.yield(receiver)
         }
     }
 
     deinit {
         continuation.finish()
-    }
-
-    /// Waits for the next inbound subgroup stream receiver.
-    public func accept() async -> StreamReceiver? {
-        var iterator: AsyncStream<StreamReceiver>.Iterator = stream.makeAsyncIterator()
-        return await iterator.next()
     }
 
     private func yield(_ receiver: StreamReceiver) {

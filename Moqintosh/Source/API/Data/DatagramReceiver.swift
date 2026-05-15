@@ -8,34 +8,29 @@
 import Foundation
 
 /// Receives object datagrams for a subscribed track.
-public actor DatagramReceiver {
+public final class DatagramReceiver: Sendable {
 
     /// The subscription associated with this receiver.
-    public nonisolated let subscription: Subscription
-    private let stream: AsyncStream<ObjectDatagram>
+    public let subscription: Subscription
+    /// Datagrams received for the subscription. Iterate this stream from a single consumer.
+    public let datagrams: AsyncStream<ObjectDatagram>
     private let continuation: AsyncStream<ObjectDatagram>.Continuation
 
-    init(sessionContext: SessionContext, subscription: Subscription) async {
+    init(sessionContext: SessionContext, subscription: Subscription) {
         self.subscription = subscription
-        let streamAndContinuation = AsyncStream<ObjectDatagram>.makeStream(bufferingPolicy: .bufferingNewest(256))
-        self.stream = streamAndContinuation.stream
+        let streamAndContinuation: (
+            stream: AsyncStream<ObjectDatagram>,
+            continuation: AsyncStream<ObjectDatagram>.Continuation
+        ) = AsyncStream<ObjectDatagram>.makeStream(bufferingPolicy: .bufferingNewest(256))
+        self.datagrams = streamAndContinuation.stream
         self.continuation = streamAndContinuation.continuation
         sessionContext.datagramReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] datagram in
-            guard let self else { return }
-            Task {
-                await self.yield(datagram)
-            }
+            self?.yield(datagram)
         }
     }
 
     deinit {
         continuation.finish()
-    }
-
-    /// Waits for the next datagram, or returns nil when the receiver closes.
-    public func receive() async -> ObjectDatagram? {
-        var iterator: AsyncStream<ObjectDatagram>.Iterator = stream.makeAsyncIterator()
-        return await iterator.next()
     }
 
     private func yield(_ datagram: ObjectDatagram) {

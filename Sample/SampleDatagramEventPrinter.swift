@@ -19,7 +19,10 @@ final class SampleDatagramEventPrinter: Sendable {
     }
 
     func receive(from receiver: DatagramReceiver) async {
-        while !Task.isCancelled, let datagram: ObjectDatagram = await receiver.receive() {
+        for await datagram in receiver.datagrams {
+            if Task.isCancelled {
+                break
+            }
             print(datagram: datagram)
         }
     }

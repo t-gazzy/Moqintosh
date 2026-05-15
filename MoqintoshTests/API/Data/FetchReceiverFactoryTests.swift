@@ -34,9 +34,10 @@ struct FetchReceiverFactoryTests {
             receiveError: nil
         )
 
+        var iterator: AsyncStream<FetchReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         connection.receiveUniStream(stream)
 
-        let fetchReceiver: FetchReceiver? = await factory.accept()
+        let fetchReceiver: FetchReceiver? = await iterator.next()
 
         #expect(fetchReceiver?.fetchSubscription.requestID == 1)
     }
