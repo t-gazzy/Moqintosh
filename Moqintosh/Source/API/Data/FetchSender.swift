@@ -8,10 +8,10 @@
 import Foundation
 
 /// Sends subgroup objects on a fetch stream.
-public final class FetchSender {
+public actor FetchSender {
 
     /// The payload or terminal status carried by a fetch object.
-    public enum Content {
+    public enum Content: Sendable {
         case payload(Data)
         case status(UInt64)
     }

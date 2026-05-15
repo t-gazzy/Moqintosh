@@ -196,7 +196,7 @@ final class SampleSessionController {
         await performOperation(status: "Subscribing track...") {
             let subscription: Subscription = try await self.subscriber.subscribe(resource: resource)
             let streamReceiverFactory: StreamReceiverFactory = await self.subscriber.makeStreamReceiverFactory(for: subscription)
-            let datagramReceiver: DatagramReceiver = await self.subscriber.makeDatagramReceiver(for: subscription)
+            let datagramReceiver: DatagramReceiver = self.subscriber.makeDatagramReceiver(for: subscription)
             self.stopReceiveLoops()
             self.streamReceiveTask = Task { [streamEventPrinter = self.streamEventPrinter] in
                 await streamEventPrinter.receive(from: streamReceiverFactory)

@@ -7,80 +7,51 @@
 
 import Foundation
 
-// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates stream receivers for inbound subgroup streams on a subscription.
-public final class StreamReceiverFactory: @unchecked Sendable {
+public final class StreamReceiverFactory: Sendable {
 
     /// The subscription associated with receivers created by this factory.
     public let subscription: Subscription
 
-    private let sessionContext: SessionContext
-    private let receiverContinuation: AsyncStream<StreamReceiver>.Continuation
-    private var receiverIterator: AsyncStream<StreamReceiver>.Iterator
+    /// Inbound subgroup stream receivers. Iterate this stream from a single consumer.
+    public let receivers: AsyncStream<StreamReceiver>
+    private let continuation: AsyncStream<StreamReceiver>.Continuation
 
     init(sessionContext: SessionContext, subscription: Subscription) async {
-        let receiverStream: (
+        self.subscription = subscription
+        let streamAndContinuation: (
             stream: AsyncStream<StreamReceiver>,
             continuation: AsyncStream<StreamReceiver>.Continuation
-        ) = StreamReceiverFactory.makeReceiverStream()
-        self.sessionContext = sessionContext
-        self.subscription = subscription
-        self.receiverContinuation = receiverStream.continuation
-        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
+        ) = AsyncStream<StreamReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
+        self.receivers = streamAndContinuation.stream
+        self.continuation = streamAndContinuation.continuation
         await sessionContext.streamReceiverStore.register(trackAlias: subscription.publishedTrack.trackAlias) { [weak self] stream, header, initialData in
-            guard let self else { return }
             let receiver: StreamReceiver = StreamReceiver(
                 stream: stream,
-                subscription: subscription,
                 header: header,
                 initialData: initialData
             )
-            self.yield(receiver)
+            self?.yield(receiver)
         }
     }
 
     deinit {
-        receiverContinuation.finish()
-    }
-
-    /// Waits for the next inbound subgroup stream receiver.
-    public func accept() async -> StreamReceiver? {
-        await receiverIterator.next()
+        continuation.finish()
     }
 
     private func yield(_ receiver: StreamReceiver) {
-        let result: AsyncStream<StreamReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
-        switch result {
+        switch continuation.yield(receiver) {
         case .enqueued:
             break
-        case .dropped:
+        case .dropped(let droppedReceiver):
             OSLogger.warn(
-                "Dropped inbound stream receiver because StreamReceiverFactory buffer is full (trackAlias: \(receiver.header.trackAlias))"
+                "Dropped inbound stream receiver because StreamReceiverFactory buffer is full (trackAlias: \(droppedReceiver.header.trackAlias))"
             )
         case .terminated:
-            OSLogger.debug(
-                "Dropped inbound stream receiver because StreamReceiverFactory is terminated (trackAlias: \(receiver.header.trackAlias))"
-            )
+            break
         @unknown default:
-            OSLogger.warn(
-                "Dropped inbound stream receiver for an unknown reason (trackAlias: \(receiver.header.trackAlias))"
-            )
+            break
         }
     }
 
-    private static func makeReceiverStream() -> (
-        stream: AsyncStream<StreamReceiver>,
-        continuation: AsyncStream<StreamReceiver>.Continuation
-    ) {
-        var streamContinuation: AsyncStream<StreamReceiver>.Continuation?
-        let stream: AsyncStream<StreamReceiver> = AsyncStream<StreamReceiver>(
-            bufferingPolicy: .bufferingOldest(256)
-        ) { continuation in
-            streamContinuation = continuation
-        }
-        guard let streamContinuation else {
-            preconditionFailure("AsyncStream must create a continuation")
-        }
-        return (stream, streamContinuation)
-    }
 }

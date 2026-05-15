@@ -9,7 +9,7 @@
 ///
 /// Implement this protocol to react to messages sent by the remote peer.
 /// All methods have a default no-op implementation so you only override what you need.
-public protocol SessionDelegate: AnyObject {
+public protocol SessionDelegate: AnyObject, Sendable {
 
     // MARK: - Publisher-facing events (sent by the remote Subscriber)
 

@@ -20,20 +20,6 @@ struct StreamReceiverTests {
         )
         let receiver: StreamReceiver = StreamReceiver(
             stream: stream,
-            subscription: Subscription(
-                requestID: 1,
-                publishedTrack: PublishedTrack(
-                    requestID: 1,
-                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
-                    trackAlias: 7,
-                    groupOrder: .ascending,
-                    contentExist: .noContent,
-                    forward: true
-                ),
-                expires: 2,
-                subscriberPriority: 3,
-                filter: .largestObject
-            ),
             header: header,
             initialData: Data()
         )
@@ -55,20 +41,6 @@ struct StreamReceiverTests {
         )
         let receiver: StreamReceiver = StreamReceiver(
             stream: stream,
-            subscription: Subscription(
-                requestID: 1,
-                publishedTrack: PublishedTrack(
-                    requestID: 1,
-                    resource: TrackResource(trackNamespace: TrackNamespace(strings: ["live"]), trackName: Data("video".utf8)),
-                    trackAlias: 7,
-                    groupOrder: .ascending,
-                    contentExist: .noContent,
-                    forward: true
-                ),
-                expires: 2,
-                subscriberPriority: 3,
-                filter: .largestObject
-            ),
             header: header,
             initialData: Data()
         )

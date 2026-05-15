@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents an inbound `FETCH` request.
-public enum FetchRequest {
+public enum FetchRequest: Sendable {
     case standalone(
         requestID: UInt64,
         resource: TrackResource,

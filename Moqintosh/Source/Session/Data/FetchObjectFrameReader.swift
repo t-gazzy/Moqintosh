@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class FetchObjectFrameReader {
+actor FetchObjectFrameReader {
 
     private var buffer: Data
     private var isStreamComplete: Bool

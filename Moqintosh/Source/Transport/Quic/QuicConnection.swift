@@ -7,16 +7,34 @@
 
 import Network
 import Foundation
+import Synchronization
 
-// Safe because Network QUIC primitives are used as thread-safe handles and all mutable coordination is delegated outward.
 /// An established QUIC transport connection.
-final class QuicConnection: TransportConnection, @unchecked Sendable {
+final class QuicConnection: TransportConnection, Sendable {
+
+    private struct DelegateStorage {
+        weak var delegate: (any TransportConnectionDelegate)?
+    }
 
     let connection: NetworkConnection<QUIC>
-    weak var delegate: (any TransportConnectionDelegate)?
+    private let delegateStorage: Mutex<DelegateStorage>
+
+    var delegate: (any TransportConnectionDelegate)? {
+        get {
+            delegateStorage.withLock { storage in
+                storage.delegate
+            }
+        }
+        set {
+            delegateStorage.withLock { storage in
+                storage.delegate = newValue
+            }
+        }
+    }
 
     init(connection: NetworkConnection<QUIC>) {
         self.connection = connection
+        self.delegateStorage = Mutex<DelegateStorage>(DelegateStorage(delegate: nil))
         Task { [weak self] in
             guard let self else { return }
             try await connection.inboundStreams { [weak self] stream in

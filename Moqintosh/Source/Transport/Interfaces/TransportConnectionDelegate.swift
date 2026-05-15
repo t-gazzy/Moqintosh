@@ -8,7 +8,7 @@
 import Foundation
 
 /// Receives inbound data-plane events from a TransportConnection.
-protocol TransportConnectionDelegate: AnyObject {
+protocol TransportConnectionDelegate: AnyObject, Sendable {
     func connection(_ connection: TransportConnection, didReceiveUniStream stream: TransportUniReceiveStream)
     func connection(_ connection: TransportConnection, didReceiveDatagram bytes: Data)
 }

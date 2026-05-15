@@ -40,9 +40,10 @@ struct StreamReceiverFactoryTests {
             receiveError: nil
         )
 
+        var iterator: AsyncStream<StreamReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         connection.receiveUniStream(stream)
 
-        let streamReceiver: StreamReceiver? = await factory.accept()
+        let streamReceiver: StreamReceiver? = await iterator.next()
 
         if case .explicit(let subgroupID) = streamReceiver?.header.subgroupID {
             #expect(subgroupID == 5)

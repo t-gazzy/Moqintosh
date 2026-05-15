@@ -7,17 +7,16 @@
 
 import Foundation
 
-// Safe because receive() is intended for app-owned consumption.
 /// Receives subgroup objects for a subscribed track.
-public final class StreamReceiver: @unchecked Sendable {
+public actor StreamReceiver {
 
     /// The subgroup header associated with this receive stream.
-    public let header: SubgroupHeader
+    public nonisolated let header: SubgroupHeader
 
     private let stream: TransportUniReceiveStream
     private let frameReader: SubgroupObjectFrameReader
 
-    init(stream: TransportUniReceiveStream, subscription: Subscription, header: SubgroupHeader, initialData: Data) {
+    init(stream: TransportUniReceiveStream, header: SubgroupHeader, initialData: Data) {
         self.stream = stream
         self.header = header
         self.frameReader = SubgroupObjectFrameReader(header: header, initialData: initialData)

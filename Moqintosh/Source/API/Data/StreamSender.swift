@@ -6,26 +6,24 @@
 //
 
 import Foundation
-import Synchronization
 
-// Safe because mutable send state is serialized through previousObjectID.
 /// Sends objects on a single subgroup stream.
-public final class StreamSender: @unchecked Sendable {
+public actor StreamSender {
 
     /// The payload or terminal status carried by a subgroup object.
-    public enum Content {
+    public enum Content: Sendable {
         case payload(ReadOnlyBytes)
         case status(UInt64)
     }
 
     private let stream: TransportUniSendStream
     private let header: SubgroupHeader
-    private let previousObjectID: Mutex<UInt64?>
+    private var previousObjectID: UInt64?
 
     init(stream: TransportUniSendStream, header: SubgroupHeader) {
         self.stream = stream
         self.header = header
-        self.previousObjectID = Mutex<UInt64?>(nil)
+        self.previousObjectID = nil
     }
 
     /// Sends a subgroup object and keeps the stream open.
@@ -44,16 +42,13 @@ public final class StreamSender: @unchecked Sendable {
         extensions: [KeyValuePair],
         content: Content
     ) async throws {
-        let subgroupObject: SubgroupObject = previousObjectID.withLock { previousObjectID in
-            let subgroupObject: SubgroupObject = header.makeObject(
-                previousObjectID: previousObjectID,
-                objectID: objectID,
-                extensions: extensions,
-                content: content.subgroupObjectContent
-            )
-            previousObjectID = objectID
-            return subgroupObject
-        }
+        let subgroupObject: SubgroupObject = header.makeObject(
+            previousObjectID: previousObjectID,
+            objectID: objectID,
+            extensions: extensions,
+            content: content.subgroupObjectContent
+        )
+        previousObjectID = objectID
         try await stream.send(bytes: subgroupObject.encode(), endOfStream: endOfGroup)
     }
 }
