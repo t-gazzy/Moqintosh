@@ -17,7 +17,7 @@ struct ConnectView: View {
                 .font(.largeTitle)
                 .fontWeight(.semibold)
 
-            TextField("host:port", text: $controller.destinationText)
+            TextField("moqt://host:port", text: $controller.destinationText)
                 .textFieldStyle(.roundedBorder)
 
             Button("Connect") {
