@@ -5,11 +5,10 @@
 //  Created by takemasa kaji on 2026/04/10.
 //
 
-// Safe because mutable session state is synchronized by SessionContext and Publisher does not add mutable shared state.
 /// Represents a MOQT publisher created from a session.
 ///
 /// Use this type to announce namespaces, publish tracks, and create data senders.
-public final class Publisher: @unchecked Sendable {
+public final class Publisher: Sendable {
 
     private let controlMessageChannel: any ControlMessageChannel
     private let sessionContext: SessionContext

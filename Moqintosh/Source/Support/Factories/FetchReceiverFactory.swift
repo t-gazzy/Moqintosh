@@ -7,77 +7,51 @@
 
 import Foundation
 
-// Safe because accept() is intended for app-owned consumption and receiver delivery uses AsyncStream.
 /// Creates fetch receivers for inbound fetch streams.
-public final class FetchReceiverFactory: @unchecked Sendable {
+public final class FetchReceiverFactory: Sendable {
 
     /// The fetch subscription associated with receivers created by this factory.
     public let fetchSubscription: FetchSubscription
 
-    private let receiverContinuation: AsyncStream<FetchReceiver>.Continuation
-    private var receiverIterator: AsyncStream<FetchReceiver>.Iterator
+    /// Inbound fetch stream receivers. Iterate this stream from a single consumer.
+    public let receivers: AsyncStream<FetchReceiver>
+    private let continuation: AsyncStream<FetchReceiver>.Continuation
 
     init(sessionContext: SessionContext, fetchSubscription: FetchSubscription) async {
-        let receiverStream: (
+        self.fetchSubscription = fetchSubscription
+        let streamAndContinuation: (
             stream: AsyncStream<FetchReceiver>,
             continuation: AsyncStream<FetchReceiver>.Continuation
-        ) = FetchReceiverFactory.makeReceiverStream()
-        self.fetchSubscription = fetchSubscription
-        self.receiverContinuation = receiverStream.continuation
-        self.receiverIterator = receiverStream.stream.makeAsyncIterator()
+        ) = AsyncStream<FetchReceiver>.makeStream(bufferingPolicy: .bufferingOldest(256))
+        self.receivers = streamAndContinuation.stream
+        self.continuation = streamAndContinuation.continuation
         await sessionContext.fetchReceiverStore.register(requestID: fetchSubscription.requestID) { [weak self] stream, _, initialData in
-            guard let self else { return }
             let receiver: FetchReceiver = FetchReceiver(
                 stream: stream,
                 fetchSubscription: fetchSubscription,
                 initialData: initialData
             )
-            self.yield(receiver)
+            self?.yield(receiver)
         }
     }
 
     deinit {
-        receiverContinuation.finish()
-    }
-
-    /// Waits for the next inbound fetch stream receiver.
-    public func accept() async -> FetchReceiver? {
-        await receiverIterator.next()
+        continuation.finish()
     }
 
     private func yield(_ receiver: FetchReceiver) {
-        let result: AsyncStream<FetchReceiver>.Continuation.YieldResult = receiverContinuation.yield(receiver)
-        switch result {
+        switch continuation.yield(receiver) {
         case .enqueued:
             break
-        case .dropped:
+        case .dropped(let droppedReceiver):
             OSLogger.warn(
-                "Dropped inbound fetch receiver because FetchReceiverFactory buffer is full (requestID: \(receiver.fetchSubscription.requestID))"
+                "Dropped inbound fetch receiver because FetchReceiverFactory buffer is full (requestID: \(droppedReceiver.fetchSubscription.requestID))"
             )
         case .terminated:
-            OSLogger.debug(
-                "Dropped inbound fetch receiver because FetchReceiverFactory is terminated (requestID: \(receiver.fetchSubscription.requestID))"
-            )
+            break
         @unknown default:
-            OSLogger.warn(
-                "Dropped inbound fetch receiver for an unknown reason (requestID: \(receiver.fetchSubscription.requestID))"
-            )
+            break
         }
     }
 
-    private static func makeReceiverStream() -> (
-        stream: AsyncStream<FetchReceiver>,
-        continuation: AsyncStream<FetchReceiver>.Continuation
-    ) {
-        var streamContinuation: AsyncStream<FetchReceiver>.Continuation?
-        let stream: AsyncStream<FetchReceiver> = AsyncStream<FetchReceiver>(
-            bufferingPolicy: .bufferingOldest(256)
-        ) { continuation in
-            streamContinuation = continuation
-        }
-        guard let streamContinuation else {
-            preconditionFailure("AsyncStream must create a continuation")
-        }
-        return (stream, streamContinuation)
-    }
 }

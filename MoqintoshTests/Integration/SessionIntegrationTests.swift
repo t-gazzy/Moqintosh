@@ -296,9 +296,10 @@ struct SessionIntegrationTests {
             receiveError: nil
         )
 
+        var iterator: AsyncStream<StreamReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         connection.receiveUniStream(stream)
 
-        guard let streamReceiver: StreamReceiver = await factory.accept() else {
+        guard let streamReceiver: StreamReceiver = await iterator.next() else {
             Issue.record("Expected stream receiver")
             return
         }
@@ -323,7 +324,8 @@ struct SessionIntegrationTests {
             controlStream: controlStream,
             trackAlias: 6
         )
-        let receiver: DatagramReceiver = await session.makeSubscriber().makeDatagramReceiver(for: subscription)
+        let receiver: DatagramReceiver = session.makeSubscriber().makeDatagramReceiver(for: subscription)
+        var iterator: AsyncStream<ObjectDatagram>.Iterator = receiver.datagrams.makeAsyncIterator()
 
         connection.receiveDatagram(
             bytes: ObjectDatagram(
@@ -335,7 +337,7 @@ struct SessionIntegrationTests {
             ).encode()
         )
 
-        let receivedDatagram: ObjectDatagram? = await receiver.receive()
+        let receivedDatagram: ObjectDatagram? = await iterator.next()
         controlStream.finishReceiving(with: CancellationError())
 
         #expect(receivedDatagram?.groupID == 8)
@@ -372,9 +374,10 @@ struct SessionIntegrationTests {
             receiveError: nil
         )
 
+        var iterator: AsyncStream<FetchReceiver>.Iterator = factory.receivers.makeAsyncIterator()
         connection.receiveUniStream(stream)
 
-        guard let fetchReceiver: FetchReceiver = await factory.accept() else {
+        guard let fetchReceiver: FetchReceiver = await iterator.next() else {
             Issue.record("Expected fetch receiver")
             return
         }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol ControlMessageChannel: AnyObject {
+protocol ControlMessageChannel: AnyObject, Sendable {
     func issueRequestID() async throws -> UInt64
     func issueTrackAlias() async -> UInt64
     func sendControlMessage(bytes: Data) async throws

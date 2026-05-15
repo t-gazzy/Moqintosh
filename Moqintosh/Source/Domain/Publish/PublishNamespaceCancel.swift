@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents a `PUBLISH_NAMESPACE_CANCEL` received from the peer.
-public struct PublishNamespaceCancel {
+public struct PublishNamespaceCancel: Sendable {
 
     /// The cancelled namespace prefix.
     public let trackNamespace: TrackNamespace

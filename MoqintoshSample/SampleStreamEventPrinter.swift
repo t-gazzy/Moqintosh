@@ -8,8 +8,7 @@
 import Foundation
 import Moqintosh
 
-// Safe because the printer is immutable after initialization and all callbacks are @Sendable.
-final class SampleStreamEventPrinter: @unchecked Sendable {
+final class SampleStreamEventPrinter: Sendable {
 
     private let configuration: SampleConfiguration
     private let onEvent: @Sendable (String) -> Void
@@ -26,7 +25,10 @@ final class SampleStreamEventPrinter: @unchecked Sendable {
     }
 
     func receive(from factory: StreamReceiverFactory) async {
-        while !Task.isCancelled, let receiver: StreamReceiver = await factory.accept() {
+        for await receiver in factory.receivers {
+            if Task.isCancelled {
+                break
+            }
             onEvent("Created stream receiver")
             Task { [weak self, receiver] in
                 await self?.receive(from: receiver)

@@ -13,7 +13,7 @@ import Foundation
 /// This reader keeps an internal buffer, pulls more bytes from the stream when
 /// needed, and decodes exactly one ``SubgroupObject`` at a time using the
 /// subgroup header context.
-final class SubgroupObjectFrameReader {
+actor SubgroupObjectFrameReader {
 
     private let header: SubgroupHeader
     private var buffer: Data

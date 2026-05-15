@@ -8,35 +8,25 @@
 import Foundation
 import Moqintosh
 
-struct SampleConfiguration {
+struct SampleConfiguration: Sendable {
 
-    struct LatencyPayload: Codable {
+    nonisolated struct LatencyPayload: Codable, Sendable {
 
         let sentAtMilliseconds: Int64
     }
 
-    let defaultPort: UInt16
+    nonisolated init() {}
 
-    init(defaultPort: UInt16 = 4433) {
-        self.defaultPort = defaultPort
-    }
-
-    func makeEndpoint(from addressText: String) -> Endpoint? {
+    nonisolated func makeEndpoint(from addressText: String) -> Endpoint? {
         let trimmedAddress: String = addressText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedAddress.isEmpty else { return nil }
-        let components: [String] = trimmedAddress.split(separator: ":", maxSplits: 1).map(String.init)
-        let host: String = components[0]
-        let port: UInt16
-        if components.count == 2 {
-            guard let parsedPort: UInt16 = UInt16(components[1]) else { return nil }
-            port = parsedPort
-        } else {
-            port = defaultPort
+        guard !trimmedAddress.isEmpty,
+              let url: URL = URL(string: trimmedAddress) else {
+            return nil
         }
-        return Endpoint(host: host, port: port)
+        return Endpoint(url: url)
     }
 
-    func makeNamespace(from text: String) -> TrackNamespace? {
+    nonisolated func makeNamespace(from text: String) -> TrackNamespace? {
         let elements: [String] = text
             .split(separator: "/")
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -45,11 +35,11 @@ struct SampleConfiguration {
         return TrackNamespace(strings: elements)
     }
 
-    func makeNamespaceString(from namespace: TrackNamespace) -> String {
+    nonisolated func makeNamespaceString(from namespace: TrackNamespace) -> String {
         namespace.joinedUTF8Elements()
     }
 
-    func makeTrackResource(namespace: TrackNamespace, trackName: String) -> TrackResource? {
+    nonisolated func makeTrackResource(namespace: TrackNamespace, trackName: String) -> TrackResource? {
         let trimmedTrackName: String = trackName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTrackName.isEmpty else { return nil }
         return TrackResource(
@@ -58,7 +48,7 @@ struct SampleConfiguration {
         )
     }
 
-    func makePayload(date: Date = Date()) -> ReadOnlyBytes {
+    nonisolated func makePayload(date: Date = Date()) -> ReadOnlyBytes {
         let payload: LatencyPayload = LatencyPayload(
             sentAtMilliseconds: Int64(date.timeIntervalSince1970 * 1_000)
         )
@@ -69,16 +59,16 @@ struct SampleConfiguration {
         return ReadOnlyBytes(data)
     }
 
-    func decodePayload(_ data: Data) -> LatencyPayload? {
+    nonisolated func decodePayload(_ data: Data) -> LatencyPayload? {
         let decoder: JSONDecoder = JSONDecoder()
         return try? decoder.decode(LatencyPayload.self, from: data)
     }
 
-    func decodePayload(_ bytes: ReadOnlyBytes) -> LatencyPayload? {
+    nonisolated func decodePayload(_ bytes: ReadOnlyBytes) -> LatencyPayload? {
         decodePayload(bytes.materialize())
     }
 
-    func makeLatencyText(sentAtMilliseconds: Int64, receivedAt: Date = Date()) -> String {
+    nonisolated func makeLatencyText(sentAtMilliseconds: Int64, receivedAt: Date = Date()) -> String {
         let receivedAtMilliseconds: Int64 = Int64(receivedAt.timeIntervalSince1970 * 1_000)
         let latencyMilliseconds: Int64 = max(0, receivedAtMilliseconds - sentAtMilliseconds)
         let sentAtDate: Date = Date(timeIntervalSince1970: TimeInterval(sentAtMilliseconds) / 1_000)
@@ -86,7 +76,7 @@ struct SampleConfiguration {
         return "sentAt=\(sentAtText), latency=\(latencyMilliseconds)ms"
     }
 
-    func makeDisplayTimestamp(date: Date = Date()) -> String {
+    nonisolated func makeDisplayTimestamp(date: Date = Date()) -> String {
         ISO8601DateFormatter.string(
             from: date,
             timeZone: .current,

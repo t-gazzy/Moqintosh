@@ -6,22 +6,40 @@
 //
 
 import Foundation
+import Synchronization
 
-// Safe because Session delegates shared mutable coordination to actor-isolated SessionContext after one-time startup.
 /// Represents a MOQT session created from an Endpoint.
 /// Use this to create a Publisher or Subscriber.
-public final class Session: @unchecked Sendable {
+public final class Session: Sendable {
+
+    private struct DelegateStorage {
+        weak var delegate: (any SessionDelegate)?
+    }
 
     let context: SessionContext
     private let controlMessageReceiver: ControlMessageReceiver
     private let streamReceiverCoordinator: StreamReceiverCoordinator
+    private let delegateStorage: Mutex<DelegateStorage>
+
     /// The delegate that receives inbound control message events.
-    public weak var delegate: (any SessionDelegate)?
+    public var delegate: (any SessionDelegate)? {
+        get {
+            delegateStorage.withLock { storage in
+                storage.delegate
+            }
+        }
+        set {
+            delegateStorage.withLock { storage in
+                storage.delegate = newValue
+            }
+        }
+    }
 
     init(sessionContext: SessionContext, controlMessageReceiver: ControlMessageReceiver) {
         self.context = sessionContext
         self.controlMessageReceiver = controlMessageReceiver
         self.streamReceiverCoordinator = StreamReceiverCoordinator(sessionContext: sessionContext)
+        self.delegateStorage = Mutex<DelegateStorage>(DelegateStorage(delegate: nil))
     }
 
     func start() async {

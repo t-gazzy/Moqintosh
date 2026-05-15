@@ -8,7 +8,7 @@
 import Foundation
 
 /// The terminal status of a published track.
-public struct PublishDone {
+public struct PublishDone: Sendable {
 
     /// The request identifier of the finished publish.
     public let requestID: UInt64

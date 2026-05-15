@@ -7,12 +7,11 @@
 
 import Foundation
 
-// Safe because receive() is intended for app-owned consumption.
 /// Receives subgroup objects from an accepted fetch stream.
-public final class FetchReceiver: @unchecked Sendable {
+public actor FetchReceiver {
 
     /// The accepted fetch subscription associated with this receiver.
-    public let fetchSubscription: FetchSubscription
+    public nonisolated let fetchSubscription: FetchSubscription
 
     private let stream: TransportUniReceiveStream
     private let frameReader: FetchObjectFrameReader

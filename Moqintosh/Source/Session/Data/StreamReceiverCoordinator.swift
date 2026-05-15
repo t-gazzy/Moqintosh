@@ -7,8 +7,7 @@
 
 import Foundation
 
-// Safe because the coordinator is immutable and only forwards inbound streams into per-stream tasks.
-final class StreamReceiverCoordinator: TransportConnectionDelegate, @unchecked Sendable {
+final class StreamReceiverCoordinator: TransportConnectionDelegate, Sendable {
 
     private let sessionContext: SessionContext
 
