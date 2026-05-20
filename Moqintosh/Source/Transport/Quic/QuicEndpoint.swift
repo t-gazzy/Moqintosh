@@ -69,7 +69,6 @@ final class QuicEndpoint: TransportEndpoint {
             }
             .start()
         }
-        OSLogger.info("qqq idle timeout: \(connection.remoteIdleTimeout)")
         return QuicConnection(connection: connection)
     }
 }
