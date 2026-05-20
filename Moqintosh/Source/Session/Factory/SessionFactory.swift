@@ -7,14 +7,20 @@
 
 /// Creates a Session by performing the MOQT handshake over a transport connection.
 final class SessionFactory {
-    func connect(transportEndpoint: TransportEndpoint) async throws -> Session {
+    func connect(
+        transportEndpoint: TransportEndpoint,
+        initialIncomingRequestIDLimit: UInt64 = 1000
+    ) async throws -> Session {
         OSLogger.info("Connecting transport")
         let connection = try await transportEndpoint.connect()
 
         OSLogger.debug("Opening control stream")
         let controlStream = try await connection.openBiStream()
 
-        let handshaker = SessionHandshaker(stream: controlStream)
+        let handshaker = SessionHandshaker(
+            stream: controlStream,
+            initialIncomingRequestIDLimit: initialIncomingRequestIDLimit
+        )
         let serverSetup = try await handshaker.handshake()
         OSLogger.info("Handshake completed (selectedVersion: \(serverSetup.selectedVersion))")
 

@@ -31,10 +31,20 @@ public final class Endpoint: Sendable {
     }
 
     /// Opens a QUIC connection and performs the MOQT session handshake.
-    public func connect(allowsUntrustedCertificates: Bool = false) async throws -> Session {
+    ///
+    /// - Parameters:
+    ///   - allowsUntrustedCertificates: Allows connecting to servers with untrusted TLS certificates.
+    ///   - initialIncomingRequestIDLimit: The initial maximum request ID accepted from the remote peer.
+    public func connect(
+        allowsUntrustedCertificates: Bool = false,
+        initialIncomingRequestIDLimit: UInt64 = 1000
+    ) async throws -> Session {
         OSLogger.info("Connecting transport to \(url.absoluteString)")
         let transportEndpoint = QuicEndpoint(host: host, port: port, allowsUntrustedCertificates: allowsUntrustedCertificates)
         let factory: SessionFactory = SessionFactory()
-        return try await factory.connect(transportEndpoint: transportEndpoint)
+        return try await factory.connect(
+            transportEndpoint: transportEndpoint,
+            initialIncomingRequestIDLimit: initialIncomingRequestIDLimit
+        )
     }
 }

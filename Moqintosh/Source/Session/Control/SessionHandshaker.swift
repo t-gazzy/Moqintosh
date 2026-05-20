@@ -12,17 +12,19 @@ import Foundation
 final class SessionHandshaker {
 
     private let stream: TransportBiStream
+    private let initialIncomingRequestIDLimit: UInt64
     private let frameReader = MessageFrameReader()
 
-    init(stream: TransportBiStream) {
+    init(stream: TransportBiStream, initialIncomingRequestIDLimit: UInt64 = 1000) {
         self.stream = stream
+        self.initialIncomingRequestIDLimit = initialIncomingRequestIDLimit
     }
 
     func handshake() async throws -> ServerSetupMessage {
         let clientSetup = ClientSetupMessage(
             supportedVersions: [0xff00000E],
             parameters: [
-                .maxRequestId(0),
+                .maxRequestId(initialIncomingRequestIDLimit),
                 .moqtImplementation("Moqintosh")
             ]
         )

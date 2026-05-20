@@ -11,6 +11,8 @@ import Network
 /// An inbound QUIC unidirectional stream.
 final class QuicUniReceiveStream: TransportUniReceiveStream, Sendable {
 
+    private static let maximumReceiveByteCount: Int = 64 * 1024
+
     private let stream: QUIC.Stream<QUICStream>
 
     init(stream: QUIC.Stream<QUICStream>) {
@@ -18,7 +20,7 @@ final class QuicUniReceiveStream: TransportUniReceiveStream, Sendable {
     }
 
     func receive() async throws -> TransportUniReceiveResult {
-        let message = try await stream.receive(atLeast: 1, atMost: Int.max)
+        let message = try await stream.receive(atLeast: 1, atMost: Self.maximumReceiveByteCount)
         OSLogger.trace(
             "UniStream received \(message.content.count) bytes (streamID: \(stream.streamID), isComplete: \(message.metadata.endOfStream))"
         )
