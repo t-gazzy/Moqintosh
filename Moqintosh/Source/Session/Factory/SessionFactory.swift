@@ -9,7 +9,7 @@
 final class SessionFactory {
     func connect(
         transportEndpoint: TransportEndpoint,
-        initialMaxRequestID: UInt64 = 1000
+        initialIncomingRequestIDLimit: UInt64 = 1000
     ) async throws -> Session {
         OSLogger.info("Connecting transport")
         let connection = try await transportEndpoint.connect()
@@ -17,7 +17,10 @@ final class SessionFactory {
         OSLogger.debug("Opening control stream")
         let controlStream = try await connection.openBiStream()
 
-        let handshaker = SessionHandshaker(stream: controlStream, initialMaxRequestID: initialMaxRequestID)
+        let handshaker = SessionHandshaker(
+            stream: controlStream,
+            initialIncomingRequestIDLimit: initialIncomingRequestIDLimit
+        )
         let serverSetup = try await handshaker.handshake()
         OSLogger.info("Handshake completed (selectedVersion: \(serverSetup.selectedVersion))")
 

@@ -19,7 +19,10 @@ struct SessionFactoryTests {
         let endpoint: MockTransportEndpoint = MockTransportEndpoint(connection: connection)
         let factory: SessionFactory = SessionFactory()
 
-        let session: Session = try await factory.connect(transportEndpoint: endpoint, initialMaxRequestID: 42)
+        let session: Session = try await factory.connect(
+            transportEndpoint: endpoint,
+            initialIncomingRequestIDLimit: 42
+        )
         let clientSetup: ClientSetupMessage = try ClientSetupMessage.decode(
             from: Data(connection.biStream.sentBytes[0].dropFirst(3))
         )

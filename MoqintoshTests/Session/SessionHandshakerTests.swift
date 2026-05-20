@@ -27,10 +27,13 @@ struct SessionHandshakerTests {
         #expect(maxRequestID == 1000)
     }
 
-    @Test func handshakeSendsConfiguredInitialMaxRequestID() async throws {
+    @Test func handshakeSendsConfiguredInitialIncomingRequestIDLimit() async throws {
         let serverSetup: ServerSetupMessage = ServerSetupMessage(selectedVersion: 0xff00000E, parameters: [.maxRequestId(10)])
         let stream: MockTransportBiStream = MockTransportBiStream(receiveQueue: [serverSetup.encode()])
-        let handshaker: SessionHandshaker = SessionHandshaker(stream: stream, initialMaxRequestID: 42)
+        let handshaker: SessionHandshaker = SessionHandshaker(
+            stream: stream,
+            initialIncomingRequestIDLimit: 42
+        )
 
         _ = try await handshaker.handshake()
 

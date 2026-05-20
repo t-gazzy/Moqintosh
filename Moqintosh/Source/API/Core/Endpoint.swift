@@ -34,17 +34,17 @@ public final class Endpoint: Sendable {
     ///
     /// - Parameters:
     ///   - allowsUntrustedCertificates: Allows connecting to servers with untrusted TLS certificates.
-    ///   - initialMaxRequestID: The initial maximum request ID that the remote peer may issue.
+    ///   - initialIncomingRequestIDLimit: The initial maximum request ID accepted from the remote peer.
     public func connect(
         allowsUntrustedCertificates: Bool = false,
-        initialMaxRequestID: UInt64 = 1000
+        initialIncomingRequestIDLimit: UInt64 = 1000
     ) async throws -> Session {
         OSLogger.info("Connecting transport to \(url.absoluteString)")
         let transportEndpoint = QuicEndpoint(host: host, port: port, allowsUntrustedCertificates: allowsUntrustedCertificates)
         let factory: SessionFactory = SessionFactory()
         return try await factory.connect(
             transportEndpoint: transportEndpoint,
-            initialMaxRequestID: initialMaxRequestID
+            initialIncomingRequestIDLimit: initialIncomingRequestIDLimit
         )
     }
 }
