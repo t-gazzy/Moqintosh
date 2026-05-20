@@ -33,6 +33,8 @@ import Foundation
 /// ```
 final class MessageFrameReader {
 
+    private static let payloadPreviewByteCount: Int = 32
+
     private var buffer: Data = Data()
 
     /// Reads exactly one complete MOQT frame from `stream` and returns the decoded message.
@@ -74,70 +76,92 @@ final class MessageFrameReader {
         let payload: Data = try reader.readBytes(length: payloadLength)
         buffer.removeFirst(reader.consumedCount)
 
-        // 5. Decode according to message type and wrap in MOQTMessage
-        switch MessageType(rawValue: type) {
-        case .clientSetup:
-            return .clientSetup(try ClientSetupMessage.decode(from: payload))
-        case .serverSetup:
-            return .serverSetup(try ServerSetupMessage.decode(from: payload))
-        case .goaway:
-            return .goaway(try GoAwayMessage.decode(from: payload))
-        case .maxRequestID:
-            return .maxRequestID(try MaxRequestIDMessage.decode(from: payload))
-        case .requestsBlocked:
-            return .requestsBlocked(try RequestsBlockedMessage.decode(from: payload))
-        case .subscribe:
-            return .subscribe(try SubscribeMessage.decode(from: payload))
-        case .subscribeOK:
-            return .subscribeOK(try SubscribeOKMessage.decode(from: payload))
-        case .subscribeError:
-            return .subscribeError(try SubscribeErrorMessage.decode(from: payload))
-        case .subscribeUpdate:
-            return .subscribeUpdate(try SubscribeUpdateMessage.decode(from: payload))
-        case .unsubscribe:
-            return .unsubscribe(try UnsubscribeMessage.decode(from: payload))
-        case .fetch:
-            return .fetch(try FetchMessage.decode(from: payload))
-        case .fetchOK:
-            return .fetchOK(try FetchOKMessage.decode(from: payload))
-        case .fetchError:
-            return .fetchError(try FetchErrorMessage.decode(from: payload))
-        case .fetchCancel:
-            return .fetchCancel(try FetchCancelMessage.decode(from: payload))
-        case .trackStatus:
-            return .trackStatus(try TrackStatusMessage.decode(from: payload))
-        case .trackStatusOK:
-            return .trackStatusOK(try TrackStatusOKMessage.decode(from: payload))
-        case .trackStatusError:
-            return .trackStatusError(try TrackStatusErrorMessage.decode(from: payload))
-        case .publish:
-            return .publish(try PublishMessage.decode(from: payload))
-        case .publishOK:
-            return .publishOK(try PublishOKMessage.decode(from: payload))
-        case .publishError:
-            return .publishError(try PublishErrorMessage.decode(from: payload))
-        case .publishDone:
-            return .publishDone(try PublishDoneMessage.decode(from: payload))
-        case .publishNamespace:
-            return .publishNamespace(try PublishNamespaceMessage.decode(from: payload))
-        case .publishNamespaceOK:
-            return .publishNamespaceOK(try PublishNamespaceOKMessage.decode(from: payload))
-        case .publishNamespaceError:
-            return .publishNamespaceError(try PublishNamespaceErrorMessage.decode(from: payload))
-        case .publishNamespaceDone:
-            return .publishNamespaceDone(try PublishNamespaceDoneMessage.decode(from: payload))
-        case .publishNamespaceCancel:
-            return .publishNamespaceCancel(try PublishNamespaceCancelMessage.decode(from: payload))
-        case .subscribeNamespace:
-            return .subscribeNamespace(try SubscribeNamespaceMessage.decode(from: payload))
-        case .subscribeNamespaceOK:
-            return .subscribeNamespaceOK(try SubscribeNamespaceOKMessage.decode(from: payload))
-        case .subscribeNamespaceError:
-            return .subscribeNamespaceError(try SubscribeNamespaceErrorMessage.decode(from: payload))
-        case .unsubscribeNamespace:
-            return .unsubscribeNamespace(try UnsubscribeNamespaceMessage.decode(from: payload))
-        default:
-            return .unknown(type: type, payload: payload)
+        do {
+            // 5. Decode according to message type and wrap in MOQTMessage
+            switch MessageType(rawValue: type) {
+            case .clientSetup:
+                return .clientSetup(try ClientSetupMessage.decode(from: payload))
+            case .serverSetup:
+                return .serverSetup(try ServerSetupMessage.decode(from: payload))
+            case .goaway:
+                return .goaway(try GoAwayMessage.decode(from: payload))
+            case .maxRequestID:
+                return .maxRequestID(try MaxRequestIDMessage.decode(from: payload))
+            case .requestsBlocked:
+                return .requestsBlocked(try RequestsBlockedMessage.decode(from: payload))
+            case .subscribe:
+                return .subscribe(try SubscribeMessage.decode(from: payload))
+            case .subscribeOK:
+                return .subscribeOK(try SubscribeOKMessage.decode(from: payload))
+            case .subscribeError:
+                return .subscribeError(try SubscribeErrorMessage.decode(from: payload))
+            case .subscribeUpdate:
+                return .subscribeUpdate(try SubscribeUpdateMessage.decode(from: payload))
+            case .unsubscribe:
+                return .unsubscribe(try UnsubscribeMessage.decode(from: payload))
+            case .fetch:
+                return .fetch(try FetchMessage.decode(from: payload))
+            case .fetchOK:
+                return .fetchOK(try FetchOKMessage.decode(from: payload))
+            case .fetchError:
+                return .fetchError(try FetchErrorMessage.decode(from: payload))
+            case .fetchCancel:
+                return .fetchCancel(try FetchCancelMessage.decode(from: payload))
+            case .trackStatus:
+                return .trackStatus(try TrackStatusMessage.decode(from: payload))
+            case .trackStatusOK:
+                return .trackStatusOK(try TrackStatusOKMessage.decode(from: payload))
+            case .trackStatusError:
+                return .trackStatusError(try TrackStatusErrorMessage.decode(from: payload))
+            case .publish:
+                return .publish(try PublishMessage.decode(from: payload))
+            case .publishOK:
+                return .publishOK(try PublishOKMessage.decode(from: payload))
+            case .publishError:
+                return .publishError(try PublishErrorMessage.decode(from: payload))
+            case .publishDone:
+                return .publishDone(try PublishDoneMessage.decode(from: payload))
+            case .publishNamespace:
+                return .publishNamespace(try PublishNamespaceMessage.decode(from: payload))
+            case .publishNamespaceOK:
+                return .publishNamespaceOK(try PublishNamespaceOKMessage.decode(from: payload))
+            case .publishNamespaceError:
+                return .publishNamespaceError(try PublishNamespaceErrorMessage.decode(from: payload))
+            case .publishNamespaceDone:
+                return .publishNamespaceDone(try PublishNamespaceDoneMessage.decode(from: payload))
+            case .publishNamespaceCancel:
+                return .publishNamespaceCancel(try PublishNamespaceCancelMessage.decode(from: payload))
+            case .subscribeNamespace:
+                return .subscribeNamespace(try SubscribeNamespaceMessage.decode(from: payload))
+            case .subscribeNamespaceOK:
+                return .subscribeNamespaceOK(try SubscribeNamespaceOKMessage.decode(from: payload))
+            case .subscribeNamespaceError:
+                return .subscribeNamespaceError(try SubscribeNamespaceErrorMessage.decode(from: payload))
+            case .unsubscribeNamespace:
+                return .unsubscribeNamespace(try UnsubscribeNamespaceMessage.decode(from: payload))
+            default:
+                return .unknown(type: type, payload: payload)
+            }
+        } catch {
+            OSLogger.error(
+                "Failed to decode control message: type=0x\(String(type, radix: 16)), "
+                + "payloadLength=\(payloadLength), payloadPrefix=\(Self.hexPreview(payload)), error=\(error)"
+            )
+            throw error
         }
+    }
+
+    private static func hexPreview(_ data: Data) -> String {
+        guard !data.isEmpty else {
+            return "<empty>"
+        }
+
+        let hex: String = data.prefix(payloadPreviewByteCount)
+            .map { String(format: "%02X", $0) }
+            .joined(separator: " ")
+        guard data.count > payloadPreviewByteCount else {
+            return hex
+        }
+        return "\(hex) ..."
     }
 }
